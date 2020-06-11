@@ -139,8 +139,10 @@ class HeartsEnv(gym.Env):
             reward = - reward
 
         global t_episodes
-        if t_episodes > 10000 and (t_episodes % 10) == 0 and reward not in (13, -13, 0):
-            print("EPISODE {}, WINNER {}, REWARD {}".format(t_episodes,self.players[winner_i].name,reward))
+        if t_episodes > 10000 and (t_episodes % 10) == 0 and reward not in (-13,13,0):
+            print("EPISODE {}, WINNER {}, REWARD {}, HAND_POINTS {}".
+                  format(t_episodes,self.players[winner_i].name,reward,self.hand_points))
+            print(self.status)
 
         return self.game_status, reward, done, {}
 
