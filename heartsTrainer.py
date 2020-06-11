@@ -89,7 +89,7 @@ class HeartsEnv(gym.Env):
         global t_episodes
         if t_episodes > 5000 and points != 0:
             print("EPISODE {}, WINNER {}, REWARD {}, HAND_POINTS {}".
-                  format(t_episodes,self.first_player.name,points,self.hand_points))
+                  format(t_episodes,self.players[self.first_player].name,points,self.hand_points))
             print(self.status)
         self.status['trick_number'] += 1
         self.status["trick_cards_played"] = []
