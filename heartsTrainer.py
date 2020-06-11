@@ -18,7 +18,10 @@ from ray.tune.registry import register_env
 from heartsBasicPlayers import BasicPlayer
 from card import CARD_2P, CARD_DE, Card, CARD_SET, CARD_LIST, CARDS_PER_PLAYER, HAND_SIZE
 
-CARD_STATUS = {-1: 'Others Hand', 0: 'My Hand', 1: 'Played'}
+# Card Status
+OTHERS_HAND = 0
+MY_HAND = 1
+PLAYED = 2
 
 CARD_DE_POINTS = HAND_SIZE
 MAX_HAND_POINTS = len([c for c in CARD_SET if c.naipe == "C"]) + CARD_DE_POINTS
@@ -33,7 +36,7 @@ class HeartsEnv(gym.Env):
         self.action_space = Discrete(4 * HAND_SIZE)
         observation_tuple = tuple(Discrete(3) for _ in range(4 * HAND_SIZE))
         self.observation_space = Tuple(observation_tuple)
-        self.game_status = 4 * HAND_SIZE * [-1]
+        self.game_status = 4 * HAND_SIZE * [OTHERS_HAND]
         self.players = [BasicPlayer("ME"), BasicPlayer("P2"), BasicPlayer("P3"), BasicPlayer("P4")]
         self.hand_points = 0
         self.first_player = None
@@ -72,7 +75,7 @@ class HeartsEnv(gym.Env):
         self.players[player_i].cards.remove(card)
         self.status["trick_cards_played"].append(card)
         self.status['hearts_broken'] = card == CARD_DE or card.naipe == "C"
-        self.game_status[CARD_LIST.index(card)] = 1
+        self.game_status[CARD_LIST.index(card)] = PLAYED
 
     def _others_play(self):
         n_cards_played = len(self.status["trick_cards_played"])
@@ -98,9 +101,9 @@ class HeartsEnv(gym.Env):
                 p.cards.add(c)
                 i = CARD_LIST.index(c)
                 if p.name == "ME":
-                    self.game_status[i] = 0
+                    self.game_status[i] = MY_HAND
                 else:
-                    self.game_status[i] = -1
+                    self.game_status[i] = OTHERS_HAND
         self.first_player = 0
         for p in self.players:
             if CARD_2P in p.cards:
@@ -114,7 +117,7 @@ class HeartsEnv(gym.Env):
     def step(self, action: int):
 
         card = CARD_LIST[action]
-        self.game_status[action] = 1
+        self.game_status[action] = PLAYED
         self.players[0].cards.remove(card)
 
         if self._cheating(card):
