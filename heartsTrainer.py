@@ -70,7 +70,7 @@ class HeartsEnv(gym.Env):
             points += CARD_DE_POINTS
         winner = (self.first_player + winner_i) % 4
         global t_episodes
-        if t_episodes > 10000 and (t_episodes % 10) == 0:
+        if t_episodes > 5000 and points != 0:
             print("EPISODE {}, WINNER {}, REWARD {}, HAND_POINTS {}".
                   format(t_episodes,self.players[winner_i].name,points,self.hand_points))
             print(self.status)
