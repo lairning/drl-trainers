@@ -15,7 +15,7 @@ from ray.rllib.agents.dqn import DQNTrainer
 from ray.rllib.env.external_env import ExternalEnv
 from ray.tune.registry import register_env
 
-from heartsBasicPlayers import BasicPlayer
+from heartsBasicPlayers import BasicPlayer, RandomPlayer
 from card import CARD_2P, CARD_DE, Card, CARD_SET, CARD_LIST, CARDS_PER_PLAYER, HAND_SIZE
 
 # Card Status
@@ -37,7 +37,7 @@ class HeartsEnv(gym.Env):
         observation_tuple = tuple(Discrete(3) for _ in range(4 * HAND_SIZE))
         self.observation_space = Tuple(observation_tuple)
         self.game_status = 4 * HAND_SIZE * [OTHERS_HAND]
-        self.players = [BasicPlayer("ME"), BasicPlayer("P2"), BasicPlayer("P3"), BasicPlayer("P4")]
+        self.players = [RandomPlayer("ME"), RandomPlayer("P2"), RandomPlayer("P3"), RandomPlayer("P4")]
         self.hand_points = 0
         self.first_player = None
         self.status = {"hearts_broken": False,
@@ -173,7 +173,7 @@ if __name__ == "__main__":
 
     register_env(
         "ExternalHearts",
-        lambda _: ExternalHearts(HeartsEnv(), episodes=50000)
+        lambda _: ExternalHearts(HeartsEnv(), episodes=100000)
     )
     dqn = DQNTrainer(
         env="ExternalHearts",
