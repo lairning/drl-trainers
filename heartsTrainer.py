@@ -183,7 +183,7 @@ dqn_config = {
     },
     "hiddens": [256, 256],
     "learning_starts": 500,
-    "timesteps_per_iteration": 1000
+    "timesteps_per_iteration": 5000
 }
 
 if __name__ == "__main__":
@@ -191,7 +191,7 @@ if __name__ == "__main__":
 
     register_env(
         "ExternalHearts",
-        lambda _: ExternalHearts(HeartsEnv(), episodes=1000000)
+        lambda _: ExternalHearts(HeartsEnv(), episodes=10000000)
     )
     dqn = DQNTrainer(
         env="ExternalHearts",
