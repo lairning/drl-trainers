@@ -183,7 +183,7 @@ dqn_config = {
     },
     "hiddens": [256, 256],
     "learning_starts": 500,
-    "timesteps_per_iteration": 5000
+    "timesteps_per_iteration": 2000
 }
 
 if __name__ == "__main__":
