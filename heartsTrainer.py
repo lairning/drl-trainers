@@ -27,6 +27,7 @@ CARD_DE_POINTS = HAND_SIZE
 MAX_HAND_POINTS = len([c for c in CARD_SET if c.naipe == "C"]) + CARD_DE_POINTS
 CHEAT_POINTS = -MAX_HAND_POINTS
 
+t_episodes = 0
 
 class HeartsEnv(gym.Env):
     """Example of a custom env in which you have to walk down a corridor.
@@ -93,6 +94,8 @@ class HeartsEnv(gym.Env):
         return self.first_player, points
 
     def reset(self):
+        global t_episodes
+        t_episodes += 1
         deck = CARD_SET.copy()
         for p in self.players:
             for i in range(CARDS_PER_PLAYER):
@@ -135,6 +138,10 @@ class HeartsEnv(gym.Env):
         if winner_i == 0:
             reward = - reward
 
+        global t_episodes
+        if t_episodes > 10000 and (t_episodes % 100) == 0:
+            print("EPISODE {}, WINNER {}, REWARD {}".format(t_episodes,self.players[winner_i].name,reward))
+
         return self.game_status, reward, done, {}
 
 
@@ -163,7 +170,7 @@ dqn_config = {
     "exploration_config": {
         "epsilon_timesteps": 1000,
     },
-    "hiddens": [256,128],
+    "hiddens": [256, 128],
     "learning_starts": 500,
     "timesteps_per_iteration": 1000
 }
