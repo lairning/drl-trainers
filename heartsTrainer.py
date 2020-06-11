@@ -161,10 +161,11 @@ dqn_config = {
     "v_min": -MAX_HAND_POINTS,
     "v_max": MAX_HAND_POINTS,
     "exploration_config": {
-        "epsilon_timesteps": 10000,
+        "epsilon_timesteps": 1000,
     },
+    "hiddens": [256,128],
     "learning_starts": 500,
-    "timesteps_per_iteration": 500
+    "timesteps_per_iteration": 1000
 }
 
 if __name__ == "__main__":
