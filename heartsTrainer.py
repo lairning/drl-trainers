@@ -138,12 +138,12 @@ class HeartsEnv(gym.Env):
         self.game_status[action] = PLAYED
 
         if card not in self.players[0].cards:
-            return self.game_status, CHEAT_POINTS-self.players_points[0], True, {}
+            return self.game_status, CHEAT_POINTS+self.players_points[0], True, {}
 
         self.players[0].cards.remove(card)
 
         if self._cheating(card):
-            return self.game_status, CHEAT_POINTS-self.players_points[0], True, {}
+            return self.game_status, CHEAT_POINTS+self.players_points[0], True, {}
 
         self.status["trick_cards_played"].append(card)
         self.status['hearts_broken'] = card == CARD_DE or card.naipe == "C"
