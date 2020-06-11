@@ -69,11 +69,6 @@ class HeartsEnv(gym.Env):
         if CARD_DE in self.status["trick_cards_played"]:
             points += CARD_DE_POINTS
         winner = (self.first_player + winner_i) % 4
-        global t_episodes
-        if t_episodes > 5000 and points != 0:
-            print("EPISODE {}, WINNER {}, REWARD {}, HAND_POINTS {}".
-                  format(t_episodes,self.players[winner_i].name,points,self.hand_points))
-            print(self.status)
         return winner, points
 
     def _play(self, player_i: int):
@@ -90,9 +85,14 @@ class HeartsEnv(gym.Env):
             self._play(player_i)
             player_i += 1
         self.first_player, points = self._get_points()
+        self.hand_points += points
+        global t_episodes
+        if t_episodes > 5000 and points != 0:
+            print("EPISODE {}, WINNER {}, REWARD {}, HAND_POINTS {}".
+                  format(t_episodes,self.first_player.name,points,self.hand_points))
+            print(self.status)
         self.status['trick_number'] += 1
         self.status["trick_cards_played"] = []
-        self.hand_points += points
         if self.first_player != 0:
             for player_i in range(self.first_player, 4):
                 self._play(player_i)
