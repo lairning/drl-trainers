@@ -86,11 +86,14 @@ class HeartsEnv(gym.Env):
             player_i += 1
         self.first_player, points = self._get_points()
         self.hand_points += points
+        self.players_points[self.first_player] += points
+        '''
         global t_episodes
         if t_episodes > 5000 and points != 0:
             print("EPISODE {}, WINNER {}, REWARD {}, HAND_POINTS {}".
                   format(t_episodes,self.players[self.first_player].name,points,self.hand_points))
             print(self.status)
+        '''
         self.status['trick_number'] += 1
         self.status["trick_cards_played"] = []
         if self.first_player != 0:
@@ -105,6 +108,7 @@ class HeartsEnv(gym.Env):
         self.game_status = 4 * HAND_SIZE * [OTHERS_HAND]
         self.players = [RandomPlayer("ME"), RandomPlayer("P2"), RandomPlayer("P3"), RandomPlayer("P4")]
         self.hand_points = 0
+        self.players_points = 4*[0]
         self.status = {"hearts_broken": False,
                        "trick_number": 0,
                        "trick_cards_played": []}
@@ -134,12 +138,12 @@ class HeartsEnv(gym.Env):
         self.game_status[action] = PLAYED
 
         if card not in self.players[0].cards:
-            return self.game_status, CHEAT_POINTS, True, {}
+            return self.game_status, CHEAT_POINTS-self.players_points[0], True, {}
 
         self.players[0].cards.remove(card)
 
         if self._cheating(card):
-            return self.game_status, CHEAT_POINTS, True, {}
+            return self.game_status, CHEAT_POINTS-self.players_points[0], True, {}
 
         self.status["trick_cards_played"].append(card)
         self.status['hearts_broken'] = card == CARD_DE or card.naipe == "C"
