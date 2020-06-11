@@ -25,7 +25,7 @@ PLAYED = 2
 
 CARD_DE_POINTS = HAND_SIZE
 MAX_HAND_POINTS = len([c for c in CARD_SET if c.naipe == "C"]) + CARD_DE_POINTS
-CHEAT_POINTS = MAX_HAND_POINTS
+CHEAT_POINTS = -MAX_HAND_POINTS
 
 
 class HeartsEnv(gym.Env):
@@ -118,10 +118,14 @@ class HeartsEnv(gym.Env):
 
         card = CARD_LIST[action]
         self.game_status[action] = PLAYED
+
+        if card not in self.players[0].cards:
+            return self.game_status, CHEAT_POINTS, True, {}
+
         self.players[0].cards.remove(card)
 
         if self._cheating(card):
-            return self.observation_space, CHEAT_POINTS, True, {}
+            return self.game_status, CHEAT_POINTS, True, {}
 
         self.status["trick_cards_played"].append(card)
         self.status['hearts_broken'] = card == CARD_DE or card.naipe == "C"
