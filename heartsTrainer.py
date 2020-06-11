@@ -38,7 +38,7 @@ class HeartsEnv(gym.Env):
         observation_tuple = tuple(Discrete(3) for _ in range(4 * HAND_SIZE))
         self.observation_space = Tuple(observation_tuple)
         self.game_status = 4 * HAND_SIZE * [OTHERS_HAND]
-        self.players = [RandomPlayer("ME"), RandomPlayer("P2"), RandomPlayer("P3"), RandomPlayer("P4")]
+        self.players = None
         self.hand_points = 0
         self.first_player = None
         self.status = {"hearts_broken": False,
@@ -69,6 +69,11 @@ class HeartsEnv(gym.Env):
         if CARD_DE in self.status["trick_cards_played"]:
             points += CARD_DE_POINTS
         winner = (self.first_player + winner_i) % 4
+        global t_episodes
+        if t_episodes > 10000 and (t_episodes % 10) == 0:
+            print("EPISODE {}, WINNER {}, REWARD {}, HAND_POINTS {}".
+                  format(t_episodes,self.players[winner_i].name,points,self.hand_points))
+            print(self.status)
         return winner, points
 
     def _play(self, player_i: int):
@@ -97,6 +102,12 @@ class HeartsEnv(gym.Env):
         global t_episodes
         t_episodes += 1
         deck = CARD_SET.copy()
+        self.game_status = 4 * HAND_SIZE * [OTHERS_HAND]
+        self.players = [RandomPlayer("ME"), RandomPlayer("P2"), RandomPlayer("P3"), RandomPlayer("P4")]
+        self.hand_points = 0
+        self.status = {"hearts_broken": False,
+                       "trick_number": 0,
+                       "trick_cards_played": []}
         for p in self.players:
             for i in range(CARDS_PER_PLAYER):
                 c = random.sample(deck, 1)[0]
@@ -137,12 +148,6 @@ class HeartsEnv(gym.Env):
         done = self.hand_points == MAX_HAND_POINTS
         if winner_i == 0:
             reward = - reward
-
-        global t_episodes
-        if t_episodes > 10000 and (t_episodes % 10) == 0 and reward not in (-13,13,0):
-            print("EPISODE {}, WINNER {}, REWARD {}, HAND_POINTS {}".
-                  format(t_episodes,self.players[winner_i].name,reward,self.hand_points))
-            print(self.status)
 
         return self.game_status, reward, done, {}
 
