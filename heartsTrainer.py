@@ -188,7 +188,7 @@ dqn_config = {
     "timesteps_per_iteration": 1000
 }
 
-ppo_config = {}
+ppo_config = {"timesteps_per_iteration": 1000}
 
 if __name__ == "__main__":
     ray.init()
@@ -197,7 +197,7 @@ if __name__ == "__main__":
         "ExternalHearts",
         lambda _: ExternalHearts(HeartsEnv(), episodes=200000)
     )
-    dqn = ImpalaTrainer(
+    dqn = PPOTrainer(
         env="ExternalHearts",
         config=ppo_config
     )
