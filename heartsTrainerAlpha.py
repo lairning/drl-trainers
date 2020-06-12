@@ -46,7 +46,7 @@ class HeartsEnv(gym.Env):
             "obs": Tuple(observation_tuple),
             "action_mask": Box(low=0, high=1, shape=(self.action_space.n,))
         })
-        self.game_status = 4 * HAND_SIZE * [OTHERS_HAND]
+        self.game_status = np.array(4 * HAND_SIZE * [OTHERS_HAND])
         self.players = None
         self.hand_points = 0
         self.first_player = None
@@ -147,7 +147,7 @@ class HeartsEnv(gym.Env):
         global t_episodes
         t_episodes += 1
         deck = CARD_SET.copy()
-        self.game_status = 4 * HAND_SIZE * [OTHERS_HAND]
+        self.game_status = np.array(4 * HAND_SIZE * [OTHERS_HAND])
         self.players = [RandomPlayer("ME"), RandomPlayer("P2"), RandomPlayer("P3"), RandomPlayer("P4")]
         self.hand_points = 0
         self.players_points = 4 * [0]
