@@ -250,9 +250,9 @@ if __name__ == "__main__":
 
     trainer = AlphaZeroTrainer(
         env="HeartsEnv",
-        config=config,
-        model={
-                "custom_model": "dense_model"
+        config= {
+            "timesteps_per_iteration": 1000,
+            "custom_model": "dense_model"
         }
     )
 
