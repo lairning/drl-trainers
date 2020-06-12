@@ -7,6 +7,7 @@ Created on Sat Mar 14 14:00:16 2020
 
 import random
 import numpy as np
+from copy import deepcopy
 
 import gym
 from gym.spaces import Discrete, Tuple, Box, Dict
@@ -189,36 +190,44 @@ class HeartsEnv(gym.Env):
 
         winner_i, reward = self._others_play()
         done = self.hand_points == MAX_HAND_POINTS
-        if winner_i == 0:
+        if winner_i != 0:
+            reward = 0
+        else:
             reward = - reward
 
         return {'obs': self.game_status, "action_mask": self._valid_actions()}, reward, done, {}
 
+
+
+class HeartsEnvWrapper:
+    def __init__(self):
+        self.env = HeartsEnv()
+        self.action_space = Discrete(4 * HAND_SIZE)
+        observation_tuple = tuple(Discrete(3) for _ in range(4 * HAND_SIZE))
+        self.observation_space = Dict({
+            "obs": Tuple(observation_tuple),
+            "action_mask": Box(low=0, high=1, shape=(self.action_space.n,))
+        })
+        self.running_reward = 0
+
+    def reset(self):
+        self.running_reward = 0
+        return self.env.reset()
+
+    def step(self, action: int):
+        obs, rew, done, info = self.env.step(action)
+        self.running_reward += rew
+        score = self.running_reward if done else 0
+        return obs, score, done, info
+
     def set_state(self, state):
-        self.hand_points = state[1]
-        return {'obs': self.game_status, "action_mask": self._valid_actions()}
+        self.running_reward = state[1]
+        self.env = deepcopy(state[0])
+        return {'obs': self.env.game_status, "action_mask": self.env._valid_actions()}
 
     def get_state(self):
-        return None, self.hand_points
+        return deepcopy(self.env), self.running_reward
 
-
-class ExternalHearts(ExternalEnv):
-    def __init__(self, env, episodes: int):
-        ExternalEnv.__init__(self, env.action_space, env.observation_space)
-        self.env = env
-        self.episodes = episodes
-
-    def run(self):
-
-        for e in range(self.episodes):
-            eid = self.start_episode()
-            obs = self.env.reset()
-            done = False
-            while not done:
-                action = self.get_action(eid, obs)
-                obs, reward, done, info = self.env.step(action)
-                self.log_returns(eid, reward, info=info)
-            self.end_episode(eid, obs)
 
 
 config = {"timesteps_per_iteration": 1000}
