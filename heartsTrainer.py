@@ -11,7 +11,8 @@ import gym
 from gym.spaces import Discrete, Tuple
 
 import ray
-from ray.rllib.agents.dqn import DQNTrainer, ApexTrainer, PPOTrainer
+from ray.rllib.agents.dqn import DQNTrainer, ApexTrainer
+from ray.rllib.agents.ppo.ppo import PPOTrainer
 from ray.rllib.env.external_env import ExternalEnv
 from ray.tune.registry import register_env
 
