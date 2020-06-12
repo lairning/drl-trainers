@@ -13,6 +13,7 @@ from gym.spaces import Discrete, Tuple
 import ray
 from ray.rllib.agents.dqn import DQNTrainer, ApexTrainer
 from ray.rllib.agents.ppo.ppo import PPOTrainer
+from ray.rllib.agents.impala.impala import ImpalaTrainer
 from ray.rllib.env.external_env import ExternalEnv
 from ray.tune.registry import register_env
 
@@ -196,7 +197,7 @@ if __name__ == "__main__":
         "ExternalHearts",
         lambda _: ExternalHearts(HeartsEnv(), episodes=200000)
     )
-    dqn = PPOTrainer(
+    dqn = ImpalaTrainer(
         env="ExternalHearts",
         config=ppo_config
     )
