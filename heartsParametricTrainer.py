@@ -235,6 +235,7 @@ class ParametricActionsModel(DistributionalQTFModel):
             obs_space, action_space, num_outputs, model_config, name, **kw)
         print("####### obs_space {}".format(obs_space))
         raise Exception("END")
+
         self.action_param_model = FullyConnectedNetwork(
             obs_space, action_space, num_outputs,
             model_config, name + "_action_param")
