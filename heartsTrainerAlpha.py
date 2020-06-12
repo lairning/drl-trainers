@@ -6,6 +6,7 @@ Created on Sat Mar 14 14:00:16 2020
 """
 
 import random
+import numpy as np
 
 import gym
 from gym.spaces import Discrete, Tuple, Box, Dict
@@ -113,7 +114,7 @@ class HeartsEnv(gym.Env):
         action_mask = 4 * HAND_SIZE * [0]
         for card in cards:
             action_mask[CARD_LIST.index(card)] = 1
-        return action_mask
+        return np.array(action_mask)
 
     def _valid_actions(self):
         if len(self.status["trick_cards_played"]) == 0:
@@ -166,7 +167,7 @@ class HeartsEnv(gym.Env):
                 self._play(player_i)
             action_mask = self._valid_actions()
         else:
-            action_mask = 4 * HAND_SIZE * [0]
+            action_mask = np.array(4 * HAND_SIZE * [0])
             action_mask[CARD_LIST.index(CARD_2P)] = 1
         return {'obs': self.game_status, "action_mask": action_mask}
 
