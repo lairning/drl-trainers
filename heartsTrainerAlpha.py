@@ -227,7 +227,7 @@ if __name__ == "__main__":
 
     register_env(
         "ExternalHearts",
-        lambda _: ExternalHearts(HeartsEnv(), episodes=200000)
+        lambda _: HeartsEnv()
     )
 
     trainer = AlphaZeroTrainer(
