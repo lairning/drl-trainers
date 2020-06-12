@@ -250,7 +250,7 @@ if __name__ == "__main__":
 
     trainer = AlphaZeroTrainer(
         env="HeartsEnv",
-        config=config
+        config=config,
         model={
                 "custom_model": "dense_model"
         }
