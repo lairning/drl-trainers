@@ -82,6 +82,12 @@ class HeartsEnv(gym.Env):
         return winner, points
 
     def _play(self, player_i: int):
+        if len(self.players[player_i].cards) == 0:
+            print("HAND_POINTS {}, STATUS {}".
+                  format(self.hand_points, self.status))
+            for p in self.players:
+                print("    Player name {}, Cards {}".
+                      format(p.name, p.cards)
         card = self.players[player_i].play_card(self.status)
         self.players[player_i].cards.remove(card)
         self.status["trick_cards_played"].append(card)
