@@ -16,6 +16,7 @@ import ray
 from ray.rllib.contrib.alpha_zero.core.alpha_zero_trainer import AlphaZeroTrainer
 from ray.rllib.models.catalog import ModelCatalog
 from ray.rllib.contrib.alpha_zero.models.custom_torch_models import DenseModel
+from ray import tune
 
 from ray.rllib.env.external_env import ExternalEnv
 from ray.tune.registry import register_env
@@ -241,6 +242,31 @@ config = {"timesteps_per_iteration": 1000}
 if __name__ == "__main__":
     ray.init()
 
+    ModelCatalog.register_custom_model("dense_model", DenseModel)
+
+    config = {
+        "env": HeartsEnvWrapper,
+        "timesteps_per_iteration": 1000,
+        "model": {
+            "custom_model": "dense_model"
+        },
+        "ranked_rewards": {
+            "enable": True,
+        },
+    }
+
+    stop = {
+        "training_iteration": 100
+    }
+
+    results = tune.run(AlphaZeroTrainer, config=config, stop=stop)
+
+    ray.shutdown()
+
+'''
+if __name__ == "__main__":
+    ray.init()
+
     register_env(
         "HeartsEnv",
         lambda _: HeartsEnvWrapper()
@@ -265,3 +291,4 @@ if __name__ == "__main__":
         i += 1
 
     ray.shutdown()
+'''
