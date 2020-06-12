@@ -13,10 +13,9 @@ import gym
 from gym.spaces import Discrete, Tuple, Box, Dict
 
 import ray
-from ray.rllib.agents.dqn import DQNTrainer, ApexTrainer
-from ray.rllib.agents.ppo.ppo import PPOTrainer
-from ray.rllib.agents.impala.impala import ImpalaTrainer
 from ray.rllib.contrib.alpha_zero.core.alpha_zero_trainer import AlphaZeroTrainer
+from ray.rllib.models.catalog import ModelCatalog
+from ray.rllib.contrib.alpha_zero.models.custom_torch_models import DenseModel
 
 from ray.rllib.env.external_env import ExternalEnv
 from ray.tune.registry import register_env
@@ -247,9 +246,14 @@ if __name__ == "__main__":
         lambda _: HeartsEnvWrapper()
     )
 
+    ModelCatalog.register_custom_model("dense_model", DenseModel)
+
     trainer = AlphaZeroTrainer(
         env="HeartsEnv",
         config=config
+        model={
+                "custom_model": "dense_model"
+        }
     )
 
     i = 1
