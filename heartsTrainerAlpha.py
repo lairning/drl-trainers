@@ -112,9 +112,10 @@ class HeartsEnv(gym.Env):
         '''
         self.status['trick_number'] += 1
         self.status["trick_cards_played"] = []
-        if self.first_player != 0:
-            for player_i in range(self.first_player, 4):
-                self._play(player_i)
+        if self.hand_points != MAX_HAND_POINTS:
+            if self.first_player != 0:
+                for player_i in range(self.first_player, 4):
+                    self._play(player_i)
         return self.first_player, points
 
     def _mask_actions(self, cards: set):
