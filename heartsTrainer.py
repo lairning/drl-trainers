@@ -11,7 +11,7 @@ import gym
 from gym.spaces import Discrete, Tuple
 
 import ray
-from ray.rllib.agents.dqn import DQNTrainer, ApexTrainer
+from ray.rllib.agents.dqn import DQNTrainer, ApexTrainer, PPOTrainer
 from ray.rllib.env.external_env import ExternalEnv
 from ray.tune.registry import register_env
 
@@ -195,9 +195,9 @@ if __name__ == "__main__":
         "ExternalHearts",
         lambda _: ExternalHearts(HeartsEnv(), episodes=200000)
     )
-    dqn = ApexTrainer(
+    dqn = PPOTrainer(
         env="ExternalHearts",
-        config=dqn_config
+        config=ppo_config
     )
 
     i = 1
