@@ -243,12 +243,12 @@ if __name__ == "__main__":
     ray.init()
 
     register_env(
-        "ExternalHearts",
-        lambda _: HeartsEnv()
+        "HeartsEnv",
+        lambda _: HeartsEnvWrapper()
     )
 
     trainer = AlphaZeroTrainer(
-        env="ExternalHearts",
+        env="HeartsEnv",
         config=config
     )
 
