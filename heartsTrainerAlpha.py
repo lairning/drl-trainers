@@ -252,7 +252,7 @@ if __name__ == "__main__":
         env="HeartsEnv",
         config= {
             "timesteps_per_iteration": 1000,
-            "custom_model": "dense_model"
+            "model": {"custom_model": "dense_model"}
         }
     )
 
