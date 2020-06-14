@@ -17,7 +17,8 @@ from ray.rllib.agents.ppo.ppo import PPOTrainer
 from ray.rllib.agents.impala.impala import ImpalaTrainer
 from ray.rllib.env.external_env import ExternalEnv
 from ray.tune.registry import register_env
-from ray.rllib.models.tf.fcnet_v2 import FullyConnectedNetwork
+# from ray.rllib.models.tf.fcnet_v2 import FullyConnectedNetwork
+from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
 from ray.rllib.utils.framework import try_import_tf
 from ray.rllib.models.catalog import ModelCatalog
 
