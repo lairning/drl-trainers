@@ -37,6 +37,7 @@ t_episodes = 0
 
 TRUE_OBSERVATION_SPACE = Box(low=0, high=2, shape=(4 * HAND_SIZE,))
 
+
 class HeartsEnv(gym.Env):
     """Example of a custom env in which you have to walk down a corridor.
     You can configure the length of the corridor via the env config."""
@@ -206,7 +207,6 @@ class HeartsEnv(gym.Env):
         return {'obs': self.game_status, "action_mask": self._valid_actions()}, reward, done, {}
 
 
-
 class HeartsEnvWrapper:
     def __init__(self):
         self.env = HeartsEnv()
@@ -237,7 +237,6 @@ class HeartsEnvWrapper:
         return deepcopy(self.env), self.running_reward
 
 
-
 config = {"timesteps_per_iteration": 1000}
 
 if __name__ == "__main__":
@@ -252,7 +251,7 @@ if __name__ == "__main__":
     )
 
     config = {
-        "env": HeartsEnv,
+        "env": "HeartsEnv",
         "timesteps_per_iteration": 1000,
         "model": {
             "custom_model": "dense_model"
