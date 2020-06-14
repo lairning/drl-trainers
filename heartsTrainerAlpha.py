@@ -211,9 +211,8 @@ class HeartsEnvWrapper:
     def __init__(self):
         self.env = HeartsEnv()
         self.action_space = Discrete(4 * HAND_SIZE)
-        observation_tuple = tuple(Discrete(3) for _ in range(4 * HAND_SIZE))
         self.observation_space = Dict({
-            "obs": Tuple(observation_tuple),
+            "obs": TRUE_OBSERVATION_SPACE,
             "action_mask": Box(low=0, high=1, shape=(self.action_space.n,))
         })
         self.running_reward = 0
