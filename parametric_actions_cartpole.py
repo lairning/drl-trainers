@@ -183,7 +183,7 @@ if __name__ == "__main__":
             "custom_model": "pa_model",
         },
         "num_workers": 0,
-        "framework": "torch" if args.torch else "tf",
+        "framework": "tf",
     }, **cfg)
 
     stop = {
@@ -195,7 +195,7 @@ if __name__ == "__main__":
     results = tune.run(args.run, stop=stop, config=config)
 
     if results.trials[0].last_result["episode_reward_mean"] < args.stop_reward:
-        raise ValueError("`stop-reward` of {} not reached!".format(min_reward))
+        raise ValueError("`stop-reward` of {} not reached!".format(args.stop_reward))
 
     print("ok")
 
