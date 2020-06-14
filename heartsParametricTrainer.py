@@ -283,9 +283,11 @@ if __name__ == "__main__":
 
     ModelCatalog.register_custom_model("ParametricActionsModel", ParametricActionsModel)
 
-    ppo_config = {"model": {"custom_model": "ParametricActionsModel"},
-                  "num_workers": 0
-                  }
+    ppo_config = {
+        "env": "HeartsEnv",
+        "model": {"custom_model": "ParametricActionsModel"},
+        "num_workers": 0
+    }
 
     stop = {
         "training_iteration": 200,
