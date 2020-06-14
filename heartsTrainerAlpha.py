@@ -245,8 +245,14 @@ if __name__ == "__main__":
 
     ModelCatalog.register_custom_model("dense_model", DenseModel)
 
+    register_env(
+        "HeartsEnv",
+        lambda _: HeartsEnv()
+        # lambda _: ExternalHearts(HeartsEnv(), episodes=200000)
+    )
+
     config = {
-        "env": HeartsEnvWrapper,
+        "env": HeartsEnv,
         "timesteps_per_iteration": 1000,
         "model": {
             "custom_model": "dense_model"
