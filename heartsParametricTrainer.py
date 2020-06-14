@@ -13,7 +13,7 @@ from gym.spaces import Discrete, Tuple, Dict, Box
 
 import ray
 from ray import tune
-# from ray.rllib.agents.dqn import DQNTrainer
+from ray.rllib.agents.dqn import DQNTrainer
 from ray.rllib.agents.ppo.ppo import PPOTrainer
 # from ray.rllib.agents.impala.impala import ImpalaTrainer
 from ray.rllib.env.external_env import ExternalEnv
@@ -31,9 +31,9 @@ from card import CARD_2P, CARD_DE, Card, CARD_SET, CARD_LIST, CARDS_PER_PLAYER, 
 tf = try_import_tf()
 
 # Card Status
-OTHERS_HAND = 0
-MY_HAND = 1
-PLAYED = 2
+OTHERS_HAND = -1
+MY_HAND = 0
+PLAYED = 1
 
 CARD_DE_POINTS = HAND_SIZE
 MAX_HAND_POINTS = len([c for c in CARD_SET if c.naipe == "C"]) + CARD_DE_POINTS
@@ -42,7 +42,7 @@ CHEAT_POINTS = -MAX_HAND_POINTS
 t_episodes = 0
 
 # TRUE_OBSERVATION_SPACE = Tuple(tuple(Discrete(3) for _ in range(4 * HAND_SIZE)))
-TRUE_OBSERVATION_SPACE = Box(low=0, high=2, shape=(4 * HAND_SIZE,))
+TRUE_OBSERVATION_SPACE = Box(low=-1, high=1, shape=(4 * HAND_SIZE,))
 
 
 class HeartsEnv(gym.Env):
@@ -313,13 +313,22 @@ if __name__ == "__main__":
 
     ppo_config = {"timesteps_per_iteration": 1000,
                   "model": {"custom_model": "ParametricActionsModel"},
-                  "num_workers": 0
+                  "num_workers": 0,
+                  "vf_clip_param": 26.0
                   }
 
-    trainer = PPOTrainer(
-        env="ExternalHearts",
-        config=ppo_config
-    )
+    dqn_config = {"timesteps_per_iteration": 1000,
+                  "model": {"custom_model": "ParametricActionsModel"},
+                  "num_workers": 0,
+                  "hiddens": [],
+                  "dueling": False,
+                  "v_min": -26,
+                  "v_max": 26,
+                  "noisy": True
+                  }
+
+    trainer = PPOTrainer(env="ExternalHearts", config=ppo_config)
+    # trainer = DQNTrainer(env="ExternalHearts", config=dqn_config)
 
     i = 1
     while True:
