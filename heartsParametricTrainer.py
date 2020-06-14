@@ -12,9 +12,10 @@ import gym
 from gym.spaces import Discrete, Tuple, Dict, Box
 
 import ray
-from ray.rllib.agents.dqn import DQNTrainer
+from ray import tune
+# from ray.rllib.agents.dqn import DQNTrainer
 from ray.rllib.agents.ppo.ppo import PPOTrainer
-from ray.rllib.agents.impala.impala import ImpalaTrainer
+# from ray.rllib.agents.impala.impala import ImpalaTrainer
 from ray.rllib.env.external_env import ExternalEnv
 from ray.tune.registry import register_env
 from ray.rllib.models.tf.fcnet_v2 import FullyConnectedNetwork
@@ -41,6 +42,7 @@ CHEAT_POINTS = -MAX_HAND_POINTS
 t_episodes = 0
 
 TRUE_OBSERVATION_SPACE = Tuple(tuple(Discrete(3) for _ in range(4 * HAND_SIZE)))
+
 
 class HeartsEnv(gym.Env):
     """Example of a custom env in which you have to walk down a corridor.
@@ -234,8 +236,8 @@ class ParametricActionsModel(DistributionalQTFModel):
                  **kw):
         super(ParametricActionsModel, self).__init__(
             obs_space, action_space, num_outputs, model_config, name, **kw)
-        #print("####### obs_space {}".format(obs_space))
-        #raise Exception("END")
+        # print("####### obs_space {}".format(obs_space))
+        # raise Exception("END")
 
         self.action_param_model = FullyConnectedNetwork(
             TRUE_OBSERVATION_SPACE, action_space, num_outputs,
@@ -274,6 +276,30 @@ if __name__ == "__main__":
     ray.init()
 
     register_env(
+        "HeartsEnv",
+        lambda _: HeartsEnv()
+        # lambda _: ExternalHearts(HeartsEnv(), episodes=200000)
+    )
+
+    ModelCatalog.register_custom_model("ParametricActionsModel", ParametricActionsModel)
+
+    ppo_config = {"model": {"custom_model": "ParametricActionsModel"},
+                  "num_workers": 0
+                  }
+
+    stop = {
+        "training_iteration": 200,
+        "timesteps_total": 200000}
+
+    results = tune.run(PPOTrainer, stop=stop, config=ppo_config)
+
+    ray.shutdown()
+
+'''
+if __name__ == "__main__":
+    ray.init()
+
+    register_env(
         "ExternalHearts",
         #lambda _: HeartsEnv()
         lambda _: ExternalHearts(HeartsEnv(), episodes=200000)
@@ -299,3 +325,4 @@ if __name__ == "__main__":
         i += 1
 
     ray.shutdown()
+'''
