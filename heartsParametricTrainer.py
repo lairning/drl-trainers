@@ -201,7 +201,7 @@ class HeartsEnv(gym.Env):
         winner_i, reward = self._others_play()
         done = self.hand_points == MAX_HAND_POINTS
         if winner_i != 0:
-            reward = 0
+            reward = reward/3
         else:
             reward = - reward
 
