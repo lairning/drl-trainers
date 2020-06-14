@@ -95,6 +95,7 @@ class ParametricActionsCartPole(gym.Env):
 
 from ray.rllib.agents.dqn.distributional_q_tf_model import \
     DistributionalQTFModel
+from ray.rllib.agents import ppo
 from ray.rllib.models.tf.fcnet_v2 import FullyConnectedNetwork
 # from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
 from ray.rllib.utils.framework import try_import_tf
@@ -184,7 +185,6 @@ if __name__ == "__main__":
             "custom_model": "pa_model",
         },
         "num_workers": 0,
-        "framework": "tf",
     }, **cfg)
 
     stop = {
@@ -193,7 +193,8 @@ if __name__ == "__main__":
         "episode_reward_mean": args.stop_reward,
     }
 
-    results = tune.run(args.run, stop=stop, config=config)
+    # results = tune.run(args.run, stop=stop, config=config)
+    results = tune.run(ppo.PPOTrainer, stop=stop, config=config)
 
     if results.trials[0].last_result["episode_reward_mean"] < args.stop_reward:
         raise ValueError("`stop-reward` of {} not reached!".format(args.stop_reward))
