@@ -322,9 +322,9 @@ if __name__ == "__main__":
                   "num_workers": 0,
                   "hiddens": [],
                   "dueling": False,
-                  "v_min": -26,
-                  "v_max": 26,
-                  "noisy": True
+                  #"v_min": -26,
+                  #"v_max": 26,
+                  #"noisy": True
                   }
 
     #trainer = PPOTrainer(env="ExternalHearts", config=ppo_config)
