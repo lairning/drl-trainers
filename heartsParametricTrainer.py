@@ -39,6 +39,7 @@ CHEAT_POINTS = -MAX_HAND_POINTS
 
 t_episodes = 0
 
+TRUE_OBSERVATION_SPACE = Tuple(tuple(Discrete(3) for _ in range(4 * HAND_SIZE)))
 
 class HeartsEnv(gym.Env):
     """Example of a custom env in which you have to walk down a corridor.
@@ -46,9 +47,8 @@ class HeartsEnv(gym.Env):
 
     def __init__(self):
         self.action_space = Discrete(4 * HAND_SIZE)
-        observation_tuple = tuple(Discrete(3) for _ in range(4 * HAND_SIZE))
         self.observation_space = Dict({
-            "status": Tuple(observation_tuple),
+            "status": TRUE_OBSERVATION_SPACE,
             "action_mask": Box(low=0, high=1, shape=(self.action_space.n,))
         })
         self.game_status = np.array(4 * HAND_SIZE * [OTHERS_HAND])
@@ -233,11 +233,11 @@ class ParametricActionsModel(DistributionalQTFModel):
                  **kw):
         super(ParametricActionsModel, self).__init__(
             obs_space, action_space, num_outputs, model_config, name, **kw)
-        print("####### obs_space {}".format(obs_space))
-        raise Exception("END")
+        #print("####### obs_space {}".format(obs_space))
+        #raise Exception("END")
 
         self.action_param_model = FullyConnectedNetwork(
-            obs_space, action_space, num_outputs,
+            TRUE_OBSERVATION_SPACE, action_space, num_outputs,
             model_config, name + "_action_param")
         self.register_variables(self.action_param_model.variables())
 
