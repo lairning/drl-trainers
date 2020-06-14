@@ -19,11 +19,10 @@ import random
 
 import ray
 from ray import tune
-from ray.rllib.examples.models.parametric_actions_model import \
-    ParametricActionsModel, TorchParametricActionsModel
 from ray.rllib.models import ModelCatalog
 from ray.rllib.utils.test_utils import check_learning_achieved
 from ray.tune.registry import register_env
+
 
 class ParametricActionsCartPole(gym.Env):
     """Parametric action version of CartPole.
@@ -52,7 +51,7 @@ class ParametricActionsCartPole(gym.Env):
         self.action_space = Discrete(max_avail_actions)
         self.wrapped = gym.make("CartPole-v0")
         self.observation_space = Dict({
-            "action_mask": Box(0, 1, shape=(max_avail_actions, )),
+            "action_mask": Box(0, 1, shape=(max_avail_actions,)),
             "avail_actions": Box(-10, 10, shape=(max_avail_actions, 2)),
             "cart": self.wrapped.observation_space,
         })
@@ -94,9 +93,66 @@ class ParametricActionsCartPole(gym.Env):
         }
         return obs, rew, done, info
 
+
+from ray.rllib.agents.dqn.distributional_q_tf_model import \
+    DistributionalQTFModel
+from ray.rllib.models.tf.fcnet_v2 import FullyConnectedNetwork
+from ray.rllib.utils.framework import try_import_tf
+
+tf = try_import_tf()
+
+
+class ParametricActionsModel(DistributionalQTFModel):
+    """Parametric action model that handles the dot product and masking.
+    This assumes the outputs are logits for a single Categorical action dist.
+    Getting this to work with a more complex output (e.g., if the action space
+    is a tuple of several distributions) is also possible but left as an
+    exercise to the reader.
+    """
+
+    def __init__(self,
+                 obs_space,
+                 action_space,
+                 num_outputs,
+                 model_config,
+                 name,
+                 true_obs_shape=(4,),
+                 action_embed_size=2,
+                 **kw):
+        super(ParametricActionsModel, self).__init__(
+            obs_space, action_space, num_outputs, model_config, name, **kw)
+        self.action_embed_model = FullyConnectedNetwork(
+            Box(-1, 1, shape=true_obs_shape), action_space, action_embed_size,
+            model_config, name + "_action_embed")
+        self.register_variables(self.action_embed_model.variables())
+
+    def forward(self, input_dict, state, seq_lens):
+        # Extract the available actions tensor from the observation.
+        avail_actions = input_dict["obs"]["avail_actions"]
+        action_mask = input_dict["obs"]["action_mask"]
+
+        # Compute the predicted action embedding
+        action_embed, _ = self.action_embed_model({
+            "obs": input_dict["obs"]["cart"]
+        })
+
+        # Expand the model output to [BATCH, 1, EMBED_SIZE]. Note that the
+        # avail actions tensor is of shape [BATCH, MAX_ACTIONS, EMBED_SIZE].
+        intent_vector = tf.expand_dims(action_embed, 1)
+
+        # Batch dot product => shape of logits is [BATCH, MAX_ACTIONS].
+        action_logits = tf.reduce_sum(avail_actions * intent_vector, axis=2)
+
+        # Mask out invalid actions (use tf.float32.min for stability)
+        inf_mask = tf.maximum(tf.log(action_mask), tf.float32.min)
+        return action_logits + inf_mask, state
+
+    def value_function(self):
+        return self.action_embed_model.value_function()
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--run", type=str, default="PPO")
-parser.add_argument("--torch", action="store_true")
 parser.add_argument("--as-test", action="store_true")
 parser.add_argument("--stop-iters", type=int, default=200)
 parser.add_argument("--stop-reward", type=float, default=150.0)
@@ -108,8 +164,7 @@ if __name__ == "__main__":
 
     register_env("pa_cartpole", lambda _: ParametricActionsCartPole(10))
     ModelCatalog.register_custom_model(
-        "pa_model", TorchParametricActionsModel
-        if args.torch else ParametricActionsModel)
+        "pa_model", ParametricActionsModel)
 
     if args.run == "DQN":
         cfg = {
