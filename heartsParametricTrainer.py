@@ -17,7 +17,7 @@ from ray.rllib.agents.ppo.ppo import PPOTrainer
 from ray.rllib.agents.impala.impala import ImpalaTrainer
 from ray.rllib.env.external_env import ExternalEnv
 from ray.tune.registry import register_env
-from ray.rllib.models import FullyConnectedNetwork
+from ray.rllib.models.tf import FullyConnectedNetwork
 from ray.rllib.utils.framework import try_import_tf
 from ray.rllib.models.catalog import ModelCatalog
 
@@ -274,8 +274,8 @@ if __name__ == "__main__":
 
     register_env(
         "ExternalHearts",
-        lambda _: HeartsEnv()
-        # lambda _: ExternalHearts(HeartsEnv(), episodes=200000)
+        #lambda _: HeartsEnv()
+        lambda _: ExternalHearts(HeartsEnv(), episodes=200000)
     )
 
     ModelCatalog.register_custom_model("ParametricActionsModel", ParametricActionsModel)
