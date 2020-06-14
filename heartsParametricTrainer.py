@@ -41,7 +41,8 @@ CHEAT_POINTS = -MAX_HAND_POINTS
 
 t_episodes = 0
 
-TRUE_OBSERVATION_SPACE = Tuple(tuple(Discrete(3) for _ in range(4 * HAND_SIZE)))
+# TRUE_OBSERVATION_SPACE = Tuple(tuple(Discrete(3) for _ in range(4 * HAND_SIZE)))
+TRUE_OBSERVATION_SPACE = Box(low=0, high=2, shape=(4 * HAND_SIZE,))
 
 
 class HeartsEnv(gym.Env):
