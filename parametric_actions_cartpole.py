@@ -195,7 +195,9 @@ if __name__ == "__main__":
 
     results = tune.run(args.run, stop=stop, config=config)
 
-    if args.as_test:
-        check_learning_achieved(results, args.stop_reward)
+    if results.trials[0].last_result["episode_reward_mean"] < args.stop_reward:
+        raise ValueError("`stop-reward` of {} not reached!".format(min_reward))
+
+    print("ok")
 
     ray.shutdown()
