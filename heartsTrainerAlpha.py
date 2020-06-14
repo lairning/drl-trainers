@@ -246,7 +246,7 @@ if __name__ == "__main__":
 
     register_env(
         "HeartsEnv",
-        lambda _: HeartsEnv()
+        lambda _: HeartsEnvWrapper()
         # lambda _: ExternalHearts(HeartsEnv(), episodes=200000)
     )
 
