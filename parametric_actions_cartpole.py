@@ -95,8 +95,8 @@ class ParametricActionsCartPole(gym.Env):
 
 from ray.rllib.agents.dqn.distributional_q_tf_model import \
     DistributionalQTFModel
-# from ray.rllib.models.tf.fcnet_v2 import FullyConnectedNetwork
-from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
+from ray.rllib.models.tf.fcnet_v2 import FullyConnectedNetwork
+# from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
 from ray.rllib.utils.framework import try_import_tf
 
 tf = try_import_tf()
