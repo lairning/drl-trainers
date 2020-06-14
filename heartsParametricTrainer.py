@@ -273,6 +273,7 @@ dqn_config = {
     "timesteps_per_iteration": 1000
 }
 
+'''
 if __name__ == "__main__":
     ray.init()
 
@@ -311,7 +312,8 @@ if __name__ == "__main__":
     ModelCatalog.register_custom_model("ParametricActionsModel", ParametricActionsModel)
 
     ppo_config = {"timesteps_per_iteration": 1000,
-                  "model": {"custom_model": "ParametricActionsModel"}
+                  "model": {"custom_model": "ParametricActionsModel"},
+                  "num_workers": 0
                   }
 
     trainer = PPOTrainer(
@@ -328,4 +330,4 @@ if __name__ == "__main__":
         i += 1
 
     ray.shutdown()
-'''
+
