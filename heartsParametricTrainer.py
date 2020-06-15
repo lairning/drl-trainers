@@ -26,7 +26,13 @@ from ray.rllib.models.catalog import ModelCatalog
 from ray.rllib.agents.dqn.distributional_q_tf_model import DistributionalQTFModel
 
 from heartsBasicPlayers import BasicPlayer, RandomPlayer
-from card import CARD_2P, CARD_DE, Card, CARD_SET, CARD_LIST, CARDS_PER_PLAYER, HAND_SIZE
+from card import CARD_2P, CARD_DE, Card
+
+HAND_SIZE = 7
+
+CARD_SET = {Card(naipe,n) for naipe in {"E","C", "O", "P"} for n in list(range(16-HAND_SIZE,15))+[2]}
+CARD_LIST = [Card(naipe,n) for naipe in {"E","C", "O", "P"} for n in list(range(16-HAND_SIZE,15))+[2]]
+CARDS_PER_PLAYER = len(CARD_SET)//4
 
 tf = try_import_tf()
 
@@ -34,6 +40,7 @@ tf = try_import_tf()
 OTHERS_HAND = -1
 MY_HAND = 0
 PLAYED = 1
+CURRENT_TRICK = 2
 
 CARD_DE_POINTS = HAND_SIZE
 MAX_HAND_POINTS = len([c for c in CARD_SET if c.naipe == "C"]) + CARD_DE_POINTS
@@ -42,7 +49,7 @@ CHEAT_POINTS = -MAX_HAND_POINTS
 t_episodes = 0
 
 # TRUE_OBSERVATION_SPACE = Tuple(tuple(Discrete(3) for _ in range(4 * HAND_SIZE)))
-TRUE_OBSERVATION_SPACE = Box(low=-1, high=1, shape=(4 * HAND_SIZE,))
+TRUE_OBSERVATION_SPACE = Box(low=-1, high=2, shape=(4 * HAND_SIZE,))
 
 
 class HeartsEnv(gym.Env):
@@ -262,16 +269,6 @@ class ParametricActionsModel(DistributionalQTFModel):
         return self.action_param_model.value_function()
 
 
-dqn_config = {
-    "v_min": -MAX_HAND_POINTS,
-    "v_max": MAX_HAND_POINTS,
-    "exploration_config": {
-        "epsilon_timesteps": 1000,
-    },
-    "hiddens": [3 * 4 * HAND_SIZE],
-    "learning_starts": 500,
-    "timesteps_per_iteration": 1000
-}
 
 '''
 if __name__ == "__main__":
@@ -313,9 +310,7 @@ if __name__ == "__main__":
 
     ppo_config = {"timesteps_per_iteration": 1000,
                   "model": {"custom_model": "ParametricActionsModel"},
-                  "num_workers": 0,
-                  "vf_clip_param": 26.0
-                  }
+                  "num_workers": 0}
 
     dqn_config = {"timesteps_per_iteration": 1000,
                   "model": {"custom_model": "ParametricActionsModel"},

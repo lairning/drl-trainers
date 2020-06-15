@@ -42,18 +42,3 @@ CARD_RE = Card("E",13)
 CARD_AE = Card("E",14)
 CARD_2P = Card("P",2)
 
-HAND_SIZE = 13
-
-CARD_SET = {Card(naipe,n) for naipe in {"E","C", "O", "P"} for n in list(range(16-HAND_SIZE,15))+[2]}
-CARD_LIST = [Card(naipe,n) for naipe in {"E","C", "O", "P"} for n in list(range(16-HAND_SIZE,15))+[2]]
-CARDS_PER_PLAYER = len(CARD_SET)//4
-
-
-
-CARD_FEATURES = 9
-# Used in DQMCTPlayerV1.py
-INPUT_DIM = CARD_FEATURES*len(CARD_LIST)+1
-OUTPUT_DIM = len(CARD_LIST) #
-# Used in DQMCTPlayerV2.py
-INPUT_DIM_V2 = CARD_FEATURES*len(CARD_LIST)+1+6
-OUTPUT_DIM_V2 = 1 #len(CARD_LIST) #
