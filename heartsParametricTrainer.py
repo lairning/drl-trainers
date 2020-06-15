@@ -49,7 +49,7 @@ CHEAT_POINTS = -MAX_HAND_POINTS
 t_episodes = 0
 
 # TRUE_OBSERVATION_SPACE = Tuple(tuple(Discrete(3) for _ in range(4 * HAND_SIZE)))
-TRUE_OBSERVATION_SPACE = Box(low=-1, high=2, shape=(4 * HAND_SIZE,))
+TRUE_OBSERVATION_SPACE = Box(low=-1, high=1, shape=(4 * HAND_SIZE,))
 
 
 class HeartsEnv(gym.Env):
@@ -119,13 +119,6 @@ class HeartsEnv(gym.Env):
         self.first_player, points = self._get_points()
         self.hand_points += points
         self.players_points[self.first_player] += points
-        '''
-        global t_episodes
-        if t_episodes > 5000 and points != 0:
-            print("EPISODE {}, WINNER {}, REWARD {}, HAND_POINTS {}".
-                  format(t_episodes,self.players[self.first_player].name,points,self.hand_points))
-            print(self.status)
-        '''
         self.status['trick_number'] += 1
         self.status["trick_cards_played"] = []
         if self.hand_points != MAX_HAND_POINTS:
