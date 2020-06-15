@@ -303,7 +303,7 @@ if __name__ == "__main__":
     register_env(
         "ExternalHearts",
         #lambda _: HeartsEnv()
-        lambda _: ExternalHearts(HeartsEnv(), episodes=200000)
+        lambda _: ExternalHearts(HeartsEnv(), episodes=400000)
     )
 
     ModelCatalog.register_custom_model("ParametricActionsModel", ParametricActionsModel)
