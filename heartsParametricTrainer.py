@@ -49,7 +49,7 @@ CHEAT_POINTS = -MAX_HAND_POINTS
 t_episodes = 0
 
 # TRUE_OBSERVATION_SPACE = Tuple(tuple(Discrete(3) for _ in range(4 * HAND_SIZE)))
-TRUE_OBSERVATION_SPACE = Box(low=-1, high=1, shape=(4 * HAND_SIZE,))
+TRUE_OBSERVATION_SPACE = Box(low=-1, high=2, shape=(4 * HAND_SIZE,))
 
 
 class HeartsEnv(gym.Env):
@@ -98,17 +98,10 @@ class HeartsEnv(gym.Env):
         return winner, points
 
     def _play(self, player_i: int):
-        if len(self.players[player_i].cards) == 0:
-            print("HAND_POINTS {}, STATUS {}".
-                  format(self.hand_points, self.status))
-            for p in self.players:
-                print("    Player name {}, Cards {}".
-                      format(p.name, p.cards))
         card = self.players[player_i].play_card(self.status)
         self.players[player_i].cards.remove(card)
         self.status["trick_cards_played"].append(card)
         self.status['hearts_broken'] = card == CARD_DE or card.naipe == "C"
-        self.game_status[CARD_LIST.index(card)] = PLAYED
 
     def _others_play(self):
         n_cards_played = len(self.status["trick_cards_played"])
@@ -116,6 +109,8 @@ class HeartsEnv(gym.Env):
         for i in range(n_cards_played, 4):
             self._play(player_i)
             player_i += 1
+        for card in self.status["trick_cards_played"]:
+            self.game_status[CARD_LIST.index(card)] = PLAYED
         self.first_player, points = self._get_points()
         self.hand_points += points
         self.players_points[self.first_player] += points
@@ -125,6 +120,8 @@ class HeartsEnv(gym.Env):
             if self.first_player != 0:
                 for player_i in range(self.first_player, 4):
                     self._play(player_i)
+        for card in self.status["trick_cards_played"]:
+            self.game_status[CARD_LIST.index(card)] = CURRENT_TRICK
         return self.first_player, points
 
     def _mask_actions(self, cards: set):
