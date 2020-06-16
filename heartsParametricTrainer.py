@@ -122,6 +122,7 @@ class HeartsEnv(gym.Env):
                     self._play(player_i)
         for card in self.status["trick_cards_played"]:
             self.game_status[CARD_LIST.index(card)] = CURRENT_TRICK
+
         return self.first_player, points
 
     def _mask_actions(self, cards: set):
