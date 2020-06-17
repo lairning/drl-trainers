@@ -49,7 +49,7 @@ CHEAT_POINTS = -MAX_HAND_POINTS
 t_episodes = 0
 
 # TRUE_OBSERVATION_SPACE = Tuple(tuple(Discrete(3) for _ in range(4 * HAND_SIZE)))
-TRUE_OBSERVATION_SPACE = Box(low=-1, high=2, shape=(4 * HAND_SIZE,))
+TRUE_OBSERVATION_SPACE = Box(low=-1, high=2, shape=(4 * HAND_SIZE,), dtype=np.int64)
 
 
 class HeartsEnv(gym.Env):
@@ -316,7 +316,8 @@ if __name__ == "__main__":
                   #"noisy": True
                   }
 
-    trainer = ImpalaTrainer(env="ExternalHearts", config=other_config)
+    trainer = PPOTrainer(env="ExternalHearts", config=ppo_config)
+    #trainer = ImpalaTrainer(env="ExternalHearts", config=other_config)
     #trainer = DQNTrainer(env="ExternalHearts", config=dqn_config)
 
     i = 1
