@@ -227,7 +227,7 @@ if __name__ == "__main__":
     parser.add_argument("--num-workers", default=6, type=int)
     parser.add_argument("--training-iteration", default=10000, type=int)
     args = parser.parse_args()
-    ray.init()
+    ray.init(num_cpus=6)
 
     ModelCatalog.register_custom_model("dense_model", DenseModel)
 
