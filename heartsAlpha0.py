@@ -24,7 +24,7 @@ CARD_LIST = [Card(naipe, n) for naipe in {"E", "C", "O", "P"} for n in list(rang
 CARDS_PER_PLAYER = len(CARD_SET) // 4
 
 # Card Status
-OTHERS_HAND = -1
+OTHERS_HAND = 3
 MY_HAND = 0
 PLAYED = 1
 CURRENT_TRICK = 2
@@ -36,7 +36,7 @@ CHEAT_POINTS = -MAX_HAND_POINTS
 t_episodes = 0
 
 # TRUE_OBSERVATION_SPACE = Tuple(tuple(Discrete(3) for _ in range(4 * HAND_SIZE)))
-TRUE_OBSERVATION_SPACE = Box(low=-1, high=2, shape=(4 * HAND_SIZE,))
+TRUE_OBSERVATION_SPACE = Box(low=0, high=3, shape=(4 * HAND_SIZE,))
 
 
 class HeartsEnv(gym.Env):
