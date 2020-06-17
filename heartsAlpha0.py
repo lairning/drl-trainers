@@ -194,7 +194,7 @@ class HeartsEnv(gym.Env):
 
 
 class HeartsEnvWrapper:
-    def __init__(self):
+    def __init__(self, config=None):
         self.env = HeartsEnv()
         self.action_space = Discrete(4 * HAND_SIZE)
         self.observation_space = Dict({
