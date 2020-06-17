@@ -303,6 +303,9 @@ if __name__ == "__main__":
                   "model": {"custom_model": "ParametricActionsModel"},
                   "num_workers": 0}
 
+    other_config = {"timesteps_per_iteration": 1000,
+                  "model": {"custom_model": "ParametricActionsModel"}}
+
     dqn_config = {"timesteps_per_iteration": 1000,
                   "model": {"custom_model": "ParametricActionsModel"},
                   "num_workers": 0,
@@ -313,7 +316,7 @@ if __name__ == "__main__":
                   #"noisy": True
                   }
 
-    trainer = ImpalaTrainer(env="ExternalHearts", config=ppo_config)
+    trainer = ImpalaTrainer(env="ExternalHearts", config=other_config)
     #trainer = DQNTrainer(env="ExternalHearts", config=dqn_config)
 
     i = 1
