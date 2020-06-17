@@ -171,7 +171,7 @@ class HeartsEnv(gym.Env):
         else:
             action_mask = np.array(4 * HAND_SIZE * [0])
             action_mask[CARD_LIST.index(CARD_2P)] = 1
-        return {'status': self.game_status, "action_mask": action_mask}
+        return {'obs': self.game_status, "action_mask": action_mask}
 
     def step(self, action: int):
 
@@ -190,7 +190,7 @@ class HeartsEnv(gym.Env):
         else:
             reward = - reward
 
-        return {'status': self.game_status, "action_mask": self.valid_actions()}, reward, done, {}
+        return {'obs': self.game_status, "action_mask": self.valid_actions()}, reward, done, {}
 
 
 class HeartsEnvWrapper:
