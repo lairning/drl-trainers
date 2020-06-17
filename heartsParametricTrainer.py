@@ -28,7 +28,7 @@ from ray.rllib.agents.dqn.distributional_q_tf_model import DistributionalQTFMode
 from heartsBasicPlayers import BasicPlayer, RandomPlayer
 from card import CARD_2P, CARD_DE, Card
 
-HAND_SIZE = 13
+HAND_SIZE = 7
 
 CARD_SET = {Card(naipe,n) for naipe in {"E","C", "O", "P"} for n in list(range(16-HAND_SIZE,15))+[2]}
 CARD_LIST = [Card(naipe,n) for naipe in {"E","C", "O", "P"} for n in list(range(16-HAND_SIZE,15))+[2]]
@@ -313,7 +313,7 @@ if __name__ == "__main__":
                   #"noisy": True
                   }
 
-    trainer = DQNTrainer(env="ExternalHearts", config=dqn_config)
+    trainer = ImpalaTrainer(env="ExternalHearts", config=ppo_config)
     #trainer = DQNTrainer(env="ExternalHearts", config=dqn_config)
 
     i = 1
