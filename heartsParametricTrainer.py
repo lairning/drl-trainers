@@ -50,8 +50,8 @@ t_episodes = 0
 
 # TRUE_OBSERVATION_SPACE = Tuple(tuple(Discrete(3) for _ in range(4 * HAND_SIZE)))
 # TRUE_OBSERVATION_SPACE = Box(low=-1, high=2, shape=(4 * HAND_SIZE,), dtype=np.int64)
-low = (4 * HAND_SIZE+3)*[0]
-high = (4 * HAND_SIZE)*[3]+[1]+[HAND_SIZE-1]+[3]
+low = np.array((4 * HAND_SIZE+3)*[0])
+high = np.array((4 * HAND_SIZE)*[3]+[1]+[HAND_SIZE-1]+[3])
 TRUE_OBSERVATION_SPACE = Box(low=low, high=high, dtype=np.int64)
 
 HEARTS_IDX = 4 * HAND_SIZE
