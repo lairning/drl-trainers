@@ -103,6 +103,10 @@ class HeartsEnv(gym.Env):
         self.hand_points += points
         self.players_points[self.first_player] += points
         self.status['trick_number'] += 1
+        if self.status['trick_number'] > HAND_SIZE:
+            print("{} : [ERROR] Trick-Number. Status = {}. First Player = {}"
+                  .format(datetime.now(), self.status, self.first_player))
+            raise Exception("[ERROR] Trick-Number")
         self.status["trick_cards_played"] = []
         if self.hand_points != MAX_HAND_POINTS:
             if self.first_player != 0:
