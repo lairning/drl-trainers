@@ -37,8 +37,8 @@ CARDS_PER_PLAYER = len(CARD_SET)//4
 tf = try_import_tf()
 
 # Card Status
-OTHERS_HAND = -1
-MY_HAND = 0
+OTHERS_HAND = 0
+MY_HAND = 3
 PLAYED = 1
 CURRENT_TRICK = 2
 
@@ -49,7 +49,14 @@ CHEAT_POINTS = -MAX_HAND_POINTS
 t_episodes = 0
 
 # TRUE_OBSERVATION_SPACE = Tuple(tuple(Discrete(3) for _ in range(4 * HAND_SIZE)))
-TRUE_OBSERVATION_SPACE = Box(low=-1, high=2, shape=(4 * HAND_SIZE,), dtype=np.int64)
+# TRUE_OBSERVATION_SPACE = Box(low=-1, high=2, shape=(4 * HAND_SIZE,), dtype=np.int64)
+low = (4 * HAND_SIZE+3)*[0]
+high = (4 * HAND_SIZE)*[3]+[1]+[HAND_SIZE-1]+[3]
+TRUE_OBSERVATION_SPACE = Box(low=low, high=high, dtype=np.int64)
+
+HEARTS_IDX = 4 * HAND_SIZE
+TRICK_NUMBER_IDX = HEARTS_IDX+1
+PLAYER_NUMBER_IDX = TRICK_NUMBER_IDX
 
 
 class HeartsEnv(gym.Env):
@@ -62,7 +69,7 @@ class HeartsEnv(gym.Env):
             "status": TRUE_OBSERVATION_SPACE,
             "action_mask": Box(low=0, high=1, shape=(self.action_space.n,))
         })
-        self.game_status = np.array(4 * HAND_SIZE * [OTHERS_HAND])
+        self.game_status = np.array((4 * HAND_SIZE+3) * [OTHERS_HAND])
         self.players = None
         self.hand_points = 0
         self.players_points = 4 * [0]
@@ -155,8 +162,8 @@ class HeartsEnv(gym.Env):
         global t_episodes
         t_episodes += 1
         deck = CARD_SET.copy()
-        self.game_status = np.array(4 * HAND_SIZE * [OTHERS_HAND])
-        self.players = [RandomPlayer("ME"), RandomPlayer("P2"), RandomPlayer("P3"), RandomPlayer("P4")]
+        self.game_status = np.array((4 * HAND_SIZE+3) * [OTHERS_HAND])
+        self.players = [RandomPlayer("ME"), BasicPlayer("P2"), BasicPlayer("P3"), BasicPlayer("P4")]
         self.hand_points = 0
         self.players_points = 4 * [0]
         self.status = {"hearts_broken": False,
@@ -181,9 +188,14 @@ class HeartsEnv(gym.Env):
             for player_i in range(self.first_player, 4):
                 self._play(player_i)
             action_mask = self._valid_actions()
+            for card in self.status["trick_cards_played"]:
+                self.game_status[CARD_LIST.index(card)] = CURRENT_TRICK
         else:
             action_mask = np.array(4 * HAND_SIZE * [0])
             action_mask[CARD_LIST.index(CARD_2P)] = 1
+        self.game_status[HEARTS_IDX] = 0
+        self.game_status[TRICK_NUMBER_IDX] = 0
+        self.game_status[PLAYER_NUMBER_IDX] = self.first_player
         return {'status': self.game_status, "action_mask": action_mask}
 
     def step(self, action: int):
@@ -199,7 +211,13 @@ class HeartsEnv(gym.Env):
         winner_i, reward = self._others_play()
         done = self.hand_points == MAX_HAND_POINTS
         if winner_i == 0:
-            reward = 0
+            reward = reward / 3
+        else:
+            reward = - reward
+
+        self.game_status[HEARTS_IDX] = 1 if self.status["hearts_broken"] else 0
+        self.game_status[TRICK_NUMBER_IDX] = self.status["trick_number"]
+        self.game_status[PLAYER_NUMBER_IDX] = self.first_player
 
         return {'status': self.game_status, "action_mask": self._valid_actions()}, reward, done, {}
 
