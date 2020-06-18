@@ -136,7 +136,7 @@ class HeartsEnv(gym.Env):
                 if len(non_hearts) > 0:
                     return self._mask_actions(non_hearts)
 
-        if not len(self.players[0].cards):
+        if len(self.players[0].cards) == 0 and self.hand_points != MAX_HAND_POINTS:
             print("{} : [ERROR] Player with no Cards. Status = {}. First Player = {}"
                   .format(datetime.now(),self.status,self.first_player))
             raise Exception("Player with no Cards")
