@@ -151,7 +151,7 @@ class HeartsEnv(gym.Env):
         t_episodes += 1
         deck = CARD_SET.copy()
         self.game_status = np.array(4 * HAND_SIZE * [OTHERS_HAND])
-        self.players = [RandomPlayer("ME"), BasicPlayer("P2"), BasicPlayer("P3"), BasicPlayer("P4")]
+        self.players = [RandomPlayer("ME"), RandomPlayer("P2"), RandomPlayer("P3"), RandomPlayer("P4")]
         self.hand_points = 0
         self.players_points = 4 * [0]
         self.status = {"hearts_broken": False,
