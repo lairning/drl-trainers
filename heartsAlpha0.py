@@ -139,6 +139,7 @@ class HeartsEnv(gym.Env):
         if not len(self.players[0].cards):
             print("{} : [ERROR] Player with no Cards. Status = {}. First Player = {}"
                   .format(datetime.now(),self.status,self.first_player))
+            raise Exception("Player with no Cards")
         return self._mask_actions(self.players[0].cards)
 
     def reset(self):
