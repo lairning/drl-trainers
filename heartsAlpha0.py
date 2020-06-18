@@ -114,6 +114,7 @@ class HeartsEnv(gym.Env):
         return self.first_player, points
 
     def _mask_actions(self, cards: set):
+        return np.array(4 * HAND_SIZE * [1])
         action_mask = 4 * HAND_SIZE * [0]
         for card in cards:
             action_mask[CARD_LIST.index(card)] = 1
@@ -180,10 +181,18 @@ class HeartsEnv(gym.Env):
 
     def step(self, action: int):
 
+        if CARD_LIST[action] not in self.players[0].cards:
+            return {'obs': self.game_status, "action_mask": self.valid_actions()}, \
+                   CHEAT_POINTS+self.players_points[0], True, {}
+
         card = CARD_LIST[action]
         self.game_status[action] = PLAYED
 
         self.players[0].cards.remove(card)
+
+        if self._cheating(CARD_LIST[action]):
+            return {'obs': self.game_status, "action_mask": self.valid_actions()}, \
+                   CHEAT_POINTS+self.players_points[0], True, {}
 
         self.status["trick_cards_played"].append(card)
         self.status['hearts_broken'] = card == CARD_DE or card.naipe == "C"
