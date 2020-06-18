@@ -4,6 +4,7 @@ import argparse
 from copy import deepcopy
 import numpy as np
 import random
+from datetime import datetime
 
 import ray
 from ray import tune
@@ -125,7 +126,6 @@ class HeartsEnv(gym.Env):
                 if len(possible_cards) > 0:
                     return self._mask_actions(possible_cards)
 
-            return self._mask_actions(self.players[0].cards)
         else:
             possible_cards = {c for c in self.players[0].cards if c.naipe == self.status["trick_cards_played"][0].naipe}
             if len(possible_cards) > 0:
@@ -136,7 +136,10 @@ class HeartsEnv(gym.Env):
                 if len(non_hearts) > 0:
                     return self._mask_actions(non_hearts)
 
-            return self._mask_actions(self.players[0].cards)
+        if not len(self.players[0].cards):
+            print("{} : [ERROR] Player with no Cards. Status = {}. First Player = {}"
+                  .format(datetime.now(),self.status,self.first_player))
+        return self._mask_actions(self.players[0].cards)
 
     def reset(self):
         global t_episodes
@@ -171,6 +174,7 @@ class HeartsEnv(gym.Env):
         else:
             action_mask = np.array(4 * HAND_SIZE * [0])
             action_mask[CARD_LIST.index(CARD_2P)] = 1
+
         return {'obs': self.game_status, "action_mask": action_mask}
 
     def step(self, action: int):
@@ -185,8 +189,10 @@ class HeartsEnv(gym.Env):
 
         winner_i, reward = self._others_play()
         done = self.hand_points == MAX_HAND_POINTS
-        if winner_i == 0:
-            reward = - reward
+        if winner_i != 0:
+            reward = 0
+        else:
+            reward = -reward
 
         return {'obs': self.game_status, "action_mask": self.valid_actions()}, reward, done, {}
 
