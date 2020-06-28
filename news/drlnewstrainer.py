@@ -6,7 +6,7 @@ Created on Sat Mar 14 14:00:16 2020
 """
 
 import numpy as np
-import itertools
+import argparse
 
 import gym
 from gym.spaces import Discrete, Box, Tuple
@@ -15,6 +15,8 @@ import ray
 from ray import tune
 from ray.rllib.agents import dqn, a3c, ppo, sac
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--stop", type=int, default=20)
 
 N_TOPICS = 15
 TOPICS = ['T{}'.format(i) for i in range(N_TOPICS)]
