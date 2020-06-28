@@ -76,7 +76,6 @@ class NewsWorld(gym.Env):
 
 dqn_config = {
     "env": NewsWorld,
-    "env_config": {},
     "v_min": 0.0,
     "v_max": 10.0,
     "hiddens": [128],
