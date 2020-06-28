@@ -106,9 +106,9 @@ if __name__ == "__main__":
         "training_iteration": 20
     }
 
-    results_dqn = tune.run(dqn.DQNTrainer, config=dqn_config, stop=stop)
+    #results_dqn = tune.run(dqn.DQNTrainer, config=dqn_config, stop=stop)
 
-    #results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop)
+    results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop)
 
     #results_a3c = tune.run(a3c.A3CTrainer, config=a3c_config, stop=stop)
 
