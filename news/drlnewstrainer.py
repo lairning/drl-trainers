@@ -125,8 +125,8 @@ if __name__ == "__main__":
 
     # results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop)
 
-    # results_a3c = tune.run(a3c.A3CTrainer, config=a3c_config, stop=stop)
+    results_a3c = tune.run(a3c.A3CTrainer, config=a3c_config, stop=stop)
 
-    results_sac = tune.run(sac.SACTrainer, config=sac_config, stop=stop)
+    # results_sac = tune.run(sac.SACTrainer, config=sac_config, stop=stop)
 
     ray.shutdown()
