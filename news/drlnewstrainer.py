@@ -52,7 +52,7 @@ class NewsWorld(gym.Env):
     """Example of a custom env in which you have to walk down a corridor.
     You can configure the length of the corridor via the env config."""
 
-    def __init__(self):
+    def __init__(self,config):
         self.observation = OBSERVATION_0
         self.observation_space = OBSERVATION_SPACE
         self.action_space = ACTION_SPACE
