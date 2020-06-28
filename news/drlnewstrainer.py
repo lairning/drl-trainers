@@ -112,13 +112,14 @@ sac_config = {
 }
 
 if __name__ == "__main__":
+    args = parser.parse_args()
     ray.init()
 
     # Can also register the env creator function explicitly with:
     # register_env("corridor", lambda config: SimpleCorridor(config))
 
     stop = {
-        "training_iteration": 20
+        "training_iteration": args.stop
     }
 
     # results_dqn = tune.run(dqn.DQNTrainer, config=dqn_config, stop=stop)
