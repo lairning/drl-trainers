@@ -90,23 +90,11 @@ dqn_config = {
 }
 
 ppo_config = {
-    "env": MKTWorld,  # or "corridor" if registered above
-    "env_config": {
-        "mkt_rewards": MKT_REWARDS,
-        "customer_journeys": CUSTOMER_BEHAVIOR,
-        "customer_attributes": CUSTOMER_ATTRIBUTES,
-        "mkt_offers": MKT_TEMPLATES
-    }
+    "env": NewsWorld
 }
 
 a3c_config = {
-    "env": MKTWorld,  # or "corridor" if registered above
-    "env_config": {
-        "mkt_rewards": MKT_REWARDS,
-        "customer_journeys": CUSTOMER_BEHAVIOR,
-        "customer_attributes": CUSTOMER_ATTRIBUTES,
-        "mkt_offers": MKT_TEMPLATES
-    }
+    "env": NewsWorld
 }
 
 if __name__ == "__main__":
