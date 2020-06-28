@@ -50,6 +50,7 @@ class HeartsEnv(gym.Env):
             "obs": TRUE_OBSERVATION_SPACE,
             "action_mask": Box(low=0, high=1, shape=(self.action_space.n,))
         })
+        self.PlayerClass = BasicPlayer
         self.game_status = np.array(4 * HAND_SIZE * [OTHERS_HAND])
         self.players = None
         self.hand_points = 0
@@ -151,12 +152,13 @@ class HeartsEnv(gym.Env):
         t_episodes += 1
         deck = CARD_SET.copy()
         self.game_status = np.array(4 * HAND_SIZE * [OTHERS_HAND])
-        self.players = [RandomPlayer("ME"), RandomPlayer("P2"), RandomPlayer("P3"), RandomPlayer("P4")]
+        self.players = [self.PlayerClass("ME"), self.PlayerClass("P2"), self.PlayerClass("P3"), self.PlayerClass("P4")]
         self.hand_points = 0
         self.players_points = 4 * [0]
         self.status = {"hearts_broken": False,
                        "trick_number": 0,
                        "trick_cards_played": []}
+        self.players = [self.PlayerClass("ME"), self.PlayerClass("P2"), self.PlayerClass("P3"), self.PlayerClass("P4")]
         for p in self.players:
             for i in range(CARDS_PER_PLAYER):
                 c = random.sample(deck, 1)[0]
@@ -176,6 +178,8 @@ class HeartsEnv(gym.Env):
             for player_i in range(self.first_player, 4):
                 self._play(player_i)
             action_mask = self.valid_actions()
+            for card in self.status["trick_cards_played"]:
+                self.game_status[CARD_LIST.index(card)] = CURRENT_TRICK
         else:
             action_mask = np.array(4 * HAND_SIZE * [0])
             action_mask[CARD_LIST.index(CARD_2P)] = 1

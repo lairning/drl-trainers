@@ -181,6 +181,8 @@ class HeartsEnv(gym.Env):
             for player_i in range(self.first_player, 4):
                 self._play(player_i)
             action_mask = self._valid_actions()
+            for card in self.status["trick_cards_played"]:
+                self.game_status[CARD_LIST.index(card)] = CURRENT_TRICK
         else:
             action_mask = np.array(4 * HAND_SIZE * [0])
             action_mask[CARD_LIST.index(CARD_2P)] = 1

@@ -80,7 +80,7 @@ class NewsWorld(gym.Env):
 
     def step(self, action: list):
         d = distance(action, self.observation[len(CONTEXT_ATTRIBUTES):])
-        p = PROBAB[d]+np.random.normal(0,1)
+        p = PROBAB[d]+np.random.normal(0,0.2)
         click = p > 0.5
         done = not click
         reward = 1 if click else 0
