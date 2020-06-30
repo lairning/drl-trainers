@@ -18,7 +18,7 @@ from ray.rllib.agents import dqn, a3c, ppo, sac
 parser = argparse.ArgumentParser()
 parser.add_argument("--stop", type=int, default=20)
 
-N_TOPICS = 15
+N_TOPICS = 20
 TOPICS = ['T{}'.format(i) for i in range(N_TOPICS)]
 
 CONTEXT_ATTRIBUTES = {'hour':['0-7', '8-9', '10-12','13-14','15-18','19-21','22-23'],
@@ -46,14 +46,14 @@ ACTION_SPACE = Tuple( (Discrete(2), Discrete(2), Discrete(2), Discrete(2), Discr
 
 # Probability of a user click based on the distance bwteen article topics
 PROBAB = N_TOPICS*[0]
-PROBAB[1:8] = [0.3, 0.5, 0.7, 0.5, 0.4, 0.2, 0.1]
+PROBAB[1:8] = [0.2, 0.5, 0.7, 0.4, 0.3, 0.2, 0.1]
 
 def distance(article1, article2):
     return sum(abs(article1[i]-article2[i]) for i in range(N_TOPICS))
 
 # Start Aticles
 N_ARICLES = 5
-p = 3 / N_TOPICS
+p = 5 / N_TOPICS
 START_ARTICLES = [
     [np.random.choice([0,1],p=[1-p,p]) for _ in range(N_TOPICS)] for _ in range(N_ARICLES)
 ]
@@ -80,7 +80,7 @@ class NewsWorld(gym.Env):
 
     def step(self, action: list):
         d = distance(action, self.observation[len(CONTEXT_ATTRIBUTES):])
-        p = PROBAB[d]+np.random.normal(0,0.2)
+        p = PROBAB[d]+np.random.normal(0,0.4)
         click = p > 0.5
         done = not click
         reward = 1 if click else 0
