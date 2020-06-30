@@ -319,7 +319,7 @@ if __name__ == "__main__":
                   #"noisy": True
                   }
 
-    trainer = A3CTrainer(env="ExternalHearts", config=ppo_config)
+    trainer = A3CTrainer(env="ExternalHearts", config=other_config)
     #trainer = DQNTrainer(env="ExternalHearts", config=dqn_config)
     # trainer = PPOTrainer(env="ExternalHearts", config=ppo_config)
 
