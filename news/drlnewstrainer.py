@@ -18,7 +18,7 @@ from ray.rllib.agents import dqn, a3c, ppo, sac
 parser = argparse.ArgumentParser()
 parser.add_argument("--stop", type=int, default=20)
 
-N_TOPICS = 20
+N_TOPICS = 15
 TOPICS = ['T{}'.format(i) for i in range(N_TOPICS)]
 
 CONTEXT_ATTRIBUTES = {'hour':['0-7', '8-9', '10-12','13-14','15-18','19-21','22-23'],
@@ -60,8 +60,7 @@ START_ARTICLES = [
 np.random.choice([0,1],p=[1-p,p])
 
 class NewsWorld(gym.Env):
-    """Example of a custom env in which you have to walk down a corridor.
-    You can configure the length of the corridor via the env config."""
+
 
     def __init__(self,config):
         self.observation = OBSERVATION_0
