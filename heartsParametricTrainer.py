@@ -303,11 +303,18 @@ if __name__ == "__main__":
     ModelCatalog.register_custom_model("ParametricActionsModel", ParametricActionsModel)
 
     ppo_config = {"timesteps_per_iteration": 1000,
-                  "model": {"custom_model": "ParametricActionsModel"},
+                  "model": {"custom_model": "ParametricActionsModel",
+                            "use_lstm": True,
+                            "max_seq_len": HAND_SIZE,
+                            "lstm_use_prev_action_reward": True},
                   "num_workers": 0}
 
     other_config = {"timesteps_per_iteration": 1000,
-                  "model": {"custom_model": "ParametricActionsModel"}}
+                  "model": {"custom_model": "ParametricActionsModel",
+                            "use_lstm": True,
+                            "max_seq_len": HAND_SIZE,
+                            "lstm_use_prev_action_reward": True}
+                    }
 
     dqn_config = {"timesteps_per_iteration": 1000,
                   "model": {"custom_model": "ParametricActionsModel"},
@@ -319,9 +326,9 @@ if __name__ == "__main__":
                   #"noisy": True
                   }
 
-    trainer = A3CTrainer(env="ExternalHearts", config=other_config)
+    #trainer = A3CTrainer(env="ExternalHearts", config=other_config)
     #trainer = DQNTrainer(env="ExternalHearts", config=dqn_config)
-    # trainer = PPOTrainer(env="ExternalHearts", config=ppo_config)
+    trainer = PPOTrainer(env="ExternalHearts", config=ppo_config)
 
     i = 1
     while True:
