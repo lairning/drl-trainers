@@ -100,7 +100,13 @@ dqn_config = {
 
 marwil_config = {
     "env": NewsWorld,
-    "input": "/tmp/demo-out"
+    "input": "/tmp/demo-out",
+    "exploration_final_eps": 0,
+    "exploration_fraction": 0,
+    "evaluation_num_workers": 1,
+    "evaluation_interval": 1,
+    "evaluation_config": {"input": "sampler"},
+    "beta": tune.grid_search([0, 1]),
 }
 
 
