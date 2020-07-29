@@ -86,10 +86,12 @@ class NewsWorld(gym.Env):
         return self.observation, reward, done, {}
 
 
+
 marwil_config = {
     "input": "/tmp/demo-out",
     "evaluation_num_workers": 1,
     "evaluation_interval": 1,
+    "input_evaluation": ["wis"]
     "evaluation_config": {"input": "sampler"},
     "beta": 1, #tune.grid_search([0, 1])
     "timesteps_per_iteration": 1000,
