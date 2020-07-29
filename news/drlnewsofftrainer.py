@@ -84,19 +84,6 @@ class NewsWorld(gym.Env):
         self.observation[len(CONTEXT_ATTRIBUTES):] = action
         return self.observation, reward, done, {}
 
-dqn_config = {
-    "env": NewsWorld,
-    "v_min": 0.0,
-    "v_max": 10.0,
-    "hiddens": [128],
-    "exploration_config": {
-        "epsilon_timesteps": 5000,
-    },
-    "learning_starts": 100,
-    "timesteps_per_iteration": 1200,
-    'lr': 5e-5,
-    "num_atoms": 2
-}
 
 marwil_config = {
     "env": NewsWorld,
@@ -124,7 +111,9 @@ if __name__ == "__main__":
 
     # results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop)
 
-    results_a3c = tune.run(marwil.MARWILTrainer, config=marwil_config, stop=stop)
+    results = tune.run(marwil.MARWILTrainer, config=marwil_config, stop=stop)
+
+    print(results)
 
     # results_sac = tune.run(sac.SACTrainer, config=sac_config, stop=stop)
 
