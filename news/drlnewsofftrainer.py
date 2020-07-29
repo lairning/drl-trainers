@@ -61,7 +61,7 @@ np.random.choice([0,1],p=[1-p,p])
 class NewsWorld(gym.Env):
 
 
-    def __init__(self):
+    def __init__(self, config):
         self.observation = OBSERVATION_0
         self.observation_space = OBSERVATION_SPACE
         self.action_space = ACTION_SPACE
