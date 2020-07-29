@@ -94,6 +94,12 @@ marwil_config = {
     "beta": tune.grid_search([0, 1]),
 }
 
+a3c_config = {
+    "env": NewsWorld,
+    "input": "/tmp/demo-out",
+    "num_workers": 1,
+    "gamma": 0.95,
+}
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -106,14 +112,8 @@ if __name__ == "__main__":
         "training_iteration": args.stop
     }
 
-    # results_dqn = tune.run(dqn.DQNTrainer, config=dqn_config, stop=stop)
+    # results = tune.run(marwil.MARWILTrainer, config=marwil_config, stop=stop)
 
-    # results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop)
-
-    results = tune.run(marwil.MARWILTrainer, config=marwil_config, stop=stop)
-
-    print(results.dataframe().head())
-
-    # results_sac = tune.run(sac.SACTrainer, config=sac_config, stop=stop)
+    results = tune.run(a3c.A3CTrainer, config=a3c_config, stop=stop)
 
     ray.shutdown()
