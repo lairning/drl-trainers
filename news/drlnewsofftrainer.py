@@ -13,7 +13,8 @@ from gym.spaces import Discrete, Box, Tuple
 
 import ray
 from ray import tune
-from ray.rllib.agents import dqn, a3c, ppo, sac, marwil
+# from ray.rllib.agents import dqn, a3c, ppo, sac, marwil
+from ray.rllib.agents.marwil import MARWILTrainer
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--stop", type=int, default=20)
@@ -60,7 +61,7 @@ np.random.choice([0,1],p=[1-p,p])
 class NewsWorld(gym.Env):
 
 
-    def __init__(self,config):
+    def __init__(self):
         self.observation = OBSERVATION_0
         self.observation_space = OBSERVATION_SPACE
         self.action_space = ACTION_SPACE
@@ -86,12 +87,12 @@ class NewsWorld(gym.Env):
 
 
 marwil_config = {
-    "env": NewsWorld,
     "input": "/tmp/demo-out",
     "evaluation_num_workers": 1,
     "evaluation_interval": 1,
     "evaluation_config": {"input": "sampler"},
-    "beta": tune.grid_search([0, 1]),
+    "beta": 1, #tune.grid_search([0, 1])
+    "timesteps_per_iteration": 1000,
 }
 
 a3c_config = {
@@ -105,16 +106,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     ray.init()
 
-    # Can also register the env creator function explicitly with:
-    # register_env("corridor", lambda config: SimpleCorridor(config))
+    marwil = MARWILTrainer(config=marwil_config, env=NewsWorld)
 
-    stop = {
-        "training_iteration": args.stop
-    }
-
-
-    results = tune.run(marwil.MARWILTrainer, config=marwil_config, stop=stop)
-
-    # results = tune.run(a3c.A3CTrainer, config=a3c_config, stop=stop)
+    while True:
+        result = marwil.train()
 
     ray.shutdown()
