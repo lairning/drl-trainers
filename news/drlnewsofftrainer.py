@@ -108,7 +108,12 @@ if __name__ == "__main__":
 
     marwil = MARWILTrainer(config=marwil_config, env=NewsWorld)
 
+    i = 1
     while True:
         result = marwil.train()
+        print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
+            i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
+        ))
+        i += 1
 
     ray.shutdown()
