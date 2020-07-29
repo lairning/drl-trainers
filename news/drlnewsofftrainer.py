@@ -112,7 +112,7 @@ if __name__ == "__main__":
 
     results = tune.run(marwil.MARWILTrainer, config=marwil_config, stop=stop)
 
-    print(results)
+    print(results.dataframe().head())
 
     # results_sac = tune.run(sac.SACTrainer, config=sac_config, stop=stop)
 
