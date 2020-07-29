@@ -116,19 +116,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
     ray.init()
 
-    # Can also register the env creator function explicitly with:
-    # register_env("corridor", lambda config: SimpleCorridor(config))
 
-    stop = {
-        "training_iteration": args.stop
-    }
+    trainer = a3c.A3CTrainer(env=NewsWorld)
 
-    # results_dqn = tune.run(dqn.DQNTrainer, config=dqn_config, stop=stop)
-
-    # results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop)
-
-    results_a3c = tune.run(a3c.A3CTrainer, config=a3c_config, stop=stop)
-
-    # results_sac = tune.run(sac.SACTrainer, config=sac_config, stop=stop)
+    i = 1
+    while True:
+        result = trainer.train()
+        print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
+            i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
+        ))
+        i += 1
 
     ray.shutdown()
