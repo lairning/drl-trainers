@@ -112,8 +112,9 @@ if __name__ == "__main__":
         "training_iteration": args.stop
     }
 
-    # results = tune.run(marwil.MARWILTrainer, config=marwil_config, stop=stop)
 
-    results = tune.run(a3c.A3CTrainer, config=a3c_config, stop=stop)
+    results = tune.run(marwil.MARWILTrainer, config=marwil_config, stop=stop)
+
+    # results = tune.run(a3c.A3CTrainer, config=a3c_config, stop=stop)
 
     ray.shutdown()
