@@ -88,7 +88,6 @@ class NewsWorld(gym.Env):
 marwil_config = {
     "env": NewsWorld,
     "input": "/tmp/demo-out",
-    "input_evaluation": "simulation",
     "evaluation_num_workers": 1,
     "evaluation_interval": 1,
     "evaluation_config": {"input": "sampler"},
