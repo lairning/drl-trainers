@@ -92,6 +92,7 @@ class NewsWorld(gym.Env):
     def action_space_sample(self):
         dist = np.random.randint(10)
         change_topics = np.random.choice(N_TOPICS,dist,replace=False)
+        action = self.observation[len(CONTEXT_ATTRIBUTES):].copy()
         for i in change_topics:
             action[i] = 0 if action[i] else 1
         return action
