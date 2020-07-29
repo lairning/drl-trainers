@@ -108,7 +108,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     ray.init()
 
-    marwil = MARWILTrainer(config=marwil_config, env=NewsWorld)
+    marwil = MARWILTrainer(config=marwil_config)
 
     i = 1
     while True:
