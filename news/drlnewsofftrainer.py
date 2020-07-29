@@ -111,7 +111,7 @@ if __name__ == "__main__":
     marwil = MARWILTrainer(config=marwil_config)
 
     i = 1
-    while True:
+    while i < args.stop:
         result = marwil.train()
         print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
             i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
