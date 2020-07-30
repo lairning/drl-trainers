@@ -16,14 +16,15 @@ import csv
 from datetime import datetime
 import json
 
+'''
 import ray.utils
 
 from ray.rllib.models.preprocessors import get_preprocessor
 from ray.rllib.evaluation.sample_batch_builder import SampleBatchBuilder
 from ray.rllib.offline.json_writer import JsonWriter
-
+'''
 parser = argparse.ArgumentParser()
-parser.add_argument("--e", type=int, default=10000)
+parser.add_argument("--episodes", type=int, default=100)
 
 N_TOPICS = 15
 TOPICS = ['T{}'.format(i) for i in range(N_TOPICS)]
@@ -100,27 +101,51 @@ class NewsWorld(gym.Env):
             action[i] = 0 if action[i] else 1
         return action
 
+intlist2json = lambda l: list(np.array(l, dtype=int))
 
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    csv_file = open("news_log_{}".format(datetime.now()), 'w', newline='')
-    writer = csv.writer(csvfile=csv_file,delimiter=';')
+    file_name = "news_log_{}.csv".format(datetime.now().timestamp())
+    csv_file = open(file_name, 'w', newline='')
+
+    writer = csv.writer(csv_file)
 
     env = NewsWorld()
 
-    for eps_id in range(args.stop):
+    for eps_id in range(args.episodes):
         obs = env.reset()
         done = False
         while not done:
             action = env.action_space_sample()
             new_obs, rew, done, info = env.step(action)
             writer.writerow([eps_id,
-                             json.dumps(obs),
-                             json.dumps(action),
-                             json.dumps(new_obs),
+                             intlist2json(obs),
+                             intlist2json(action),
+                             intlist2json(new_obs),
                              str(rew),
                              str(done)])
             obs = new_obs
 
     csv_file.close()
+
+    first_line = 5
+
+    import itertools
+
+    csv_file = open(file_name, newline='')
+    csv_file = itertools.islice(csv_file, first_line, None)
+
+    reader = csv.reader(csv_file)
+
+    done = True
+    eid = None
+    episode_id = 0
+    for row in reader:
+        _, observation, action, new_observation, reward, done = tuple(row)
+        observation = json.loads(observation)
+        action = json.loads(action)
+        new_observation = json.loads(new_observation)
+        reward = float(reward)
+        done = True if done == True else False
+        print(observation,action,new_observation,reward,done)

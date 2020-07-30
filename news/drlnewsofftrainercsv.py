@@ -101,7 +101,7 @@ class HistoricalLearn(ExternalEnv):
         global first_line
 
         csv_file = itertools.islice(self.csv_file, first_line, None)
-        reader = csv.reader(csv_file,delimiter=';')
+        reader = csv.reader(csv_file)
 
         done = True
         eid = None
