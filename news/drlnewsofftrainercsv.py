@@ -162,7 +162,7 @@ if __name__ == "__main__":
     )
 
     # trainer = MARWILTrainer(config=marwil_config, env=ExternalWorld)
-    trainer = DQNTrainer(config=dqn_config, env=_HistoricalLearn)
+    trainer = DQNTrainer(config=dqn_config, env=HistoricalLearn(NewsWorld(dict()), 1000, args.file))
 
     i = 1
     while i < args.stop:
