@@ -156,13 +156,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     register_env(
-        "HistoricalLearn",
+        "_HistoricalLearn",
         #lambda _: HeartsEnv()
         lambda _: HistoricalLearn(NewsWorld(dict()), 1000, args.file)
     )
 
     # trainer = MARWILTrainer(config=marwil_config, env=ExternalWorld)
-    trainer = DQNTrainer(config=dqn_config, env=HistoricalLearn)
+    trainer = DQNTrainer(config=dqn_config, env=_HistoricalLearn)
 
     i = 1
     while i < args.stop:
