@@ -167,7 +167,7 @@ if __name__ == "__main__":
     #trainer = DQNTrainer(config=dqn_config, env="HistoricalLearn")
 
     i = 1
-    while i < args.stop:
+    while True:
         result = trainer.train()
         print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
             i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
