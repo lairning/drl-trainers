@@ -158,7 +158,7 @@ if __name__ == "__main__":
     register_env(
         "HistoricalLearn",
         #lambda _: HeartsEnv()
-        lambda _: HistoricalLearn(NewsWorld(dict()), episodes=1000, file_name=args.file)
+        lambda _: HistoricalLearn(NewsWorld(dict()), 1000, args.file)
     )
 
     # trainer = MARWILTrainer(config=marwil_config, env=ExternalWorld)
