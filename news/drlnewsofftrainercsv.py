@@ -121,6 +121,7 @@ class HistoricalLearn(ExternalEnv):
             if done:
                 self.end_episode(eid, new_observation)
                 episode_id += 1
+                first_line += 1
                 if episode_id == self.episodes:
                     break
 
@@ -161,7 +162,7 @@ if __name__ == "__main__":
     register_env(
         "HistoricalLearn",
         #lambda _: HeartsEnv()
-        lambda _: HistoricalLearn(NewsWorld(dict()), 20, args.file)
+        lambda _: HistoricalLearn(NewsWorld(dict()), 1000, args.file)
     )
 
     trainer = MARWILTrainer(config=marwil_config, env="HistoricalLearn")
