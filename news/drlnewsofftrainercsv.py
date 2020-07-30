@@ -161,7 +161,7 @@ if __name__ == "__main__":
         lambda _: HistoricalLearn(NewsWorld(dict()), 1000, args.file)
     )
 
-    trainer = MARWILTrainer(config=marwil_config, env=ExternalWorld)
+    trainer = MARWILTrainer(config=marwil_config, env="HistoricalLearn")
     #trainer = DQNTrainer(config=dqn_config, env="HistoricalLearn")
 
     i = 1
