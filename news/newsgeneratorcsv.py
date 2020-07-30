@@ -148,4 +148,3 @@ if __name__ == "__main__":
         new_observation = json.loads(new_observation)
         reward = float(reward)
         done = True if done == True else False
-        print(observation,action,new_observation,reward,done)
