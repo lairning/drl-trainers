@@ -115,6 +115,7 @@ class HistoricalLearn(ExternalEnv):
             new_observation = json.loads(new_observation)
             reward = float(reward)
             done = True if done == True else False
+            print(observation, action, new_observation, reward, done)
             self.log_action(eid, observation, action)
             self.log_returns(eid, reward)
             if done:
@@ -160,14 +161,14 @@ if __name__ == "__main__":
     register_env(
         "HistoricalLearn",
         #lambda _: HeartsEnv()
-        lambda _: HistoricalLearn(NewsWorld(dict()), 1000, args.file)
+        lambda _: HistoricalLearn(NewsWorld(dict()), 20, args.file)
     )
 
     trainer = MARWILTrainer(config=marwil_config, env="HistoricalLearn")
     #trainer = DQNTrainer(config=dqn_config, env="HistoricalLearn")
 
     i = 1
-    while True:
+    while i = 1:
         result = trainer.train()
         print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
             i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
