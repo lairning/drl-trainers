@@ -114,7 +114,7 @@ class HistoricalLearn(ExternalEnv):
             action = json.loads(action)
             new_observation = json.loads(new_observation)
             reward = float(reward)
-            done = True if done == True else False
+            done = True if done == 'True' else False
             print(observation, action, new_observation, reward, done)
             self.log_action(eid, observation, action)
             self.log_returns(eid, reward)
