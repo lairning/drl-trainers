@@ -155,6 +155,8 @@ parser.add_argument("--file", type=str)
 if __name__ == "__main__":
     args = parser.parse_args()
 
+    ray.init()
+
     register_env(
         "HistoricalLearn",
         #lambda _: HeartsEnv()
@@ -172,3 +174,5 @@ if __name__ == "__main__":
         ))
         i += 1
 
+
+    ray.shutdown()
