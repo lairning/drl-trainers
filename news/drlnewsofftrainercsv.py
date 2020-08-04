@@ -189,23 +189,23 @@ if __name__ == "__main__":
     )
 
     #trainer = MARWILTrainer(config=marwil_config, env="HistoricalLearn")
-    trainer = A3CTrainer(config=a3c_config, env="HistoricalLearn")
+    trainer1 = A3CTrainer(config=a3c_config, env="HistoricalLearn")
 
     for i in range(args.hister):
-        result = trainer.train()
+        result = trainer1.train()
         print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
             i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
         ))
         i += 1
 
-    checkpoint = trainer.save()
+    checkpoint = trainer1.save()
 
-    trainer = A3CTrainer(config=a3c_config, env="OnlineLearn")
+    trainer2 = A3CTrainer(config=a3c_config, env="OnlineLearn")
 
-    trainer.restore(checkpoint)
+    trainer2.restore(checkpoint)
 
     for i in range(args.onliter):
-        result = trainer.train()
+        result = trainer2.train()
         print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
             i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
         ))
