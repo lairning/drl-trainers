@@ -107,8 +107,9 @@ ppo_config = {
 a3c_config = {
     "env": NewsWorld,
     "num_workers": 1,
-    "lambda"      : tune.grid_search([0.95, 1.0]),
-    "lr": tune.grid_search([0.001, 0.01, 0.1])
+    "lambda"      : 0.95,
+    "lr": tune.grid_search([0.001, 0.003, 0.07]),
+    "use_lstm": tune.grid_search([False, True])
 }
 
 sac_config = {
