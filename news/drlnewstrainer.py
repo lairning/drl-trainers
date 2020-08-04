@@ -12,7 +12,9 @@ import gym
 from gym.spaces import Discrete, Box, Tuple
 
 import ray
-from ray import tune
+from ray.rllib.env.external_env import ExternalEnv
+from ray.tune.registry import register_env
+
 from ray.rllib.agents import dqn, a3c, ppo, sac
 
 parser = argparse.ArgumentParser()
@@ -86,8 +88,25 @@ class NewsWorld(gym.Env):
         self.observation[len(CONTEXT_ATTRIBUTES):] = action
         return self.observation, reward, done, {}
 
+class ExternalWorld(ExternalEnv):
+    def __init__(self, env, episodes: int):
+        ExternalEnv.__init__(self, env.action_space, env.observation_space)
+        self.env = env
+        self.episodes = episodes
+
+    def run(self):
+
+        for e in range(self.episodes):
+            eid = self.start_episode()
+            obs = self.env.reset()
+            done = False
+            while not done:
+                action = self.get_action(eid, obs)
+                obs, reward, done, info = self.env.step(action)
+                self.log_returns(eid, reward, info=info)
+            self.end_episode(eid, obs)
+
 dqn_config = {
-    "env": NewsWorld,
     "v_min": 0.0,
     "v_max": 10.0,
     "hiddens": [128],
@@ -116,8 +135,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
     ray.init()
 
+    register_env(
+        "NewsLearn",
+        #lambda _: HeartsEnv()
+        lambda _: ExternalWorld(NewsWorld(dict()), 10000)
+    )
 
-    trainer = a3c.A3CTrainer(env=NewsWorld)
+    trainer = a3c.A3CTrainer(env="NewsLearn", config=dict())
 
     i = 1
     while True:
