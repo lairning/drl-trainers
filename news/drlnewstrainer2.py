@@ -12,7 +12,9 @@ import gym
 from gym.spaces import Discrete, Box, Tuple
 
 import ray
-from ray import tune
+from ray.rllib.env.external_env import ExternalEnv
+from ray.tune.registry import register_env
+
 from ray.rllib.agents import dqn, a3c, ppo, sac
 
 parser = argparse.ArgumentParser()
@@ -86,8 +88,24 @@ class NewsWorld(gym.Env):
         self.observation[len(CONTEXT_ATTRIBUTES):] = action
         return self.observation, reward, done, {}
 
+class ExternalWorld(ExternalEnv):
+    def __init__(self, env):
+        ExternalEnv.__init__(self, env.action_space, env.observation_space)
+        self.env = env
+
+    def run(self):
+
+        while True:
+            eid = self.start_episode()
+            obs = self.env.reset()
+            done = False
+            while not done:
+                action = self.get_action(eid, obs)
+                obs, reward, done, info = self.env.step(action)
+                self.log_returns(eid, reward, info=info)
+            self.end_episode(eid, obs)
+
 dqn_config = {
-    "env": NewsWorld,
     "v_min": 0.0,
     "v_max": 10.0,
     "hiddens": [128],
@@ -105,32 +123,33 @@ ppo_config = {
 }
 
 a3c_config = {
-    "env": NewsWorld,
-    "num_workers": 1,
-    "gamma"      : 0.95,
+    "env": NewsWorld
 }
 
 sac_config = {
     "env": NewsWorld
 }
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--iterations", type=int, default=10)
+
 if __name__ == "__main__":
     args = parser.parse_args()
     ray.init()
 
-    # Can also register the env creator function explicitly with:
-    # register_env("corridor", lambda config: SimpleCorridor(config))
+    register_env(
+        "NewsLearn",
+        #lambda _: HeartsEnv()
+        lambda _: ExternalWorld(env=NewsWorld(dict()))
+    )
 
-    stop = {
-        "training_iteration": args.stop
-    }
+    trainer = a3c.A3CTrainer(env="NewsLearn", config=dict())
 
-    # results_dqn = tune.run(dqn.DQNTrainer, config=dqn_config, stop=stop)
-
-    # results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop)
-
-    results_a3c = tune.run(a3c.A3CTrainer, config=a3c_config, stop=stop)
-
-    # results_sac = tune.run(sac.SACTrainer, config=sac_config, stop=stop)
+    for i in range(args.iterations):
+        result = trainer.train()
+        print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
+            i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
+        ))
+        i += 1
 
     ray.shutdown()
