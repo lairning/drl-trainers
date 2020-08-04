@@ -108,7 +108,7 @@ a3c_config = {
     "env": NewsWorld,
     "num_workers": 1,
     "lambda"      : 0.95,
-    "lr": tune.grid_search([0.001, 0.003, 0.0007]),
+    "lr": tune.grid_search([0.001, 0.003, 0.0006]),
     "model": {"use_lstm": tune.grid_search([False, True])},
 }
 
