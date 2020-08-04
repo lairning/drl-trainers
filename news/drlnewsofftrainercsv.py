@@ -140,12 +140,20 @@ class OnlineLearn(ExternalEnv):
                 self.log_returns(eid, reward, info=info)
             self.end_episode(eid, obs)
 
-marwil_config = {
+marwil_config1 = {
     "evaluation_num_workers": 1,
     "evaluation_interval": 1,
     "input_evaluation": ["wis"],
     "evaluation_config": {"input": "sampler"},
     "beta": 1, #tune.grid_search([0, 1])
+}
+
+marwil_config2 = {
+    "evaluation_num_workers": 1,
+    "evaluation_interval": 1,
+    "input_evaluation": ["wis"],
+    "evaluation_config": {"input": "sampler"},
+    "beta": 0, #tune.grid_search([0, 1])
 }
 
 a3c_config = {
@@ -189,8 +197,8 @@ if __name__ == "__main__":
         lambda _: OnlineLearn(NewsWorld(dict()))
     )
 
-    trainer1 = MARWILTrainer(config=marwil_config, env="logdata")
-    #trainer1 = A3CTrainer(config=a3c_config, env="logdata")
+    trainer1 = MARWILTrainer(config=marwil_config1, env="logdata")
+    # trainer1 = A3CTrainer(config=a3c_config, env="logdata")
 
     for i in range(args.hister):
         result = trainer1.train()
@@ -201,8 +209,8 @@ if __name__ == "__main__":
 
     checkpoint = trainer1.save()
 
-    trainer2 = MARWILTrainer(config=marwil_config, env="simulation")
-    # trainer2 = A3CTrainer(config=a3c_config, env="simulation")
+    trainer2 = MARWILTrainer(config=marwil_config2, env="simulation")
+    #trainer2 = A3CTrainer(config=a3c_config, env="simulation")
 
     trainer2.restore(checkpoint)
 
