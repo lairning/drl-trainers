@@ -20,7 +20,7 @@ from ray.tune.registry import register_env
 
 # from ray.rllib.agents import dqn, a3c, ppo, sac, marwil
 from ray.rllib.agents.marwil import MARWILTrainer
-from ray.rllib.agents.dqn import DQNTrainer
+from ray.rllib.agents.a3c import A3CTrainer
 
 
 N_TOPICS = 15
@@ -165,8 +165,8 @@ if __name__ == "__main__":
         lambda _: HistoricalLearn(NewsWorld(dict()), args.file)
     )
 
-    trainer = MARWILTrainer(config=marwil_config, env="HistoricalLearn")
-    #trainer = DQNTrainer(config=dqn_config, env="HistoricalLearn")
+    #trainer = MARWILTrainer(config=marwil_config, env="HistoricalLearn")
+    trainer = A3CTrainer(config=a3c_config, env="HistoricalLearn")
 
     for i in range(args.iterations):
         result = trainer.train()
