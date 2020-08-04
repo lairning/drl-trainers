@@ -202,7 +202,7 @@ if __name__ == "__main__":
 
     trainer2 = A3CTrainer(config=a3c_config, env="OnlineLearn")
 
-    trainer2.restore(checkpoint)
+    # trainer2.restore(checkpoint)
 
     for i in range(args.onliter):
         result = trainer2.train()
