@@ -149,7 +149,7 @@ if __name__ == "__main__":
 
     #i = 1
     #while True:
-    for i in range(3)
+    for i in range(3):
         result = trainer.train()
         print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
             i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
