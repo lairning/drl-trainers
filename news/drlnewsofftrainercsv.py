@@ -123,6 +123,22 @@ class HistoricalLearn(ExternalEnv):
                 self.end_episode(eid, new_observation)
                 first_line += 1
 
+class OnlineLearn(ExternalEnv):
+    def __init__(self, env):
+        ExternalEnv.__init__(self, env.action_space, env.observation_space)
+        self.env = env
+
+    def run(self):
+
+        while True:
+            eid = self.start_episode()
+            obs = self.env.reset()
+            done = False
+            while not done:
+                action = self.get_action(eid, obs)
+                obs, reward, done, info = self.env.step(action)
+                self.log_returns(eid, reward, info=info)
+            self.end_episode(eid, obs)
 
 marwil_config = {
     "evaluation_num_workers": 1,
@@ -152,7 +168,8 @@ dqn_config = {
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--file", type=str)
-parser.add_argument("--iterations", type=int, default=10)
+parser.add_argument("--hister", type=int, default=20)
+parser.add_argument("--onliter", type=int, default=20)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -165,10 +182,29 @@ if __name__ == "__main__":
         lambda _: HistoricalLearn(NewsWorld(dict()), args.file)
     )
 
+    register_env(
+        "OnlinelLearn",
+        #lambda _: HeartsEnv()
+        lambda _: OnlineLearn(NewsWorld(dict()))
+    )
+
     #trainer = MARWILTrainer(config=marwil_config, env="HistoricalLearn")
     trainer = A3CTrainer(config=a3c_config, env="HistoricalLearn")
 
-    for i in range(args.iterations):
+    for i in range(args.hister):
+        result = trainer.train()
+        print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
+            i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
+        ))
+        i += 1
+
+    checkpoint = trainer.save()
+
+    trainer = A3CTrainer(config=a3c_config, env="OnlineLearn")
+
+    trainer.restore(checkpoint)
+
+    for i in range(args.onliter):
         result = trainer.train()
         print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
             i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
