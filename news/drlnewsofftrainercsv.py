@@ -197,8 +197,8 @@ if __name__ == "__main__":
         lambda _: OnlineLearn(NewsWorld(dict()))
     )
 
-    trainer1 = MARWILTrainer(config=marwil_config1, env="logdata")
-    # trainer1 = A3CTrainer(config=a3c_config, env="logdata")
+    # trainer1 = MARWILTrainer(config=marwil_config1, env="logdata")
+    trainer1 = A3CTrainer(config=a3c_config, env="logdata")
 
     for i in range(args.hister):
         result = trainer1.train()
@@ -209,8 +209,8 @@ if __name__ == "__main__":
 
     checkpoint = trainer1.save()
 
-    trainer2 = MARWILTrainer(config=marwil_config2, env="simulation")
-    #trainer2 = A3CTrainer(config=a3c_config, env="simulation")
+    # trainer2 = MARWILTrainer(config=marwil_config2, env="simulation")
+    trainer2 = A3CTrainer(config=a3c_config, env="simulation")
 
     trainer2.restore(checkpoint)
 
