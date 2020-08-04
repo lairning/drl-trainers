@@ -89,10 +89,9 @@ class NewsWorld(gym.Env):
         return self.observation, reward, done, {}
 
 class ExternalWorld(ExternalEnv):
-    def __init__(self, env, episodes: int):
+    def __init__(self, env):
         ExternalEnv.__init__(self, env.action_space, env.observation_space)
         self.env = env
-        self.episodes = episodes
 
     def run(self):
 
@@ -133,7 +132,7 @@ sac_config = {
 }
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--episodes", type=int, default=1000)
+parser.add_argument("--iterations", type=int, default=10)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -142,14 +141,14 @@ if __name__ == "__main__":
     register_env(
         "NewsLearn",
         #lambda _: HeartsEnv()
-        lambda _: ExternalWorld(env=NewsWorld(dict()), episodes=args.episodes)
+        lambda _: ExternalWorld(env=NewsWorld(dict()))
     )
 
     trainer = a3c.A3CTrainer(env="NewsLearn", config=dict())
 
     #i = 1
     #while True:
-    for i in range(3):
+    for i in range(args.iterations):
         result = trainer.train()
         print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
             i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
