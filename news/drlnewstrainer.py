@@ -95,7 +95,6 @@ class ExternalWorld(ExternalEnv):
 
     def run(self):
 
-        #for e in range(self.episodes):
         while True:
             eid = self.start_episode()
             obs = self.env.reset()
@@ -146,8 +145,6 @@ if __name__ == "__main__":
 
     trainer = a3c.A3CTrainer(env="NewsLearn", config=dict())
 
-    #i = 1
-    #while True:
     for i in range(args.iterations):
         result = trainer.train()
         print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
