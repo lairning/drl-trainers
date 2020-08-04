@@ -176,11 +176,13 @@ if __name__ == "__main__":
 
     ray.init()
 
+    '''
     register_env(
         "HistoricalLearn",
         #lambda _: HeartsEnv()
         lambda _: HistoricalLearn(NewsWorld(dict()), args.file)
     )
+    '''
 
     register_env(
         "OnlinelLearn",
@@ -189,7 +191,7 @@ if __name__ == "__main__":
     )
 
     #trainer = MARWILTrainer(config=marwil_config, env="HistoricalLearn")
-    trainer1 = A3CTrainer(config=a3c_config, env="HistoricalLearn")
+    '''    trainer1 = A3CTrainer(config=a3c_config, env="HistoricalLearn")
 
     for i in range(args.hister):
         result = trainer1.train()
@@ -199,6 +201,7 @@ if __name__ == "__main__":
         i += 1
 
     checkpoint = trainer1.save()
+    '''
 
     trainer2 = A3CTrainer(config=a3c_config, env="OnlineLearn")
 
