@@ -131,6 +131,9 @@ sac_config = {
     "env": NewsWorld
 }
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--episodes", type=int, default=1000)
+
 if __name__ == "__main__":
     args = parser.parse_args()
     ray.init()
@@ -138,7 +141,7 @@ if __name__ == "__main__":
     register_env(
         "NewsLearn",
         #lambda _: HeartsEnv()
-        lambda _: ExternalWorld(NewsWorld(dict()), 10000)
+        lambda _: ExternalWorld(env=NewsWorld(dict()), episodes=args.episodes)
     )
 
     trainer = a3c.A3CTrainer(env="NewsLearn", config=dict())
