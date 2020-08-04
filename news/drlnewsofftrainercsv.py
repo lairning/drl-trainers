@@ -52,7 +52,7 @@ PROBAB = N_TOPICS*[0]
 PROBAB[1:8] = [0.2, 0.5, 0.7, 0.4, 0.3, 0.2, 0.1]
 
 def distance(article1, article2):
-    return sum(abs(article1[i]-article2[i]) for i in range(N_TOPICS))
+    return min(sum(abs(article1[i]-article2[i]) for i in range(N_TOPICS)),N_TOPICS)
 
 # Start Aticles
 N_ARICLES = 5
