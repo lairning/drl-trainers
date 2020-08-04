@@ -92,9 +92,8 @@ class NewsWorld(gym.Env):
 first_line = 0
 
 class HistoricalLearn(ExternalEnv):
-    def __init__(self, env, episodes: int, file_name: str):
+    def __init__(self, env, file_name: str):
         ExternalEnv.__init__(self, env.action_space, env.observation_space)
-        self.episodes = episodes
         self.csv_file = open(file_name, newline='')
 
     def run(self):
@@ -105,25 +104,25 @@ class HistoricalLearn(ExternalEnv):
 
         done = True
         eid = None
-        episode_id = 0
-        for row in reader:
+        while True:
             if done:
                 eid = self.start_episode()
+            try:
+                row = next(reader)
+            except StopIteration:
+                reader = csv.reader(self.csv_file)
             _, observation, action, new_observation, reward, done = tuple(row)
             observation = json.loads(observation)
             action = json.loads(action)
             new_observation = json.loads(new_observation)
             reward = float(reward)
             done = True if done == 'True' else False
-            #print(observation, action, new_observation, reward, done)
             self.log_action(eid, observation, action)
             self.log_returns(eid, reward)
             if done:
                 self.end_episode(eid, new_observation)
-                episode_id += 1
                 first_line += 1
-                if episode_id == self.episodes:
-                    break
+
 
 marwil_config = {
     "evaluation_num_workers": 1,
@@ -153,6 +152,7 @@ dqn_config = {
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--file", type=str)
+parser.add_argument("--iterations", type=int, default=10)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -162,14 +162,13 @@ if __name__ == "__main__":
     register_env(
         "HistoricalLearn",
         #lambda _: HeartsEnv()
-        lambda _: HistoricalLearn(NewsWorld(dict()), 1000, args.file)
+        lambda _: HistoricalLearn(NewsWorld(dict()), args.file)
     )
 
     trainer = MARWILTrainer(config=marwil_config, env="HistoricalLearn")
     #trainer = DQNTrainer(config=dqn_config, env="HistoricalLearn")
 
-    i = 1
-    while True:
+    for i in range(args.iterations):
         result = trainer.train()
         print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
             i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
