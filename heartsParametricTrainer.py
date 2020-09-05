@@ -236,6 +236,10 @@ class ParametricActionsModel(DistributionalQTFModel):
                  model_config,
                  name,
                  **kw):
+
+        print("{} : [INFO] ParametricActionsModel {}, {}, {}, {}, {}"
+             .format(datetime.now(),action_space, obs_space, num_outputs, name, model_config))
+
         super(ParametricActionsModel, self).__init__(
             obs_space, action_space, num_outputs, model_config, name, **kw)
         # print("####### obs_space {}".format(obs_space))
@@ -264,40 +268,13 @@ class ParametricActionsModel(DistributionalQTFModel):
 
 
 
-'''
-if __name__ == "__main__":
-    ray.init()
-
-    register_env(
-        "HeartsEnv",
-        lambda _: HeartsEnv()
-        # lambda _: ExternalHearts(HeartsEnv(), episodes=200000)
-    )
-
-    ModelCatalog.register_custom_model("ParametricActionsModel", ParametricActionsModel)
-
-    ppo_config = {
-        "env": "HeartsEnv",
-        "model": {"custom_model": "ParametricActionsModel"},
-        "num_workers": 0
-    }
-
-    stop = {
-        "training_iteration": 200,
-        "timesteps_total": 200000}
-
-    results = tune.run(PPOTrainer, stop=stop, config=ppo_config)
-
-    ray.shutdown()
-
-'''
 if __name__ == "__main__":
     ray.init()
 
     register_env(
         "ExternalHearts",
         #lambda _: HeartsEnv()
-        lambda _: ExternalHearts(HeartsEnv(), episodes=400000)
+        lambda _: ExternalHearts(HeartsEnv(), episodes=1000)
     )
 
     ModelCatalog.register_custom_model("ParametricActionsModel", ParametricActionsModel)
