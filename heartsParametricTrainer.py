@@ -8,6 +8,8 @@ Created on Sat Mar 14 14:00:16 2020
 import random
 import numpy as np
 
+from datetime import datetime
+
 import gym
 from gym.spaces import Discrete, Tuple, Dict, Box
 
