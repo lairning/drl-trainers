@@ -124,7 +124,7 @@ class FlattenObservation(gym.ObservationWrapper):
     def observation(self, observation):
         return flatten(self.env.observation_space['space'], observation)
 
-class MKTWorld:
+class MKTWorld(gym.Env):
 
     def __init__(self, config):
         self.probab = dict()
@@ -148,8 +148,6 @@ class MKTWorld:
             "state": REAL_OBSERVATION_SPACE,
             "action_mask": Box(low=0, high=1, shape=(max_action_size,))
         })
-        self.reward_range = None
-        self.metadata = None
 
     def random_customer(self):
         cs = self.customer_segments[np.random.randint(len(self.customer_segments))]
