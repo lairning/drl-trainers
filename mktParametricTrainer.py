@@ -112,7 +112,7 @@ max_action_size = max([len(options) for options in MKT_TEMPLATES.values()])
 action_mask = {tp_id: _get_action_mask(tp_actions[tp], max_action_size) for tp_id, tp
                in enumerate(tp_actions.keys())}
 
-#FLAT_OBSERVATION_SPACE = Box(low=0, high=1, shape=(20,), dtype=np.int64)
+FLAT_OBSERVATION_SPACE = Box(low=0, high=1, shape=(20,), dtype=np.int64)
 REAL_OBSERVATION_SPACE = Tuple((Discrete(10), Discrete(3), Discrete(2), Discrete(5)))
 
 class FlattenObservation(gym.ObservationWrapper):
@@ -153,6 +153,10 @@ class MKTWorld(MKTEnv):
                 dt[t] = {mo: np.random.dirichlet(np.ones(len(self.journeys[t])), size=1)[0] for mo in
                          self.mkt_offers[t]}
             self.probab[cs] = dt
+        self.observation_space = Dict({
+            "state": FLAT_OBSERVATION_SPACE,
+            "action_mask": Box(low=0, high=1, shape=(max_action_size,))
+        })
 
     def random_customer(self):
         cs = self.customer_segments[np.random.randint(len(self.customer_segments))]
@@ -201,7 +205,6 @@ class ExternalMkt(ExternalEnv):
         for e in range(self.episodes):
             eid = self.start_episode()
             obs = self.env.reset()
-            print("ExternalMK",obs)
             done = False
             while not done:
                 action = self.get_action(eid, obs)
@@ -229,7 +232,7 @@ class ParametricActionsModel(DistributionalQTFModel):
         # raise Exception("END")
 
         self.action_param_model = FullyConnectedNetwork(
-            flat.observation_space, action_space, num_outputs,
+            FLAT_OBSERVATION_SPACE, action_space, num_outputs,
             model_config, name + "_action_param")
         self.register_variables(self.action_param_model.variables())
 
