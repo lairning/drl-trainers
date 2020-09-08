@@ -274,10 +274,10 @@ if __name__ == "__main__":
     dqn_config = {"timesteps_per_iteration": 1000,
                   "model": {"custom_model": "ParametricActionsModel"},
                   "num_workers": 0,
-                  "hiddens": [],
+                  "hiddens": [64],
                   "dueling": False,
-                  #"v_min": -26,
-                  #"v_max": 26,
+                  "v_min": -5,
+                  "v_max": 135,
                   #"noisy": True
                   }
 
