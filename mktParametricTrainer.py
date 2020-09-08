@@ -282,7 +282,7 @@ if __name__ == "__main__":
                   }
 
     #trainer = DQNTrainer(env="ExternalMkt", config=dqn_config)
-    trainer = PPOTrainer(env="ExternalHearts", config=ppo_config)
+    trainer = PPOTrainer(env="ExternalMkt", config=ppo_config)
 
     i = 1
     for _ in range(5):
