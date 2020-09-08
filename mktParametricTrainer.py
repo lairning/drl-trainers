@@ -108,8 +108,8 @@ def _get_action_mask(actions: list, max_actions: int):
     return action_mask
 
 tp_actions = MKT_TEMPLATES
-mask_size = max([len(options) for options in MKT_TEMPLATES.values()])
-action_mask = {tp_id: _get_action_mask(tp_actions[tp], mask_size) for tp_id, tp
+max_action_size = max([len(options) for options in MKT_TEMPLATES.values()])
+action_mask = {tp_id: _get_action_mask(tp_actions[tp], max_action_size) for tp_id, tp
                in enumerate(tp_actions.keys())}
 
 #FLAT_OBSERVATION_SPACE = Box(low=0, high=1, shape=(20,), dtype=np.int64)
@@ -119,10 +119,10 @@ class FlattenObservation(gym.ObservationWrapper):
     r"""Observation wrapper that flattens the observation."""
     def __init__(self, env):
         super(FlattenObservation, self).__init__(env)
-        self.observation_space = flatten_space(env.observation_space)
+        self.observation_space = flatten_space(env.observation_space['space'])
 
     def observation(self, observation):
-        return flatten(self.env.observation_space, observation)
+        return flatten(self.env.observation_space['space'], observation)
 
 class MKTWorld:
 
@@ -143,9 +143,10 @@ class MKTWorld:
                 dt[t] = {mo: np.random.dirichlet(np.ones(len(self.journeys[t])), size=1)[0] for mo in
                          self.mkt_offers[t]}
             self.probab[cs] = dt
+        self.action_space = Box(low=0, high=1, shape=(max_action_size,))
         self.observation_space = Dict({
             "state": REAL_OBSERVATION_SPACE,
-            "action_mask": Box(low=0, high=1, shape=(mask_size,))
+            "action_mask": Box(low=0, high=1, shape=(max_action_size,))
         })
 
     def random_customer(self):
@@ -205,7 +206,7 @@ class ExternalMkt(ExternalEnv):
 
 tf1, tf, tfv = try_import_tf()
 
-flat_space = FlattenObservation(MKTWorld(env_config))
+
 
 class ParametricActionsModel(DistributionalQTFModel):
     def __init__(self,
@@ -224,8 +225,10 @@ class ParametricActionsModel(DistributionalQTFModel):
         # print("####### obs_space {}".format(obs_space))
         # raise Exception("END")
 
+        self.flat = FlattenObservation(MKTWorld(env_config))
+
         self.action_param_model = FullyConnectedNetwork(
-            flat_space.observation_space, action_space, num_outputs,
+            self.flat.observation_space, action_space, num_outputs,
             model_config, name + "_action_param")
         self.register_variables(self.action_param_model.variables())
 
@@ -239,7 +242,7 @@ class ParametricActionsModel(DistributionalQTFModel):
 
         # Compute the predicted action embedding
         action_param, _ = self.action_param_model({
-            "obs": flat_space.observation(["obs"]["state"])
+            "obs": self.flat_space.observation(["obs"]["state"])
         })
 
         # Mask out invalid actions (use tf.float32.min for stability)
