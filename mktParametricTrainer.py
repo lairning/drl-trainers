@@ -12,7 +12,8 @@ from datetime import datetime
 import itertools
 
 import gym
-from gym.spaces import Discrete, Tuple, Dict, Box
+from gym.spaces import Discrete, Tuple, Dict, Box, flatten
+
 
 import ray
 from ray import tune
@@ -28,6 +29,54 @@ from ray.rllib.utils.framework import try_import_tf
 from ray.rllib.models.catalog import ModelCatalog
 
 from ray.rllib.agents.dqn.distributional_q_tf_model import DistributionalQTFModel
+
+def flatten_space(space):
+    """Flatten a space into a single ``Box``.
+    This is equivalent to ``flatten()``, but operates on the space itself. The
+    result always is a `Box` with flat boundaries. The box has exactly
+    ``flatdim(space)`` dimensions. Flattening a sample of the original space
+    has the same effect as taking a sample of the flattenend space.
+    Raises ``NotImplementedError`` if the space is not defined in
+    ``gym.spaces``.
+    Example::
+        >>> box = Box(0.0, 1.0, shape=(3, 4, 5))
+        >>> box
+        Box(3, 4, 5)
+        >>> flatten_space(box)
+        Box(60,)
+        >>> flatten(box, box.sample()) in flatten_space(box)
+        True
+    Example that flattens a discrete space::
+        >>> discrete = Discrete(5)
+        >>> flatten_space(discrete)
+        Box(5,)
+        >>> flatten(box, box.sample()) in flatten_space(box)
+        True
+    Example that recursively flattens a dict::
+        >>> space = Dict({"position": Discrete(2),
+        ...               "velocity": Box(0, 1, shape=(2, 2))})
+        >>> flatten_space(space)
+        Box(6,)
+        >>> flatten(space, space.sample()) in flatten_space(space)
+        True
+    """
+    if isinstance(space, Box):
+        return Box(space.low.flatten(), space.high.flatten())
+    if isinstance(space, Discrete):
+        return Box(low=0, high=1, shape=(space.n, ))
+    if isinstance(space, Tuple):
+        space = [flatten_space(s) for s in space.spaces]
+        return Box(
+            low=np.concatenate([s.low for s in space]),
+            high=np.concatenate([s.high for s in space]),
+        )
+    if isinstance(space, Dict):
+        space = [flatten_space(s) for s in space.spaces.values()]
+        return Box(
+            low=np.concatenate([s.low for s in space]),
+            high=np.concatenate([s.high for s in space]),
+        )
+    raise NotImplementedError
 
 MKT_TEMPLATES = {'eMail':['mail1','mail2','mail3','mail4'],
                  'webDiscount':['discount1','discount2','discount3','discount4'],
@@ -60,9 +109,20 @@ def _get_action_mask(actions: list, max_actions: int):
 
 tp_actions = MKT_TEMPLATES
 mask_size = max([len(options) for options in MKT_TEMPLATES.values()])
-
 action_mask = {tp_id: _get_action_mask(tp_actions[tp], mask_size) for tp_id, tp
                in enumerate(tp_actions.keys())}
+
+#FLAT_OBSERVATION_SPACE = Box(low=0, high=1, shape=(20,), dtype=np.int64)
+REAL_OBSERVATION_SPACE = Tuple((Discrete(10), Discrete(3), Discrete(2), Discrete(5)))
+
+class FlattenObservation(gym.ObservationWrapper):
+    r"""Observation wrapper that flattens the observation."""
+    def __init__(self, env):
+        super(FlattenObservation, self).__init__(env)
+        self.observation_space = flatten_space(env.observation_space)
+
+    def observation(self, observation):
+        return flatten(self.env.observation_space, observation)
 
 class MKTWorld:
 
@@ -83,8 +143,10 @@ class MKTWorld:
                 dt[t] = {mo: np.random.dirichlet(np.ones(len(self.journeys[t])), size=1)[0] for mo in
                          self.mkt_offers[t]}
             self.probab[cs] = dt
-        # self.action_space = ACTION_SPACE
-        # self.observation_space = OBSERVATION_SPACE
+        self.observation_space = Dict({
+            "state": REAL_OBSERVATION_SPACE,
+            "action_mask": Box(low=0, high=1, shape=(mask_size,))
+        })
 
     def random_customer(self):
         cs = self.customer_segments[np.random.randint(len(self.customer_segments))]
@@ -98,7 +160,7 @@ class MKTWorld:
         for i,_ in enumerate(CUSTOMER_ATTRIBUTES.keys()):
             self.observation[i+1] = self.customer_values[i].index(cs[customer_feature[i]])
 
-        return {'action_mask': action_mask[0], 'cart': self.observation}
+        return {'action_mask': action_mask[0], 'state': tuple(self.observation)}
 
     def step(self, action):
         touch_point = self.touch_points[self.observation[0]]
@@ -112,7 +174,7 @@ class MKTWorld:
         self.observation[0] = self.touch_points.index(new_touch_point)
         done = new_touch_point in self.rewards.keys()
         reward = self.rewards[new_touch_point] if done else 0
-        return {'action_mask': action_mask[self.observation[0]], 'cart': self.observation}, reward, done, {}
+        return {'action_mask': action_mask[self.observation[0]], 'state': tuple(self.observation)}, reward, done, {}
 
 
 env_config = {
@@ -143,6 +205,8 @@ class ExternalMkt(ExternalEnv):
 
 tf1, tf, tfv = try_import_tf()
 
+flat_space = FlattenObservation(MKTWorld(env_config))
+
 class ParametricActionsModel(DistributionalQTFModel):
     def __init__(self,
                  obs_space,
@@ -160,20 +224,22 @@ class ParametricActionsModel(DistributionalQTFModel):
         # print("####### obs_space {}".format(obs_space))
         # raise Exception("END")
 
-        model_observation_space = Box(low=0, high=1, shape=(obs_space.shape[0] - action_space.n,))
-
         self.action_param_model = FullyConnectedNetwork(
-            model_observation_space, action_space, num_outputs,
+            flat_space.observation_space, action_space, num_outputs,
             model_config, name + "_action_param")
         self.register_variables(self.action_param_model.variables())
 
     def forward(self, input_dict, state, seq_lens):
+
+        print("{} : [INFO] ParametricActionsModel Input_Dict['obs']['cart'] {}"
+              .format(datetime.now(), input_dict["obs"]))
+
         # Extract the available actions tensor from the observation.
         action_mask = input_dict["obs"]["action_mask"]
 
         # Compute the predicted action embedding
         action_param, _ = self.action_param_model({
-            "obs": input_dict["obs"]["status"]
+            "obs": flat_space.observation(["obs"]["state"])
         })
 
         # Mask out invalid actions (use tf.float32.min for stability)
