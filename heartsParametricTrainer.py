@@ -37,7 +37,7 @@ CARD_SET = {Card(naipe,n) for naipe in {"E","C", "O", "P"} for n in list(range(1
 CARD_LIST = [Card(naipe,n) for naipe in {"E","C", "O", "P"} for n in list(range(16-HAND_SIZE,15))+[2]]
 CARDS_PER_PLAYER = len(CARD_SET)//4
 
-tf = try_import_tf()
+tf1, tf, tfv = try_import_tf()
 
 # Card Status
 OTHERS_HAND = -1
