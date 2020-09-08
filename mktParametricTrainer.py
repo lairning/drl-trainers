@@ -148,6 +148,8 @@ class MKTWorld:
             "state": REAL_OBSERVATION_SPACE,
             "action_mask": Box(low=0, high=1, shape=(max_action_size,))
         })
+        self.reward_range = None
+        self.metadata = None
 
     def random_customer(self):
         cs = self.customer_segments[np.random.randint(len(self.customer_segments))]
