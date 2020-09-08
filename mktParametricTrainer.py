@@ -81,7 +81,7 @@ def flatten_space(space):
 MKT_TEMPLATES = {'eMail':['mail1','mail2','mail3','mail4'],
                  'webDiscount':['discount1','discount2','discount3'],
                  'webPremium':['premium1','premium2','premium3','premium4','premium5'],
-                'callCenter':['script1','script2','script3','script4']}
+                'callCenter':['script1','script2','script3','script4','script5','script6']}
 
 MKT_REWARDS = { 'email do nothing':-0.5,
                 'call do nothing':-5,
@@ -281,16 +281,23 @@ if __name__ == "__main__":
                   #"noisy": True
                   }
 
-    #trainer = DQNTrainer(env="ExternalMkt", config=dqn_config)
-    trainer = PPOTrainer(env="ExternalMkt", config=ppo_config)
+    trainerD = DQNTrainer(env="ExternalMkt", config=dqn_config)
+    trainerP = PPOTrainer(env="ExternalMkt", config=ppo_config)
 
     i = 1
-    for _ in range(5):
-        result = trainer.train()
-        print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
+    for _ in range(20):
+        result = trainerD.train()
+        print("DQNTrainer: Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
             i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
         ))
         i += 1
+    i = 1
 
+    for _ in range(20):
+        result = trainerP.train()
+        print("PPOTrainer: Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
+            i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
+        ))
+        i += 1
     ray.shutdown()
 
