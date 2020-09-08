@@ -281,23 +281,18 @@ if __name__ == "__main__":
                   #"noisy": True
                   }
 
-    trainerD = DQNTrainer(env="ExternalMkt", config=dqn_config)
-    trainerP = PPOTrainer(env="ExternalMkt", config=ppo_config)
+    #trainer = DQNTrainer(env="ExternalMkt", config=dqn_config)
+    trainer = PPOTrainer(env="ExternalMkt", config=ppo_config)
 
     i = 1
     for _ in range(20):
         result = trainerD.train()
-        print("DQNTrainer: Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
+        print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
             i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
         ))
         i += 1
     i = 1
 
-    for _ in range(20):
-        result = trainerP.train()
-        print("PPOTrainer: Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
-            i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
-        ))
-        i += 1
+
     ray.shutdown()
 
