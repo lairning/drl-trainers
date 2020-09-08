@@ -262,7 +262,7 @@ class ParametricActionsModel(DistributionalQTFModel):
         })
 
         # Mask out invalid actions (use tf.float32.min for stability)
-        inf_mask = tf.maximum(tf.log(action_mask), tf.float32.min)
+        inf_mask = tf.maximum(tf.math.log(action_mask), tf.float32.min)
         return action_param + inf_mask, state
 
     def value_function(self):
