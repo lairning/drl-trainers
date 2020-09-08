@@ -274,15 +274,15 @@ if __name__ == "__main__":
     dqn_config = {"timesteps_per_iteration": 1000,
                   "model": {"custom_model": "ParametricActionsModel"},
                   "num_workers": 0,
-                  "hiddens": [64],
+                  "hiddens": [],
                   "dueling": False,
                   "v_min": -5,
                   "v_max": 135,
                   #"noisy": True
                   }
 
-    trainer = DQNTrainer(env="ExternalMkt", config=dqn_config)
-    #trainer = PPOTrainer(env="ExternalHearts", config=ppo_config)
+    #trainer = DQNTrainer(env="ExternalMkt", config=dqn_config)
+    trainer = PPOTrainer(env="ExternalHearts", config=ppo_config)
 
     i = 1
     for _ in range(5):
