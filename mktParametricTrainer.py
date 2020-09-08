@@ -119,10 +119,10 @@ class FlattenObservation(gym.ObservationWrapper):
     r"""Observation wrapper that flattens the observation."""
     def __init__(self, env):
         super(FlattenObservation, self).__init__(env)
-        self.observation_space = flatten_space(env.observation_space['space'])
+        self.observation_space = flatten_space(env.observation_space['state'])
 
     def observation(self, observation):
-        return flatten(self.env.observation_space['space'], observation)
+        return flatten(self.env.observation_space['state'], observation)
 
 class MKTWorld(gym.Env):
 
