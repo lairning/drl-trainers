@@ -199,7 +199,7 @@ class ExternalMkt(ExternalEnv):
     def __init__(self, env):
         ExternalEnv.__init__(self, env.action_space, env.observation_space)
         self.env = env
-        self.episodes = episodes
+        #self.episodes = episodes
 
     def run(self):
 
