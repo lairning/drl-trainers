@@ -242,7 +242,7 @@ class ParametricActionsModel(DistributionalQTFModel):
 
         # Compute the predicted action embedding
         action_param, _ = self.action_param_model({
-            "obs": self.flat.observation(["obs"]["state"])
+            "obs": self.flat.observation(input_dict["obs"]["state"])
         })
 
         # Mask out invalid actions (use tf.float32.min for stability)
