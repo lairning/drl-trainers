@@ -124,9 +124,19 @@ class FlattenObservation(gym.ObservationWrapper):
     def observation(self, observation):
         return flatten(self.env.observation_space['state'], observation)
 
-class MKTWorld(gym.Env):
+class MKTEnv(gym.Env):
+    def __init__(self):
+        self.action_space = Discrete(max_action_size)
+        self.observation_space = Dict({
+            "state": REAL_OBSERVATION_SPACE,
+            "action_mask": Box(low=0, high=1, shape=(max_action_size,))
+        })
 
+flat = FlattenObservation(MKTEnv())
+
+class MKTWorld(MKTEnv):
     def __init__(self, config):
+        super(MKTWorld, self).__init__()
         self.probab = dict()
         self.rewards = config["mkt_rewards"]
         self.journeys = config["customer_journeys"]
@@ -143,11 +153,6 @@ class MKTWorld(gym.Env):
                 dt[t] = {mo: np.random.dirichlet(np.ones(len(self.journeys[t])), size=1)[0] for mo in
                          self.mkt_offers[t]}
             self.probab[cs] = dt
-        self.action_space = Discrete(max_action_size)
-        self.observation_space = Dict({
-            "state": REAL_OBSERVATION_SPACE,
-            "action_mask": Box(low=0, high=1, shape=(max_action_size,))
-        })
 
     def random_customer(self):
         cs = self.customer_segments[np.random.randint(len(self.customer_segments))]
@@ -161,9 +166,9 @@ class MKTWorld(gym.Env):
         for i,_ in enumerate(CUSTOMER_ATTRIBUTES.keys()):
             self.observation[i+1] = self.customer_values[i].index(cs[customer_feature[i]])
 
-        return {'action_mask': action_mask[0], 'state': tuple(self.observation)}
+        return {'action_mask': action_mask[0], 'state': flat.observation(self.observation)}
 
-    def step(self, action):
+    def step(self, action: int):
         touch_point = self.touch_points[self.observation[0]]
         assert action < len(self.mkt_offers[touch_point]), \
             "Action={}, TP={}, OFFERS={}".format(action, touch_point, self.mkt_offers[touch_point])
@@ -175,8 +180,7 @@ class MKTWorld(gym.Env):
         self.observation[0] = self.touch_points.index(new_touch_point)
         done = new_touch_point in self.rewards.keys()
         reward = self.rewards[new_touch_point] if done else 0
-        return {'action_mask': action_mask[self.observation[0]], 'state': tuple(self.observation)}, reward, done, {}
-
+        return {'action_mask': action_mask[self.observation[0]], 'state': flat.observation(self.observation)}, reward, done, {}
 
 env_config = {
     "mkt_rewards": MKT_REWARDS,
@@ -206,8 +210,6 @@ class ExternalMkt(ExternalEnv):
 
 tf1, tf, tfv = try_import_tf()
 
-
-
 class ParametricActionsModel(DistributionalQTFModel):
     def __init__(self,
                  obs_space,
@@ -225,10 +227,8 @@ class ParametricActionsModel(DistributionalQTFModel):
         # print("####### obs_space {}".format(obs_space))
         # raise Exception("END")
 
-        self.flat = FlattenObservation(MKTWorld(env_config))
-
         self.action_param_model = FullyConnectedNetwork(
-            self.flat.observation_space, action_space, num_outputs,
+            flat.observation_space, action_space, num_outputs,
             model_config, name + "_action_param")
         self.register_variables(self.action_param_model.variables())
 
@@ -242,7 +242,7 @@ class ParametricActionsModel(DistributionalQTFModel):
 
         # Compute the predicted action embedding
         action_param, _ = self.action_param_model({
-            "obs": self.flat.observation(input_dict["obs"]["state"])
+            "obs": input_dict["obs"]["state"]
         })
 
         # Mask out invalid actions (use tf.float32.min for stability)
