@@ -306,8 +306,8 @@ if __name__ == "__main__":
                   }
 
     #trainer = A3CTrainer(env="ExternalHearts", config=other_config)
-    #trainer = DQNTrainer(env="ExternalHearts", config=dqn_config)
-    trainer = PPOTrainer(env="ExternalHearts", config=ppo_config)
+    trainer = DQNTrainer(env="ExternalHearts", config=dqn_config)
+    #trainer = PPOTrainer(env="ExternalHearts", config=ppo_config)
 
     i = 1
     while True:
