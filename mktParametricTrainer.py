@@ -262,7 +262,7 @@ if __name__ == "__main__":
     register_env(
         "ExternalMkt",
         #lambda _: HeartsEnv()
-        lambda _: ExternalMkt(MKTWorld(env_config), episodes=1000)
+        lambda _: ExternalMkt(MKTWorld(env_config), episodes=10000)
     )
 
     ModelCatalog.register_custom_model("ParametricActionsModel", ParametricActionsModel)
