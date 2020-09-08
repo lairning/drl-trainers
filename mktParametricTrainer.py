@@ -205,6 +205,8 @@ class ExternalMkt(ExternalEnv):
         for e in range(self.episodes):
             eid = self.start_episode()
             obs = self.env.reset()
+            print("{} : [INFO] ExternalMkt Obs {}"
+                  .format(datetime.now(), obs))
             done = False
             while not done:
                 action = self.get_action(eid, obs)
@@ -237,9 +239,6 @@ class ParametricActionsModel(DistributionalQTFModel):
         self.register_variables(self.action_param_model.variables())
 
     def forward(self, input_dict, state, seq_lens):
-
-        print("{} : [INFO] ParametricActionsModel Input_Dict['obs']['cart'] {}"
-              .format(datetime.now(), input_dict["obs"]))
 
         # Extract the available actions tensor from the observation.
         action_mask = input_dict["obs"]["action_mask"]
