@@ -143,7 +143,7 @@ class MKTWorld:
                 dt[t] = {mo: np.random.dirichlet(np.ones(len(self.journeys[t])), size=1)[0] for mo in
                          self.mkt_offers[t]}
             self.probab[cs] = dt
-        self.action_space = Box(low=0, high=1, shape=(max_action_size,))
+        self.action_space = Discrete(max_action_size)
         self.observation_space = Dict({
             "state": REAL_OBSERVATION_SPACE,
             "action_mask": Box(low=0, high=1, shape=(max_action_size,))
