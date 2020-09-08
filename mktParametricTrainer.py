@@ -184,7 +184,8 @@ class MKTWorld(MKTEnv):
         self.observation[0] = self.touch_points.index(new_touch_point)
         done = new_touch_point in self.rewards.keys()
         reward = self.rewards[new_touch_point] if done else 0
-        return {'action_mask': action_mask[self.observation[0]], 'state': flat.observation(self.observation)}, reward, done, {}
+        return {'action_mask': action_mask[self.observation[0]] if not done else None, 'state': flat.observation(
+            self.observation)}, reward, done, {}
 
 env_config = {
     "mkt_rewards": MKT_REWARDS,
@@ -205,8 +206,6 @@ class ExternalMkt(ExternalEnv):
         for e in range(self.episodes):
             eid = self.start_episode()
             obs = self.env.reset()
-            print("{} : [INFO] ExternalMkt Obs {}"
-                  .format(datetime.now(), obs))
             done = False
             while not done:
                 action = self.get_action(eid, obs)
