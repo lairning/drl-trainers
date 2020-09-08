@@ -79,8 +79,8 @@ def flatten_space(space):
     raise NotImplementedError
 
 MKT_TEMPLATES = {'eMail':['mail1','mail2','mail3','mail4'],
-                 'webDiscount':['discount1','discount2','discount3','discount4'],
-                 'webPremium':['premium1','premium2','premium3','premium4'],
+                 'webDiscount':['discount1','discount2','discount3'],
+                 'webPremium':['premium1','premium2','premium3','premium4','premium5'],
                 'callCenter':['script1','script2','script3','script4']}
 
 MKT_REWARDS = { 'email do nothing':-0.5,
@@ -285,7 +285,7 @@ if __name__ == "__main__":
     #trainer = PPOTrainer(env="ExternalHearts", config=ppo_config)
 
     i = 1
-    for _ in range(10000):
+    for _ in range(5):
         result = trainer.train()
         print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
             i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
