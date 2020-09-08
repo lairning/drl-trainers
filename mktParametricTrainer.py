@@ -196,14 +196,14 @@ env_config = {
 
 
 class ExternalMkt(ExternalEnv):
-    def __init__(self, env, episodes: int):
+    def __init__(self, env):
         ExternalEnv.__init__(self, env.action_space, env.observation_space)
         self.env = env
         self.episodes = episodes
 
     def run(self):
 
-        for e in range(self.episodes):
+        while True:
             eid = self.start_episode()
             obs = self.env.reset()
             done = False
@@ -262,7 +262,7 @@ if __name__ == "__main__":
     register_env(
         "ExternalMkt",
         #lambda _: HeartsEnv()
-        lambda _: ExternalMkt(MKTWorld(env_config), episodes=10000)
+        lambda _: ExternalMkt(MKTWorld(env_config))
     )
 
     ModelCatalog.register_custom_model("ParametricActionsModel", ParametricActionsModel)
@@ -285,7 +285,7 @@ if __name__ == "__main__":
     #trainer = PPOTrainer(env="ExternalHearts", config=ppo_config)
 
     i = 1
-    while True:
+    for _ in range(10000):
         result = trainer.train()
         print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
             i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
