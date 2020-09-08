@@ -166,7 +166,7 @@ class MKTWorld(MKTEnv):
         for i,_ in enumerate(CUSTOMER_ATTRIBUTES.keys()):
             self.observation[i+1] = self.customer_values[i].index(cs[customer_feature[i]])
 
-        return {'action_mask': action_mask[0], 'state': self.observation}
+        return {'action_mask': action_mask[0], 'state': flat.observation(self.observation)}
 
     def step(self, action: int):
         touch_point = self.touch_points[self.observation[0]]
@@ -180,7 +180,7 @@ class MKTWorld(MKTEnv):
         self.observation[0] = self.touch_points.index(new_touch_point)
         done = new_touch_point in self.rewards.keys()
         reward = self.rewards[new_touch_point] if done else 0
-        return {'action_mask': action_mask[self.observation[0]], 'state': self.observation}, reward, done, {}
+        return {'action_mask': action_mask[self.observation[0]], 'state': flat.observation(self.observation)}, reward, done, {}
 
 env_config = {
     "mkt_rewards": MKT_REWARDS,
@@ -201,6 +201,7 @@ class ExternalMkt(ExternalEnv):
         for e in range(self.episodes):
             eid = self.start_episode()
             obs = self.env.reset()
+            print("ExternalMK",obs)
             done = False
             while not done:
                 action = self.get_action(eid, obs)
@@ -228,7 +229,7 @@ class ParametricActionsModel(DistributionalQTFModel):
         # raise Exception("END")
 
         self.action_param_model = FullyConnectedNetwork(
-            REAL_OBSERVATION_SPACE, action_space, num_outputs,
+            flat.observation_space, action_space, num_outputs,
             model_config, name + "_action_param")
         self.register_variables(self.action_param_model.variables())
 
