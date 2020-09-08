@@ -286,7 +286,7 @@ if __name__ == "__main__":
 
     i = 1
     for _ in range(20):
-        result = trainerD.train()
+        result = trainer.train()
         print("Iteration {}, Episodes {}, Mean Reward {}, Mean Length {}".format(
             i, result['episodes_this_iter'], result['episode_reward_mean'], result['episode_len_mean']
         ))
