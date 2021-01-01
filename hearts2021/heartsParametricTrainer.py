@@ -42,7 +42,7 @@ class TorchParametricActionsModel(DQNTorchModel):
                                model_config, name, **kw)
 
         self.action_model = TorchFC(
-            XPTO, action_space, num_outputs,
+            TRUE_OBSERVATION_SPACE, action_space, num_outputs,
             model_config, name + "_action_embed")
 
         print(self.action_model)
