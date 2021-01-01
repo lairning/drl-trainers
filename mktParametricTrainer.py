@@ -115,6 +115,14 @@ action_mask = {tp_id: _get_action_mask(tp_actions[tp], max_action_size) for tp_i
 FLAT_OBSERVATION_SPACE = Box(low=0, high=1, shape=(20,), dtype=np.int64)
 REAL_OBSERVATION_SPACE = Tuple((Discrete(10), Discrete(3), Discrete(2), Discrete(5)))
 
+
+def myspace2gymspace(space: dict):
+    if space['type'] == 'Discrete':
+        return Discrete(space['value'])
+    if space['type'] == 'Tuple':
+        return Tuple(tuple(myspace2gymspace(s) for s in space['value']))
+    raise "Invalid Space Type = {}".format(space['type'])
+
 class FlattenObservation(gym.ObservationWrapper):
     r"""Observation wrapper that flattens the observation."""
     def __init__(self, env):
