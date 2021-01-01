@@ -8,6 +8,7 @@ You can visualize experiment results in ~/ray_results using TensorBoard.
 
 import ray
 from ray import tune
+from ray.tune.registry import register_env
 from ray.rllib.models import ModelCatalog
 from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFC
 from ray.rllib.agents.dqn.dqn_torch_model import DQNTorchModel
@@ -75,8 +76,14 @@ if __name__ == "__main__":
     ModelCatalog.register_custom_model(
         "my_model", TorchParametricActionsModel)
 
+    register_env(
+        "HeartsEnv",
+        #lambda _: HeartsEnv()
+        lambda _: HeartsParametricEnv(6)
+    )
+
     config = {
-        "env": HeartsParametricEnv(6),  # or "corridor" if registered above
+        "env": "HeartsEnv",  # or "corridor" if registered above
         # "env_config": {"n_cards": 6,},
         # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
         # "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
