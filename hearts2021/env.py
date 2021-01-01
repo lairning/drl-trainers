@@ -224,7 +224,7 @@ class HeartsAlphaEnv:
         return {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}
 
     def step(self, action):
-        self._decode_card(action)
+        c = self._decode_card(action)
         (table_card, possible_cards), rew, done, info = self.env.step(c)
         self.running_reward += rew
         score = self.running_reward if done else 0
@@ -238,8 +238,7 @@ class HeartsAlphaEnv:
     def get_state(self):
         return deepcopy(self.env), self.running_reward
 
-TRUE_OBSERVATION_SPACE = Discrete(4*HAND_SIZE)
-XPTO = Box(0,1,shape=(4*HAND_SIZE,))
+TRUE_OBSERVATION_SPACE = Box(0,1,shape=(4*HAND_SIZE,))
 
 class HeartsParametricEnv:
 
@@ -247,7 +246,7 @@ class HeartsParametricEnv:
         self.env = HeartsEnv0(n_cards)
         self.action_space = Discrete(4*HAND_SIZE)
         self.observation_space = Dict({
-            "obs": TRUE_OBSERVATION_SPACE,
+            "obs": Discrete(4*HAND_SIZE),
             "action_mask": Box(low=0, high=1, shape=(self.action_space.n, ))
         })
 

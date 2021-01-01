@@ -15,7 +15,7 @@ from ray.rllib.agents.dqn.dqn_torch_model import DQNTorchModel
 from ray.rllib.utils.framework import try_import_tf, try_import_torch
 from ray.rllib.utils.torch_ops import FLOAT_MIN, FLOAT_MAX
 
-from env import HeartsParametricEnv, TRUE_OBSERVATION_SPACE, XPTO
+from env import HeartsParametricEnv, TRUE_OBSERVATION_SPACE
 
 torch, nn = try_import_torch()
 '''
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     register_env(
         "HeartsEnv",
         #lambda _: HeartsEnv()
-        lambda _: HeartsParametricEnv(6)
+        lambda _: HeartsParametricEnv(10)
     )
 
     config = {
@@ -98,12 +98,12 @@ if __name__ == "__main__":
 
     stop = {
         "training_iteration": 100,
-        "timesteps_total": 400000,
+        "timesteps_total": 200000,
         #"episode_reward_mean": args.stop_reward,
     }
 
     results = tune.run("PPO", config=config, stop=stop)
 
-    print("Results:", results)
+    print("Results:", result['episode_reward_mean'])
     ray.shutdown()
 
