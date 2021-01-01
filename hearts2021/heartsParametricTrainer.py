@@ -26,6 +26,7 @@ parser.add_argument("--stop-iters", type=int, default=50)
 parser.add_argument("--stop-timesteps", type=int, default=100000)
 parser.add_argument("--stop-reward", type=float, default=0.1)
 '''
+
 class TorchParametricActionsModel(DQNTorchModel):
     """PyTorch version of above ParametricActionsModel."""
 
@@ -43,6 +44,7 @@ class TorchParametricActionsModel(DQNTorchModel):
             TRUE_OBSERVATION_SPACE, action_space, num_outputs,
             model_config, name + "_action_embed")
 
+
     def forward(self, input_dict, state, seq_lens):
         # Extract the available actions tensor from the observation.
         action_mask = input_dict["obs"]["action_mask"]
@@ -51,6 +53,8 @@ class TorchParametricActionsModel(DQNTorchModel):
         action_param, _ = self.action_model({
             "obs": input_dict["obs"]["obs"]
         })
+
+        action_param = torch.unsqueeze(action_param, 1)
 
         # Mask out invalid actions (use -inf to tag invalid).
         # These are then recognized by the EpsilonGreedy exploration component
