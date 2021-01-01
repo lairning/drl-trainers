@@ -274,7 +274,7 @@ class HeartsParametricEnv:
         (table_card, possible_cards), rew, done, info = self.env.step(c)
         return {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}, rew, done, info
 
-
+'''
 he = HeartsParametricEnv(5)
 obs = he.reset()
 done = False
@@ -284,3 +284,4 @@ while not done:
     print(he.env.me, he.env.table_card, c)
     obs, points, done, _ = he.step(he._encode_card(c))
     print("POINTS:", points)
+'''
