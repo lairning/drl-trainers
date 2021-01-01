@@ -41,7 +41,7 @@ class TorchParametricActionsModel(DQNTorchModel):
                                model_config, name, **kw)
 
         self.action_model = TorchFC(
-            TRUE_OBSERVATION_SPACE, action_space, num_outputs,
+            TRUE_OBSERVATION_SPACE, action_space, 1, #num_outputs,
             model_config, name + "_action_embed")
 
 
@@ -53,8 +53,6 @@ class TorchParametricActionsModel(DQNTorchModel):
         action_param, _ = self.action_model({
             "obs": input_dict["obs"]["obs"]
         })
-
-        action_param = torch.unsqueeze(action_param, 1)
 
         # Mask out invalid actions (use -inf to tag invalid).
         # These are then recognized by the EpsilonGreedy exploration component
