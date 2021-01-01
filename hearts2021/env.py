@@ -271,7 +271,7 @@ class HeartsParametricEnv:
         return {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}
 
     def step(self, action):
-        self._decode_card(action)
+        c = self._decode_card(action)
         (table_card, possible_cards), rew, done, info = self.env.step(c)
         return {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}, rew, done, info
 
