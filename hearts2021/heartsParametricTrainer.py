@@ -49,7 +49,7 @@ class TorchParametricActionsModel(DQNTorchModel):
 
         # Compute the predicted action embedding
         action_param, _ = self.action_model({
-            "obs": input_dict["obs"]["status"]
+            "obs": input_dict["obs"]["obs"]
         })
 
         # Mask out invalid actions (use -inf to tag invalid).
