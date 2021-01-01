@@ -65,7 +65,7 @@ class TorchParametricActionsModel(DQNTorchModel):
         return action_param + inf_mask, state
 
     def value_function(self):
-        return self.action_embed_model.value_function()
+        return self.action_model.value_function()
 
 
 if __name__ == "__main__":
