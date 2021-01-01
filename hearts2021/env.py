@@ -239,6 +239,7 @@ class HeartsAlphaEnv:
         return deepcopy(self.env), self.running_reward
 
 TRUE_OBSERVATION_SPACE = Discrete(4*HAND_SIZE)
+XPTO = Box(0,1,shape=4*HAND_SIZE)
 
 class HeartsParametricEnv:
 

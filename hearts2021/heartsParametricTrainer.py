@@ -14,7 +14,7 @@ from ray.rllib.agents.dqn.dqn_torch_model import DQNTorchModel
 from ray.rllib.utils.framework import try_import_tf, try_import_torch
 from ray.rllib.utils.torch_ops import FLOAT_MIN, FLOAT_MAX
 
-from env import HeartsParametricEnv, TRUE_OBSERVATION_SPACE
+from env import HeartsParametricEnv, TRUE_OBSERVATION_SPACE, XPTO
 
 torch, nn = try_import_torch()
 '''
@@ -41,7 +41,7 @@ class TorchParametricActionsModel(DQNTorchModel):
                                model_config, name, **kw)
 
         self.action_model = TorchFC(
-            TRUE_OBSERVATION_SPACE, action_space, num_outputs,
+            XPTO, action_space, num_outputs,
             model_config, name + "_action_embed")
 
         print(self.action_model)
@@ -51,7 +51,7 @@ class TorchParametricActionsModel(DQNTorchModel):
         # Extract the available actions tensor from the observation.
         action_mask = input_dict["obs"]["action_mask"]
 
-        print(input_dict["obs"]["obs"])
+        #print(input_dict["obs"]["obs"])
 
         # Compute the predicted action embedding
         action_param, _ = self.action_model({
