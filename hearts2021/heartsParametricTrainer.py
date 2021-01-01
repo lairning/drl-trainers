@@ -41,13 +41,17 @@ class TorchParametricActionsModel(DQNTorchModel):
                                model_config, name, **kw)
 
         self.action_model = TorchFC(
-            TRUE_OBSERVATION_SPACE, action_space, 1, #num_outputs,
+            TRUE_OBSERVATION_SPACE, action_space, num_outputs,
             model_config, name + "_action_embed")
+
+        print(self.action_model)
 
 
     def forward(self, input_dict, state, seq_lens):
         # Extract the available actions tensor from the observation.
         action_mask = input_dict["obs"]["action_mask"]
+
+        print(input_dict["obs"]["obs"])
 
         # Compute the predicted action embedding
         action_param, _ = self.action_model({
