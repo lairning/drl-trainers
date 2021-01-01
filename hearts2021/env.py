@@ -267,7 +267,7 @@ class HeartsParametricEnv:
         return CARD_SET[i]
 
     def reset(self):
-        table_card, possible_cards = self.env.reset()
+        (table_card, possible_cards) = self.env.reset()
         return {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}
 
     def step(self, action):
