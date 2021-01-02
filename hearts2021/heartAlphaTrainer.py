@@ -46,7 +46,7 @@ if __name__ == "__main__":
         #resources_per_trial={"cpu": 2, "extra_cpu":2},
         config={
             "env": "HeartsEnv",
-            "num_workers": 1,
+            "num_workers": 5,
             "rollout_fragment_length": 50,
             "train_batch_size": 500,
             "sgd_minibatch_size": 64,
