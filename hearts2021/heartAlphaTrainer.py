@@ -18,7 +18,7 @@ class DenseModel(ActorCriticModel):
         print("## DEBUG obs_space ###", obs_space)
         self.shared_layers = nn.Sequential(
             nn.Linear(
-                in_features=obs_space.original_space["obs"].shape[0],
+                in_features= 20, #obs_space.original_space["obs"].shape[0],
                 out_features=256), nn.Linear(
                     in_features=256, out_features=256))
         self.actor_layers = nn.Sequential(
@@ -46,7 +46,7 @@ if __name__ == "__main__":
         #resources_per_trial={"cpu": 2, "extra_cpu":2},
         config={
             "env": "HeartsEnv",
-            "num_workers": 4,
+            "num_workers": 1,
             "rollout_fragment_length": 50,
             "train_batch_size": 500,
             "sgd_minibatch_size": 64,
