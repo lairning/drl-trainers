@@ -6,7 +6,7 @@ from env import HeartsAlphaEnv
 
 if __name__ == "__main__":
 
-    ray.init(num_cpus=6)
+    ray.init()
 
     ModelCatalog.register_custom_model("dense_model", DenseModel)
 
