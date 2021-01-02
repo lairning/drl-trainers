@@ -166,6 +166,8 @@ class HeartsEnv0(gym.Env):
 
     def step(self, played_card):
         points = 0
+        if played_card == CARD_NULL:
+            return (CARD_NULL, self.me), 0, True, {}
         if played_card.naipe == "C":
             if self.table_card.naipe == 'C':
                 if played_card.number >= self.table_card.number:
