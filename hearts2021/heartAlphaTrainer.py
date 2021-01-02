@@ -27,6 +27,11 @@ class DenseModel(ActorCriticModel):
             nn.Linear(in_features=256, out_features=1))
         self._value_out = None
 
+    def forward(self, input_dict, state, seq_lens):
+        print("## DEBUG input_dict['obs'] ##", input_dict['obs'])
+
+        return ActorCriticModel.forward(input_dict, state, seq_lens)
+
 if __name__ == "__main__":
 
     ray.init()
@@ -41,12 +46,12 @@ if __name__ == "__main__":
 
     tune.run(
         "contrib/AlphaZero",
-        stop={"training_iteration": 100},
+        stop={"training_iteration": 2},
         max_failures=0,
         #resources_per_trial={"cpu": 2, "extra_cpu":2},
         config={
             "env": "HeartsEnv",
-            "num_workers": 5,
+            "num_workers": 0,
             "rollout_fragment_length": 200,
             "train_batch_size": 4000,
             "sgd_minibatch_size": 128,
