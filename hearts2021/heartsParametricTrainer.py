@@ -101,7 +101,7 @@ if __name__ == "__main__":
         "model": {
             "custom_model": "my_model",
         },
-        "vf_share_layers": True,
+        "hiddens": [],
         #"lr": grid_search([1e-2, 1e-4, 1e-6]),  # try different lrs
         "num_workers": 5,  # parallelism
         "framework": "torch" # if args.torch else "tf",
@@ -116,6 +116,6 @@ if __name__ == "__main__":
     # results = tune.run("PPO", config=config, stop=stop)
     results = tune.run("DQN", config=config_dqn, stop=stop)
 
-    print("Results:", result['episode_reward_mean'])
+    print("Results:", results['episode_reward_mean'])
     ray.shutdown()
 
