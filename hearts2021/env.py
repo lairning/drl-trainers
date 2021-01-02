@@ -166,8 +166,8 @@ class HeartsEnv0(gym.Env):
 
     def step(self, played_card):
         points = 0
-        if played_card == CARD_NULL:
-            return (CARD_NULL, self.me), 0, True, {}
+        if played_card not in self.me:
+            return (self.table_card, self.me), -50, True, {}
         if played_card.naipe == "C":
             if self.table_card.naipe == 'C':
                 if played_card.number >= self.table_card.number:
@@ -277,7 +277,7 @@ class HeartsParametricEnv:
         return {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}, rew, done, info
 
 '''
-he = HeartsParametricEnv(5)
+he = HeartsParametricEnv(10)
 obs = he.reset()
 done = False
 while not done:
