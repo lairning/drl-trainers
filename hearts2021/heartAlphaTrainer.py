@@ -14,10 +14,10 @@ if __name__ == "__main__":
         "contrib/AlphaZero",
         stop={"training_iteration": 10000},
         max_failures=0,
-        resources_per_trial={"cpu": 2, "extra_cpu":2},
+        #resources_per_trial={"cpu": 2, "extra_cpu":2},
         config={
             "env": HeartsAlphaEnv(10),
-            "num_workers": 6,
+            "num_workers": 4,
             "rollout_fragment_length": 50,
             "train_batch_size": 500,
             "sgd_minibatch_size": 64,
