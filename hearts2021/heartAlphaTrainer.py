@@ -15,7 +15,7 @@ class DenseModel(ActorCriticModel):
         ActorCriticModel.__init__(self, obs_space, action_space, num_outputs,
                                   model_config, name)
 
-        print("## DEBUG obs_space ###", obs_space)
+        #print("## DEBUG obs_space ###", obs_space)
         self.shared_layers = nn.Sequential(
             nn.Linear(
                 in_features= 20, #obs_space.original_space["obs"].shape[0],
