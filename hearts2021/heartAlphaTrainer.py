@@ -18,15 +18,17 @@ class DenseModel(ActorCriticModel):
                                   model_config, name)
 
         #print("## DEBUG obs_space.original_space ###", obs_space.original_space)
+        N_NEURONS = 64
         self.shared_layers = nn.Sequential(
             nn.Linear(
                 in_features= obs_space.original_space["obs"].n,
-                out_features=256), nn.Linear(
-                    in_features=256, out_features=256))
+                out_features=N_NEURONS),
+            #nn.Linear(in_features=N_NEURONS, out_features=N_NEURONS)
+        )
         self.actor_layers = nn.Sequential(
-            nn.Linear(in_features=256, out_features=action_space.n))
+            nn.Linear(in_features=N_NEURONS, out_features=action_space.n))
         self.critic_layers = nn.Sequential(
-            nn.Linear(in_features=256, out_features=1))
+            nn.Linear(in_features=N_NEURONS, out_features=1))
         self._value_out = None
 
     def compute_priors_and_value(self, obs):
