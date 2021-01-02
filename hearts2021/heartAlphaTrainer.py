@@ -18,12 +18,12 @@ class DenseModel(ActorCriticModel):
                                   model_config, name)
 
         #print("## DEBUG obs_space.original_space ###", obs_space.original_space)
-        N_NEURONS = 64
+        N_NEURONS = 256
         self.shared_layers = nn.Sequential(
             nn.Linear(
                 in_features= obs_space.original_space["obs"].n,
                 out_features=N_NEURONS),
-            #nn.Linear(in_features=N_NEURONS, out_features=N_NEURONS)
+            nn.Linear(in_features=N_NEURONS, out_features=N_NEURONS)
         )
         self.actor_layers = nn.Sequential(
             nn.Linear(in_features=N_NEURONS, out_features=action_space.n))

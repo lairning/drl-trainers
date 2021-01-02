@@ -83,6 +83,17 @@ if __name__ == "__main__":
     )
 
     config = {
+        "env": "HeartsEnv",
+        "model": {
+            "custom_model": "my_model",
+        },
+        "vf_share_layers": True,
+        #"lr": grid_search([1e-2, 1e-4, 1e-6]),  # try different lrs
+        "num_workers": 5,  # parallelism
+        "framework": "torch" # if args.torch else "tf",
+    }
+
+    config_dqn = {
         "env": "HeartsEnv",  # or "corridor" if registered above
         # "env_config": {"n_cards": 6,},
         # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
@@ -102,7 +113,8 @@ if __name__ == "__main__":
         #"episode_reward_mean": args.stop_reward,
     }
 
-    results = tune.run("PPO", config=config, stop=stop)
+    # results = tune.run("PPO", config=config, stop=stop)
+    results = tune.run("DQN", config=config_dqn, stop=stop)
 
     print("Results:", result['episode_reward_mean'])
     ray.shutdown()
