@@ -10,13 +10,19 @@ if __name__ == "__main__":
 
     ModelCatalog.register_custom_model("dense_model", DenseModel)
 
+    register_env(
+        "HeartsEnv",
+        #lambda _: HeartsEnv()
+        lambda _: HeartsAlphaEnv(10)
+    )
+
     tune.run(
         "contrib/AlphaZero",
         stop={"training_iteration": 10000},
         max_failures=0,
         #resources_per_trial={"cpu": 2, "extra_cpu":2},
         config={
-            "env": HeartsAlphaEnv(10),
+            "env": "HeartsEnv",
             "num_workers": 4,
             "rollout_fragment_length": 50,
             "train_batch_size": 500,
