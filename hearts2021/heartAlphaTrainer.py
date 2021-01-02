@@ -18,7 +18,7 @@ class DenseModel(ActorCriticModel):
         print("## DEBUG obs_space.original_space ###", obs_space.original_space)
         self.shared_layers = nn.Sequential(
             nn.Linear(
-                in_features= 20, #obs_space.original_space["obs"].shape[0],
+                in_features= obs_space.original_space["obs"].n,
                 out_features=256), nn.Linear(
                     in_features=256, out_features=256))
         self.actor_layers = nn.Sequential(
@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     tune.run(
         "contrib/AlphaZero",
-        stop={"training_iteration": 2},
+        stop={"training_iteration": 100},
         max_failures=0,
         #resources_per_trial={"cpu": 2, "extra_cpu":2},
         config={
