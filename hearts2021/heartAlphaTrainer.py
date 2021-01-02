@@ -2,6 +2,7 @@ import ray
 from ray import tune
 from ray.rllib.contrib.alpha_zero.models.custom_torch_models import DenseModel
 from ray.rllib.models.catalog import ModelCatalog
+from ray.tune.registry import register_env
 from env import HeartsAlphaEnv
 
 if __name__ == "__main__":
