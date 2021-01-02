@@ -45,7 +45,7 @@ class DenseModel(ActorCriticModel):
 
             return priors, value
 
-'''    def forward(self, input_dict, state, seq_lens):
+    def forward(self, input_dict, state, seq_lens):
 
         action_mask = input_dict["action_mask"]
 
@@ -59,7 +59,7 @@ class DenseModel(ActorCriticModel):
 
         inf_mask = torch.clamp(torch.log(action_mask), FLOAT_MIN, FLOAT_MAX)
         return logits + inf_mask, None
-'''
+
 
 
 if __name__ == "__main__":
@@ -76,12 +76,12 @@ if __name__ == "__main__":
 
     tune.run(
         "contrib/AlphaZero",
-        stop={"training_iteration": 3},
+        stop={"training_iteration": 50},
         max_failures=0,
         #resources_per_trial={"cpu": 2, "extra_cpu":2},
         config={
             "env": "HeartsEnv",
-            "num_workers": 1,
+            "num_workers": 5,
             "rollout_fragment_length": 200,
             "train_batch_size": 4000,
             "sgd_minibatch_size": 128,
