@@ -28,9 +28,9 @@ class DenseModel(ActorCriticModel):
         self._value_out = None
 
     def forward(self, input_dict, state, seq_lens):
-        print("## DEBUG input_dict['obs'] ##", input_dict['obs'])
+        print("## DEBUG input_dict ##", input_dict)
 
-        return ActorCriticModel.forward(input_dict, state, seq_lens)
+        return super().forward(input_dict, state, seq_lens)
 
 if __name__ == "__main__":
 
