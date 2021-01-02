@@ -6,6 +6,7 @@ from ray.tune.registry import register_env
 from env import HeartsAlphaEnv
 
 from ray.rllib.utils.framework import try_import_torch
+from ray.rllib.utils.torch_ops import FLOAT_MIN, FLOAT_MAX
 
 torch, nn = try_import_torch()
 
@@ -28,9 +29,13 @@ class DenseModel(ActorCriticModel):
         self._value_out = None
 
     def forward(self, input_dict, state, seq_lens):
-        print("## DEBUG input_dict ##", input_dict)
 
-        return super().forward(input_dict, state, seq_lens)
+        action_mask = input_dict["action_mask"]
+
+        logits, _ = super().forward(input_dict, state, seq_lens)
+
+        inf_mask = torch.clamp(torch.log(action_mask), FLOAT_MIN, FLOAT_MAX)
+        return logits + inf_mask, None
 
 if __name__ == "__main__":
 
