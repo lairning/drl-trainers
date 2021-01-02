@@ -1,12 +1,13 @@
 import ray
 from ray import tune
-from ray.rllib.contrib.alpha_zero.models.custom_torch_models import ActorCriticModel
+from ray.rllib.contrib.alpha_zero.models.custom_torch_models import ActorCriticModel, convert_to_tensor
 from ray.rllib.models.catalog import ModelCatalog
 from ray.tune.registry import register_env
 from env import HeartsAlphaEnv
 
 from ray.rllib.utils.framework import try_import_torch
 from ray.rllib.utils.torch_ops import FLOAT_MIN, FLOAT_MAX
+from ray.rllib.models.modelv2 import restore_original_dimensions
 
 torch, nn = try_import_torch()
 
@@ -28,7 +29,23 @@ class DenseModel(ActorCriticModel):
             nn.Linear(in_features=256, out_features=1))
         self._value_out = None
 
-    def forward(self, input_dict, state, seq_lens):
+    def compute_priors_and_value(self, obs):
+        obs = convert_to_tensor([self.preprocessor.transform(obs)])
+        input_dict = restore_original_dimensions(obs, self.obs_space, "torch")
+
+        with torch.no_grad():
+            model_out = self.forward(input_dict, None, [1])
+            logits, _ = model_out
+            value = self.value_function()
+            logits, value = torch.squeeze(logits), torch.squeeze(value)
+            priors = nn.Softmax(dim=-1)(logits)
+
+            priors = priors.cpu().numpy()
+            value = value.cpu().numpy()
+
+            return priors, value
+
+'''    def forward(self, input_dict, state, seq_lens):
 
         action_mask = input_dict["action_mask"]
 
@@ -42,6 +59,8 @@ class DenseModel(ActorCriticModel):
 
         inf_mask = torch.clamp(torch.log(action_mask), FLOAT_MIN, FLOAT_MAX)
         return logits + inf_mask, None
+'''
+
 
 if __name__ == "__main__":
 
@@ -57,12 +76,12 @@ if __name__ == "__main__":
 
     tune.run(
         "contrib/AlphaZero",
-        stop={"training_iteration": 2},
+        stop={"training_iteration": 3},
         max_failures=0,
         #resources_per_trial={"cpu": 2, "extra_cpu":2},
         config={
             "env": "HeartsEnv",
-            "num_workers": 0,
+            "num_workers": 1,
             "rollout_fragment_length": 200,
             "train_batch_size": 4000,
             "sgd_minibatch_size": 128,
