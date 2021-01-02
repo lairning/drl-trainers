@@ -16,7 +16,7 @@ class DenseModel(ActorCriticModel):
         ActorCriticModel.__init__(self, obs_space, action_space, num_outputs,
                                   model_config, name)
 
-        print("## DEBUG obs_space.original_space ###", obs_space.original_space)
+        #print("## DEBUG obs_space.original_space ###", obs_space.original_space)
         self.shared_layers = nn.Sequential(
             nn.Linear(
                 in_features= obs_space.original_space["obs"].n,
@@ -32,7 +32,13 @@ class DenseModel(ActorCriticModel):
 
         action_mask = input_dict["action_mask"]
 
-        logits, _ = super().forward(input_dict, state, seq_lens)
+        x = input_dict["obs"]
+        x = self.shared_layers(x)
+        # actor outputs
+        logits = self.actor_layers(x)
+
+        # compute value
+        self._value_out = self.critic_layers(x)
 
         inf_mask = torch.clamp(torch.log(action_mask), FLOAT_MIN, FLOAT_MAX)
         return logits + inf_mask, None
