@@ -109,14 +109,16 @@ if __name__ == "__main__":
     }
 
     stop = {
-        "training_iteration": 30,
+        "training_iteration": 20,
         "timesteps_total": 200000,
         #"episode_reward_mean": args.stop_reward,
     }
 
-    # results = tune.run("PPO", config=config, stop=stop)
-    results = tune.run("DQN", config=config_dqn, stop=stop)
+    results = tune.run("PPO", config=config, stop=stop, checkpoint_at_end=True)
+    # results = tune.run("DQN", config=config_dqn, stop=stop)
 
-    print("Results:", results['episode_reward_mean'])
+    best_checkpoint = results.best_checkpoint()
+
+    print("best_checkpoint:", best_checkpoint)
     ray.shutdown()
 

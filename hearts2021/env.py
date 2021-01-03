@@ -193,7 +193,16 @@ class HeartsEnv0(gym.Env):
         else:
             self.table_card = CARD_NULL
         return (self.table_card, self.me), points, done, {}
-
+'''
+he = HeartsEnv0(10)
+obs = he.reset()
+done = False
+while not done:
+    c = random.sample(he.me, 1)[0]
+    print(he.me, he.table_card)
+    obs, points, done, _ = he.step(c)
+    print("Card {}, Points {}".format(c,points))
+'''
 class HeartsAlphaEnv:
 
     def __init__(self, n_cards):
