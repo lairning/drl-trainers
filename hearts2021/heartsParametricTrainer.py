@@ -134,10 +134,14 @@ if __name__ == "__main__":
     done = False
     obs = he.reset()
     from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
-    print("## DEBUG Agent ", agent.workers.local_worker().preprocessors[DEFAULT_POLICY_ID]._obs_space, obs)
+    print("## DEBUG Agent ", agent.workers.local_worker().preprocessors)
     while not done:
-        print("## DEBUG Agent ", agent.workers.local_worker().preprocessors[DEFAULT_POLICY_ID]._obs_space)
         action = agent.compute_action(obs)
+        # Code equivalent ao Compute action
+        state = []
+        preprocessed = agent.workers.local_worker().preprocessors[DEFAULT_POLICY_ID].transform(obs)
+        filtered_obs = agent.workers.local_worker().filters[DEFAULT_POLICY_ID](preprocessed, update=False)
+        # end of Compute Action
         print(he.env.me, he.env.table_card, he._decode_card(action))
         obs, reward, done, info = he.step(action)
         episode_reward += reward
