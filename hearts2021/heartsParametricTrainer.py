@@ -90,7 +90,7 @@ if __name__ == "__main__":
         },
         "vf_share_layers": True,
         #"lr": grid_search([1e-2, 1e-4, 1e-6]),  # try different lrs
-        "num_workers": 5,  # parallelism
+        "num_workers": 0,  # parallelism
         "framework": "torch" # if args.torch else "tf",
     }
 
@@ -134,9 +134,9 @@ if __name__ == "__main__":
     done = False
     obs = he.reset()
     from ray.rllib.models.preprocessors import get_preprocessor
-    prep  = get_preprocessor(he.observation_space)(he.observation_space)
+    prep  = get_preprocessor(he.observation_space["obs"])(he.observation_space["obs"])
     print("### DEBUG ###",obs)
-    print("### DEBUG ###",prep.transform(obs))
+    print("### DEBUG ###",prep.transform(obs["obs"]))
     #from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
     #print("## DEBUG Agent ", agent.workers.local_worker().preprocessors[DEFAULT_POLICY_ID].__dict__)
     '''    while not done:
