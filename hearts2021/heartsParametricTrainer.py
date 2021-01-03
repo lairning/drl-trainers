@@ -12,6 +12,7 @@ from ray.tune.registry import register_env
 from ray.rllib.models import ModelCatalog
 from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFC
 from ray.rllib.agents.dqn.dqn_torch_model import DQNTorchModel
+import ray.rllib.agents.ppo as ppo
 from ray.rllib.utils.framework import try_import_tf, try_import_torch
 from ray.rllib.utils.torch_ops import FLOAT_MIN, FLOAT_MAX
 
@@ -118,7 +119,25 @@ if __name__ == "__main__":
     # results = tune.run("DQN", config=config_dqn, stop=stop)
 
     best_checkpoint = results.get_best_checkpoint(trial=results.get_best_trial("episode_reward_mean"),
-                                                  metric="episode_reward_mean")
+                                                  metric="episode_reward_mean",
+                                                  mode="max")
+
+    agent = ppo.PPOTrainer(config=config, env=HeartsParametricEnv(10))
+    agent.restore(best_checkpoint)
+
+    # instantiate env class
+    he = HeartsParametricEnv(10)
+
+    # run until episode ends
+    episode_reward = 0
+    done = False
+    obs = he.reset()
+    while not done:
+        action = agent.compute_action(obs)
+        print(he.env.me, he.env.table_card, he._decode_card(action))
+        obs, reward, done, info = he.step(action)
+        episode_reward += reward
+        print(episode_reward,reward)
 
     print("best_checkpoint:", best_checkpoint)
     ray.shutdown()
