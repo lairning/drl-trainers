@@ -139,12 +139,12 @@ if __name__ == "__main__":
     print("### DEBUG ###",prep.transform(obs))
     #from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
     #print("## DEBUG Agent ", agent.workers.local_worker().preprocessors[DEFAULT_POLICY_ID].__dict__)
-'''    while not done:
-        action = agent.compute_action(obs)
-        print(he.env.me, he.env.table_card, he._decode_card(action))
-        obs, reward, done, info = he.step(action)
-        episode_reward += reward
-        print(episode_reward,reward)
-'''
+    '''    while not done:
+            action = agent.compute_action(obs)
+            print(he.env.me, he.env.table_card, he._decode_card(action))
+            obs, reward, done, info = he.step(action)
+            episode_reward += reward
+            print(episode_reward,reward)
+    '''
     ray.shutdown()
 
