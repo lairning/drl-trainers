@@ -136,8 +136,8 @@ if __name__ == "__main__":
     #from ray.rllib.models.preprocessors import get_preprocessor
     #prep  = get_preprocessor(he.observation_space["obs"])(he.observation_space["obs"])
     policy = agent.get_policy()
-    print("### DEBUG ###", policy.model.__dict__ )
-    print("### DEBUG ###", policy.model.preprocessor.__dict__)
+    print("### DEBUG ###", policy.model.action_model.__dict__ )
+    print("### DEBUG ###", policy.model.action_model.summary())
     #print("### DEBUG ###",obs)
     #print("### DEBUG ###",prep.transform(obs["obs"]))
     #from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
