@@ -118,7 +118,8 @@ if __name__ == "__main__":
     results = tune.run("PPO", config=config, stop=stop, checkpoint_at_end=True)
     # results = tune.run("DQN", config=config_dqn, stop=stop)
 
-    best_checkpoint = results.get_best_checkpoint(trial=results.get_best_trial("episode_reward_mean"),
+    best_checkpoint = results.get_best_checkpoint(trial=results.get_best_trial(metric="episode_reward_mean",
+                                                                               mode="max"),
                                                   metric="episode_reward_mean",
                                                   mode="max")
 
