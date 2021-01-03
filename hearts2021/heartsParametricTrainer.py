@@ -110,7 +110,7 @@ if __name__ == "__main__":
     }
 
     stop = {
-        "training_iteration": 10,
+        "training_iteration": 2,
         "timesteps_total": 200000,
         #"episode_reward_mean": args.stop_reward,
     }
