@@ -69,9 +69,6 @@ if __name__ == "__main__":
 
     results = tune.run(args.run, stop=stop, config=config)
 
-    if args.as_test:
-        check_learning_achieved(results, args.stop_reward)
-
     best_checkpoint = results.get_best_checkpoint(trial=results.get_best_trial(metric="episode_reward_mean",
                                                                                mode="max"),
                                                   metric="episode_reward_mean",
