@@ -168,22 +168,15 @@ class HeartsEnv0(gym.Env):
         points = 0
         if played_card not in self.me:
             return (self.table_card, self.me), -50, True, {}
-        if played_card.naipe == "C":
-            if self.table_card.naipe == 'C':
-                if played_card.number >= self.table_card.number:
-                    points = -2
-                else:
-                    points = 2
-            elif self.table_card.naipe in {c.naipe for c in self.me}:
-                points = -5
+        if self.table_card.naipe in {c.naipe for c in self.me} and played_card.naipe != self.table_card.naipe:
+            return (self.table_card, self.me), -20, True, {}
+        if played_card.naipe == "C" and self.table_card.naipe == "C":
+            if played_card.number >= self.table_card.number:
+                points = -4
             else:
-                points = 1
-        else:
-            if self.table_card.naipe == 'C':
-                if self.table_card.naipe in {c.naipe for c in self.me}:
-                    points = -5
-                else:
-                    points = 1
+                points = 4
+        elif played_card.naipe == "C" and self.table_card.naipe == "C":
+            points = 1
         self.me.remove(played_card)
         done = len(self.me) == 0
         if not done:
