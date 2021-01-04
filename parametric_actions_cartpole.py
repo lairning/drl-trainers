@@ -11,150 +11,21 @@ Working configurations are given below.
 """
 
 import argparse
-
-import gym
-from gym.spaces import Box, Dict, Discrete
-import numpy as np
-import random
+import os
 
 import ray
 from ray import tune
+from ray.rllib.examples.env.parametric_actions_cartpole import \
+    ParametricActionsCartPole
+from ray.rllib.examples.models.parametric_actions_model import \
+    ParametricActionsModel, TorchParametricActionsModel
 from ray.rllib.models import ModelCatalog
+from ray.rllib.utils.test_utils import check_learning_achieved
 from ray.tune.registry import register_env
-
-
-class ParametricActionsCartPole(gym.Env):
-    """Parametric action version of CartPole.
-    In this env there are only ever two valid actions, but we pretend there are
-    actually up to `max_avail_actions` actions that can be taken, and the two
-    valid actions are randomly hidden among this set.
-    At each step, we emit a dict of:
-        - the actual cart observation
-        - a mask of valid actions (e.g., [0, 0, 1, 0, 0, 1] for 6 max avail)
-        - the list of action embeddings (w/ zeroes for invalid actions) (e.g.,
-            [[0, 0],
-             [0, 0],
-             [-0.2322, -0.2569],
-             [0, 0],
-             [0, 0],
-             [0.7878, 1.2297]] for max_avail_actions=6)
-    In a real environment, the actions embeddings would be larger than two
-    units of course, and also there would be a variable number of valid actions
-    per step instead of always [LEFT, RIGHT].
-    """
-
-    def __init__(self, max_avail_actions):
-        # Use simple random 2-unit action embeddings for [LEFT, RIGHT]
-        self.left_action_embed = np.random.randn(2)
-        self.right_action_embed = np.random.randn(2)
-        self.action_space = Discrete(max_avail_actions)
-        self.wrapped = gym.make("CartPole-v0")
-        self.observation_space = Dict({
-            "action_mask": Box(0, 1, shape=(max_avail_actions,)),
-            "avail_actions": Box(-10, 10, shape=(max_avail_actions, 2)),
-            "cart": self.wrapped.observation_space,
-        })
-
-    def update_avail_actions(self):
-        self.action_assignments = np.array([[0., 0.]] * self.action_space.n)
-        self.action_mask = np.array([0.] * self.action_space.n)
-        self.left_idx, self.right_idx = random.sample(
-            range(self.action_space.n), 2)
-        self.action_assignments[self.left_idx] = self.left_action_embed
-        self.action_assignments[self.right_idx] = self.right_action_embed
-        self.action_mask[self.left_idx] = 1
-        self.action_mask[self.right_idx] = 1
-
-    def reset(self):
-        self.update_avail_actions()
-        return {
-            "action_mask": self.action_mask,
-            "avail_actions": self.action_assignments,
-            "cart": self.wrapped.reset(),
-        }
-
-    def step(self, action):
-        if action == self.left_idx:
-            actual_action = 0
-        elif action == self.right_idx:
-            actual_action = 1
-        else:
-            raise ValueError(
-                "Chosen action was not one of the non-zero action embeddings",
-                action, self.action_assignments, self.action_mask,
-                self.left_idx, self.right_idx)
-        orig_obs, rew, done, info = self.wrapped.step(actual_action)
-        self.update_avail_actions()
-        obs = {
-            "action_mask": self.action_mask,
-            "avail_actions": self.action_assignments,
-            "cart": orig_obs,
-        }
-        return obs, rew, done, info
-
-
-from ray.rllib.agents.dqn.distributional_q_tf_model import \
-    DistributionalQTFModel
-from ray.rllib.agents import ppo
-from ray.rllib.models.tf.fcnet_v2 import FullyConnectedNetwork
-# from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
-from ray.rllib.utils.framework import try_import_tf
-
-tf1, tf, tfv = try_import_tf()
-
-
-class ParametricActionsModel(DistributionalQTFModel):
-    """Parametric action model that handles the dot product and masking.
-    This assumes the outputs are logits for a single Categorical action dist.
-    Getting this to work with a more complex output (e.g., if the action space
-    is a tuple of several distributions) is also possible but left as an
-    exercise to the reader.
-    """
-
-    def __init__(self,
-                 obs_space,
-                 action_space,
-                 num_outputs,
-                 model_config,
-                 name,
-                 true_obs_shape=(4,),
-                 action_embed_size=2,
-                 **kw):
-        super(ParametricActionsModel, self).__init__(
-            obs_space, action_space, num_outputs, model_config, name, **kw)
-        self.action_embed_model = FullyConnectedNetwork(
-            Box(-1, 1, shape=true_obs_shape), action_space, action_embed_size,
-            model_config, name + "_action_embed")
-        self.register_variables(self.action_embed_model.variables())
-
-    def forward(self, input_dict, state, seq_lens):
-        # Extract the available actions tensor from the observation.
-        avail_actions = input_dict["obs"]["avail_actions"]
-        action_mask = input_dict["obs"]["action_mask"]
-
-        # Compute the predicted action embedding
-        action_embed, _ = self.action_embed_model({
-            "obs": input_dict["obs"]["cart"]
-        })
-
-        # Expand the model output to [BATCH, 1, EMBED_SIZE]. Note that the
-        # avail actions tensor is of shape [BATCH, MAX_ACTIONS, EMBED_SIZE].
-        intent_vector = tf.expand_dims(action_embed, 1)
-
-        # Batch dot product => shape of logits is [BATCH, MAX_ACTIONS].
-        action_logits = tf.reduce_sum(avail_actions * intent_vector, axis=2)
-
-        # Mask out invalid actions (use tf.float32.min for stability)
-        inf_mask = tf.maximum(tf.math.log(action_mask), tf.float32.min)
-        return action_logits + inf_mask, state
-
-    def value_function(self):
-        return self.action_embed_model.value_function()
-
+import ray.rllib.agents.ppo as ppo
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--run", type=str, default="PPO")
-parser.add_argument("--as-test", action="store_true")
 parser.add_argument("--stop-iters", type=int, default=200)
 parser.add_argument("--stop-reward", type=float, default=150.0)
 parser.add_argument("--stop-timesteps", type=int, default=100000)
@@ -164,28 +35,31 @@ if __name__ == "__main__":
     ray.init()
 
     register_env("pa_cartpole", lambda _: ParametricActionsCartPole(10))
-    ModelCatalog.register_custom_model(
-        "pa_model", ParametricActionsModel)
+    ModelCatalog.register_custom_model("pa_model", TorchParametricActionsModel)
 
     if args.run == "DQN":
         cfg = {
             # TODO(ekl) we need to set these to prevent the masked values
             # from being further processed in DistributionalQModel, which
             # would mess up the masking. It is possible to support these if we
-            # defined a a custom DistributionalQModel that is aware of masking.
+            # defined a custom DistributionalQModel that is aware of masking.
             "hiddens": [],
             "dueling": False,
         }
     else:
         cfg = {}
 
-    config = dict({
-        "env": "pa_cartpole",
-        "model": {
-            "custom_model": "pa_model",
+    config = dict(
+        {
+            "env": "pa_cartpole",
+            "model": {
+                "custom_model": "pa_model",
+            },
+            # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
+            "num_workers": 0,
+            "framework": "torch",
         },
-        "num_workers": 0,
-    }, **cfg)
+        **cfg)
 
     stop = {
         "training_iteration": args.stop_iters,
@@ -193,12 +67,30 @@ if __name__ == "__main__":
         "episode_reward_mean": args.stop_reward,
     }
 
-    # results = tune.run(args.run, stop=stop, config=config)
-    results = tune.run(ppo.PPOTrainer, stop=stop, config=config)
+    results = tune.run(args.run, stop=stop, config=config)
 
-    if results.trials[0].last_result["episode_reward_mean"] < args.stop_reward:
-        raise ValueError("`stop-reward` of {} not reached!".format(args.stop_reward))
+    if args.as_test:
+        check_learning_achieved(results, args.stop_reward)
 
-    print("ok")
+    best_checkpoint = results.get_best_checkpoint(trial=results.get_best_trial(metric="episode_reward_mean",
+                                                                               mode="max"),
+                                                  metric="episode_reward_mean",
+                                                  mode="max")
+
+    agent = ppo.PPOTrainer(config=config, env="HeartsEnv")
+    agent.restore(best_checkpoint)
+
+    # instantiate env class
+    env = ParametricActionsCartPole(10)
+
+    # run until episode ends
+    episode_reward = 0
+    done = False
+    obs = env.reset()
+    while not done:
+        action = agent.compute_action(obs)
+        obs, reward, done, info = env.step(action)
+        episode_reward += reward
+        print(episode_reward,reward)
 
     ray.shutdown()
