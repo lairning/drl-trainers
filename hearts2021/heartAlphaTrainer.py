@@ -78,7 +78,7 @@ if __name__ == "__main__":
 
     tune.run(
         "contrib/AlphaZero",
-        stop={"training_iteration": 50},
+        stop={"training_iteration": 30},
         max_failures=0,
         #resources_per_trial={"cpu": 2, "extra_cpu":2},
         config={
