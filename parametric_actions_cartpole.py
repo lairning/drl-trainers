@@ -85,6 +85,7 @@ if __name__ == "__main__":
     done = False
     obs = env.reset()
     while not done:
+        print(obs)
         action = agent.compute_action(obs)
         obs, reward, done, info = env.step(action)
         episode_reward += reward
