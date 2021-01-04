@@ -176,7 +176,7 @@ class HeartsEnv0(gym.Env):
                     points = -4
                 else:
                     points = 4
-            elif played_card.naipe == "C" and self.table_card.naipe == "C":
+            elif played_card.naipe == "C" or self.table_card.naipe == "C":
                 points = 1
         self.me.remove(played_card)
         done = len(self.me) == 0
