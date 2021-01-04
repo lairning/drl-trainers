@@ -123,6 +123,8 @@ if __name__ == "__main__":
                                                   metric="episode_reward_mean",
                                                   mode="max")
 
+    print(best_checkpoint)
+
     agent = ppo.PPOTrainer(config=config, env="HeartsEnv")
     agent.restore(best_checkpoint)
 
