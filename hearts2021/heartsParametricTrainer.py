@@ -110,7 +110,7 @@ if __name__ == "__main__":
     }
 
     stop = {
-        "training_iteration": 1,
+        "training_iteration": 50,
         "timesteps_total": 200000,
         #"episode_reward_mean": args.stop_reward,
     }
@@ -143,7 +143,7 @@ if __name__ == "__main__":
     #from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
     #print("## DEBUG Agent ", agent.workers.local_worker().preprocessors[DEFAULT_POLICY_ID].__dict__)
     while not done:
-        print(obs)
+        #print(obs)
         action = agent.compute_action(obs)
         print(he.env.me, he.env.table_card, he._decode_card(action))
         obs, reward, done, info = he.step(action)
