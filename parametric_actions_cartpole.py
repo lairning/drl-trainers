@@ -67,7 +67,7 @@ if __name__ == "__main__":
         "episode_reward_mean": args.stop_reward,
     }
 
-    results = tune.run(args.run, stop=stop, config=config)
+    results = tune.run(args.run, stop=stop, config=config, checkpoint_at_end=True)
 
     best_checkpoint = results.get_best_checkpoint(trial=results.get_best_trial(metric="episode_reward_mean",
                                                                                mode="max"),
