@@ -74,7 +74,7 @@ if __name__ == "__main__":
                                                   metric="episode_reward_mean",
                                                   mode="max")
 
-    agent = ppo.PPOTrainer(config=config, env="HeartsEnv")
+    agent = ppo.PPOTrainer(config=config, env="pa_cartpole")
     agent.restore(best_checkpoint)
 
     # instantiate env class
