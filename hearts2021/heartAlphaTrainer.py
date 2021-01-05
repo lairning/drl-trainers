@@ -77,7 +77,15 @@ if __name__ == "__main__":
         lambda _: HeartsAlphaEnv(10)
     )
 
-    config = {
+    config_default = {
+                 "env"                    : "HeartsEnv",
+                 "num_workers"            : 0,
+                 "model"                  : {
+                     "custom_model": "dense_model",
+                 },
+             }
+
+    config_tuned = {
                  "env"                    : "HeartsEnv",
                  "num_workers"            : 0,
                  "rollout_fragment_length": 200,
@@ -102,6 +110,9 @@ if __name__ == "__main__":
                  },
              }
 
+    config = config_tuned
+    config["num_workers"] = 5
+
     results = tune.run(
         "contrib/AlphaZero",
         stop={"training_iteration": 30},
@@ -116,6 +127,8 @@ if __name__ == "__main__":
                                                   mode="max")
 
     print(best_checkpoint)
+
+    config["num_workers"] = 0
 
     agent = AlphaZeroTrainer(config=config, env="HeartsEnv")
     agent.restore(best_checkpoint)
