@@ -90,7 +90,7 @@ if __name__ == "__main__":
         },
         "vf_share_layers": False,
         #"lr": grid_search([1e-2, 1e-4, 1e-6]),  # try different lrs
-        "num_workers": 0,  # parallelism
+        "num_workers": 5,  # parallelism
         "framework": "torch" # if args.torch else "tf",
     }
 
@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
     print(best_checkpoint)
 
-    agent = ppo.PPOTrainer(config=config, env="HeartsEnv")
+    agent = ppo.PPOTrainer(config=config2, env="HeartsEnv")
     agent.restore(best_checkpoint)
 
     # instantiate env class
