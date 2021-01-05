@@ -56,7 +56,7 @@ class HeartsNetwork(TorchModelV2, nn.Module):
             self._value_branch_separate = self._build_hidden_layers(obs_space=obs_space, hiddens=hiddens,
                                                                     activation=activation)
         self._value_branch = SlimFC(
-            in_size=int(np.product(obs_space.shape)),
+            in_size=hiddens[-1],
             out_size=1,
             initializer=normc_initializer(1.0),
             activation_fn=None)
