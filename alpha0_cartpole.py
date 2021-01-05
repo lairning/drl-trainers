@@ -6,25 +6,20 @@ import ray
 from ray import tune
 from ray.rllib.contrib.alpha_zero.models.custom_torch_models import DenseModel
 from ray.rllib.contrib.alpha_zero.environments.cartpole import CartPole
+from ray.rllib.contrib.alpha_zero.core.alpha_zero_trainer import AlphaZeroTrainer
 from ray.rllib.models.catalog import ModelCatalog
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--num-workers", default=6, type=int)
     parser.add_argument("--training-iteration", default=10000, type=int)
-    parser.add_argument("--ray-num-cpus", default=7, type=int)
     args = parser.parse_args()
     ray.init(num_cpus=args.ray_num_cpus)
 
     ModelCatalog.register_custom_model("dense_model", DenseModel)
 
-    tune.run(
-        "contrib/AlphaZero",
-        stop={"training_iteration": args.training_iteration},
-        max_failures=0,
-        config={
+    config = {
             "env": CartPole,
-            "num_workers": args.num_workers,
+            "num_workers": 5,
             "rollout_fragment_length": 50,
             "train_batch_size": 500,
             "sgd_minibatch_size": 64,
@@ -45,5 +40,39 @@ if __name__ == "__main__":
             "model": {
                 "custom_model": "dense_model",
             },
-        },
+        }
+
+    results = tune.run(
+        "contrib/AlphaZero",
+        stop={"training_iteration": args.training_iteration},
+        checkpoint_at_end=True,
+        max_failures=0,
+        config=config
     )
+
+    best_checkpoint = results.get_best_checkpoint(trial=results.get_best_trial(metric="episode_reward_mean",
+                                                                               mode="max"),
+                                                  metric="episode_reward_mean",
+                                                  mode="max")
+
+    config["num_workers"] = 0
+
+    agent = AlphaZeroTrainer(config=config, env=CartPole)
+    agent.restore(best_checkpoint)
+
+    # instantiate env class
+    env = CartPole()
+
+    # run until episode ends
+    episode_reward = 0
+    done = False
+    obs = env.reset()
+    while not done:
+        print(obs)
+        action = agent.compute_action(obs)
+        obs, reward, done, info = env.step(action)
+        episode_reward += reward
+
+    print(episode_reward)
+
+    ray.shutdown()
