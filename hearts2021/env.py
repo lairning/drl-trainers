@@ -197,52 +197,6 @@ while not done:
     obs, points, done, _ = he.step(c)
     print("Card {}, Points {}".format(c,points))
 '''
-class HeartsAlphaEnv:
-
-    def __init__(self, n_cards):
-        self.env = HeartsEnv0(n_cards)
-        self.action_space = Discrete(4*HAND_SIZE)
-        self.observation_space = Dict({
-            "obs": Discrete(4*HAND_SIZE),
-            "action_mask": Box(low=0, high=1, shape=(self.action_space.n, ))
-        })
-        self.running_reward = 0
-
-    def _get_mask(self, possible_cards):
-        mask = np.zeros(self.action_space.n)
-        for c in possible_cards:
-            i = CARD_SET.index(c)
-            mask[i] = 1
-        return mask
-
-    def _encode_card(self,c):
-        if c == CARD_NULL:
-            return 0
-        return CARD_SET.index(c)
-
-    def _decode_card(self, i):
-        return CARD_SET[i]
-
-    def reset(self):
-        self.running_reward = 0
-        table_card, possible_cards = self.env.reset()
-        return {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}
-
-    def step(self, action):
-        c = self._decode_card(action)
-        (table_card, possible_cards), rew, done, info = self.env.step(c)
-        self.running_reward += rew
-        score = self.running_reward if done else 0
-        return {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}, score, done, info
-
-    def set_state(self, state):
-        self.running_reward = state[1]
-        self.env = deepcopy(state[0])
-        return {"obs": self._encode_card(self.env.table_card), "action_mask": self._get_mask(self.env.me)}
-
-    def get_state(self):
-        return deepcopy(self.env), self.running_reward
-
 TRUE_OBSERVATION_SPACE = Box(0,1,shape=(4*HAND_SIZE,))
 
 class HeartsParametricEnv:
@@ -278,6 +232,31 @@ class HeartsParametricEnv:
         c = self._decode_card(action)
         (table_card, possible_cards), rew, done, info = self.env.step(c)
         return {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}, rew, done, info
+
+class HeartsAlphaEnv(HeartsParametricEnv):
+
+    def __init__(self, n_cards):
+        super(HeartsAlphaEnv, self).__init__(n_cards)
+        self.running_reward = 0
+
+    def reset(self):
+        self.running_reward = 0
+        return super(HeartsAlphaEnv, self).reset()
+
+    def step(self, action):
+        obs, rew, done, info = super(HeartsAlphaEnv, self).step(action)
+        self.running_reward += rew
+        score = self.running_reward if done else 0
+        return obs, score, done, info
+
+    def set_state(self, state):
+        self.running_reward = state[1]
+        self.env = deepcopy(state[0])
+        return {"obs": self._encode_card(self.env.table_card), "action_mask": self._get_mask(self.env.me)}
+
+    def get_state(self):
+        return deepcopy(self.env), self.running_reward
+
 
 '''
 he = HeartsParametricEnv(10)

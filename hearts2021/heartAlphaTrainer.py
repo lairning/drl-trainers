@@ -113,7 +113,7 @@ if __name__ == "__main__":
 
     results = tune.run(
         "contrib/AlphaZero",
-        stop={"training_iteration": 30},
+        stop={"training_iteration": 5},
         checkpoint_at_end = True,
         max_failures=0,
         config=config,
