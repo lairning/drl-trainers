@@ -13,10 +13,11 @@ from ray.rllib.models import ModelCatalog
 from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFC
 from ray.rllib.agents.dqn.dqn_torch_model import DQNTorchModel
 import ray.rllib.agents.ppo as ppo
-from ray.rllib.utils.framework import try_import_tf, try_import_torch
+from ray.rllib.utils.framework import try_import_torch
 from ray.rllib.utils.torch_ops import FLOAT_MIN, FLOAT_MAX
 
 from env import HeartsParametricEnv, TRUE_OBSERVATION_SPACE
+from models import HeartsNetwork
 
 torch, nn = try_import_torch()
 
@@ -43,11 +44,11 @@ class TorchParametricActionsModel(DQNTorchModel):
         DQNTorchModel.__init__(self, obs_space, action_space, num_outputs,
                                model_config, name, **kw)
 
-        self.action_model = TorchFC(
+        self.action_model = HeartsNetwork(
             TRUE_OBSERVATION_SPACE, action_space, num_outputs,
-            model_config, name + "_action_embed")
+            model_config, name + "_custom_hearts")
 
-        print(self.action_model.summary())
+        print(self.action_model)
 
 
     def forward(self, input_dict, state, seq_lens):
@@ -126,7 +127,6 @@ if __name__ == "__main__":
 
     agent = ppo.PPOTrainer(config=config, env="HeartsEnv")
     agent.restore(best_checkpoint)
-
 
     # instantiate env class
     he = HeartsParametricEnv(10)
