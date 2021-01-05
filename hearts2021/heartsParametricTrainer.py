@@ -146,15 +146,6 @@ if __name__ == "__main__":
     episode_reward = 0
     done = False
     obs = he.reset()
-    #from ray.rllib.models.preprocessors import get_preprocessor
-    #prep  = get_preprocessor(he.observation_space["obs"])(he.observation_space["obs"])
-    #policy = agent.get_policy()
-    #print("### DEBUG ###", policy.model.action_model.__dict__ )
-    #print("### DEBUG ###", policy.model.action_model.summary())
-    #print("### DEBUG ###",obs)
-    #print("### DEBUG ###",prep.transform(obs["obs"]))
-    #from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
-    #print("## DEBUG Agent ", agent.workers.local_worker().preprocessors[DEFAULT_POLICY_ID].__dict__)
     while not done:
         #print(obs)
         action = agent.compute_action(obs)

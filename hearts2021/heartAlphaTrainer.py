@@ -1,6 +1,7 @@
 import ray
 from ray import tune
 from ray.rllib.contrib.alpha_zero.models.custom_torch_models import ActorCriticModel, convert_to_tensor
+from ray.rllib.contrib.alpha_zero.core.alpha_zero_trainer import AlphaZeroTrainer
 from ray.rllib.models.catalog import ModelCatalog
 from ray.tune.registry import register_env
 from env import HeartsAlphaEnv
@@ -76,33 +77,62 @@ if __name__ == "__main__":
         lambda _: HeartsAlphaEnv(10)
     )
 
-    tune.run(
+    config = {
+                 "env"                    : "HeartsEnv",
+                 "num_workers"            : 5,
+                 "rollout_fragment_length": 200,
+                 "train_batch_size"       : 4000,
+                 "sgd_minibatch_size"     : 128,
+                 "lr"                     : 1e-4,
+                 "num_sgd_iter"           : 30,
+                 "mcts_config"            : {
+                     "puct_coefficient"   : 1.0,
+                     "num_simulations"    : 30,
+                     "temperature"        : 1.5,
+                     "dirichlet_epsilon"  : 0.25,
+                     "dirichlet_noise"    : 0.03,
+                     "argmax_tree_policy" : False,
+                     "add_dirichlet_noise": True,
+                 },
+                 "ranked_rewards"         : {
+                     "enable": True,
+                 },
+                 "model"                  : {
+                     "custom_model": "dense_model",
+                 },
+             }
+
+    results = tune.run(
         "contrib/AlphaZero",
         stop={"training_iteration": 30},
+        checkpoint_at_end = True,
         max_failures=0,
-        #resources_per_trial={"cpu": 2, "extra_cpu":2},
-        config={
-            "env": "HeartsEnv",
-            "num_workers": 5,
-            "rollout_fragment_length": 200,
-            "train_batch_size": 4000,
-            "sgd_minibatch_size": 128,
-            "lr": 1e-4,
-            "num_sgd_iter": 30,
-            "mcts_config": {
-                "puct_coefficient": 1.0,
-                "num_simulations": 30,
-                "temperature": 1.5,
-                "dirichlet_epsilon": 0.25,
-                "dirichlet_noise": 0.03,
-                "argmax_tree_policy": False,
-                "add_dirichlet_noise": True,
-            },
-            "ranked_rewards": {
-                "enable": True,
-            },
-            "model": {
-                "custom_model": "dense_model",
-            },
-        },
+        config=config,
     )
+
+    best_checkpoint = results.get_best_checkpoint(trial=results.get_best_trial(metric="episode_reward_mean",
+                                                                               mode="max"),
+                                                  metric="episode_reward_mean",
+                                                  mode="max")
+
+    print(best_checkpoint)
+
+    agent = AlphaZeroTrainer(config=config, env="HeartsEnv")
+    agent.restore(best_checkpoint)
+
+    # instantiate env class
+    he = HeartsAlphaEnv(10)
+
+    # run until episode ends
+    episode_reward = 0
+    done = False
+    obs = he.reset()
+    while not done:
+        #print(obs)
+        action = agent.compute_action(obs)
+        print(he.env.me, he.env.table_card, he._decode_card(action))
+        obs, reward, done, info = he.step(action)
+        episode_reward += reward
+        print(episode_reward,reward)
+
+    ray.shutdown()
