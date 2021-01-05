@@ -22,12 +22,12 @@ torch, nn = try_import_torch()
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("--run", type=str, default="PPO")
-parser.add_argument("--torch", action="store_true")
-parser.add_argument("--as-test", action="store_true")
+#parser.add_argument("--run", type=str, default="PPO")
+#parser.add_argument("--torch", action="store_true")
+#parser.add_argument("--as-test", action="store_true")
 parser.add_argument("--stop-iters", type=int, default=50)
-parser.add_argument("--stop-timesteps", type=int, default=100000)
-parser.add_argument("--stop-reward", type=float, default=0.1)
+#parser.add_argument("--stop-timesteps", type=int, default=100000)
+parser.add_argument("--stop-reward", type=float, default=4)
 
 
 class TorchParametricActionsModel(DQNTorchModel):
@@ -47,7 +47,7 @@ class TorchParametricActionsModel(DQNTorchModel):
             TRUE_OBSERVATION_SPACE, action_space, num_outputs,
             model_config, name + "_action_embed")
 
-        print(self.action_model)
+        print(self.action_model.summary())
 
 
     def forward(self, input_dict, state, seq_lens):
@@ -106,7 +106,6 @@ if __name__ == "__main__":
 
     stop = {
         "training_iteration": args.stop_iters,
-        "timesteps_total": 200000,
         #"episode_reward_mean": args.stop_reward,
     }
 
@@ -127,6 +126,7 @@ if __name__ == "__main__":
 
     agent = ppo.PPOTrainer(config=config, env="HeartsEnv")
     agent.restore(best_checkpoint)
+
 
     # instantiate env class
     he = HeartsParametricEnv(10)
