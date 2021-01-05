@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     config = {
                  "env"                    : "HeartsEnv",
-                 "num_workers"            : 5,
+                 "num_workers"            : 0,
                  "rollout_fragment_length": 200,
                  "train_batch_size"       : 4000,
                  "sgd_minibatch_size"     : 128,
