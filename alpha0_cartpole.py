@@ -11,7 +11,7 @@ from ray.rllib.models.catalog import ModelCatalog
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--training-iteration", default=10000, type=int)
+    parser.add_argument("--training-iteration", default=2, type=int)
     args = parser.parse_args()
     ray.init()
 
