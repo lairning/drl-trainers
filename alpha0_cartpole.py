@@ -13,7 +13,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--training-iteration", default=10000, type=int)
     args = parser.parse_args()
-    ray.init(num_cpus=args.ray_num_cpus)
+    ray.init()
 
     ModelCatalog.register_custom_model("dense_model", DenseModel)
 
