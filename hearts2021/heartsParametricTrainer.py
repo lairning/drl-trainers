@@ -19,7 +19,8 @@ from ray.rllib.utils.torch_ops import FLOAT_MIN, FLOAT_MAX
 from env import HeartsParametricEnv, TRUE_OBSERVATION_SPACE
 
 torch, nn = try_import_torch()
-'''
+
+import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--run", type=str, default="PPO")
 parser.add_argument("--torch", action="store_true")
@@ -27,7 +28,7 @@ parser.add_argument("--as-test", action="store_true")
 parser.add_argument("--stop-iters", type=int, default=50)
 parser.add_argument("--stop-timesteps", type=int, default=100000)
 parser.add_argument("--stop-reward", type=float, default=0.1)
-'''
+
 
 class TorchParametricActionsModel(DQNTorchModel):
     """PyTorch version of above ParametricActionsModel."""
@@ -72,6 +73,7 @@ class TorchParametricActionsModel(DQNTorchModel):
 
 if __name__ == "__main__":
 
+    args = parser.parse_args()
     ray.init()
 
     ModelCatalog.register_custom_model(
@@ -103,7 +105,7 @@ if __name__ == "__main__":
     }
 
     stop = {
-        "training_iteration": 60,
+        "training_iteration": args.stop_iters,
         "timesteps_total": 200000,
         #"episode_reward_mean": args.stop_reward,
     }
