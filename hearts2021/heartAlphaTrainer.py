@@ -79,7 +79,6 @@ if __name__ == "__main__":
 
     config_default = {
                  "env"                    : "HeartsEnv",
-                 "num_workers"            : 0,
                  "model"                  : {
                      "custom_model": "dense_model",
                  },
@@ -87,7 +86,6 @@ if __name__ == "__main__":
 
     config_tuned = {
                  "env"                    : "HeartsEnv",
-                 "num_workers"            : 0,
                  "rollout_fragment_length": 200,
                  "train_batch_size"       : 4000,
                  "sgd_minibatch_size"     : 128,
