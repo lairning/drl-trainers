@@ -110,7 +110,7 @@ if __name__ == "__main__":
                  },
              }
 
-    config = config_tuned
+    config = config_default
     config["num_workers"] = 5
 
     results = tune.run(

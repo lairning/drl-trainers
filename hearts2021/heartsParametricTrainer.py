@@ -83,40 +83,22 @@ if __name__ == "__main__":
         lambda _: HeartsParametricEnv(10)
     )
 
-    config = {
+    config_default = {
+        "env": "HeartsEnv",
+        "model": {
+            "custom_model": "my_model",
+        },
+        "vf_share_layers": False,
+        "framework": "torch" # if args.torch else "tf",
+    }
+
+    config_tuned = {
         "env": "HeartsEnv",
         "model": {
             "custom_model": "my_model",
         },
         "vf_share_layers": False,
         #"lr": grid_search([1e-2, 1e-4, 1e-6]),  # try different lrs
-        "num_workers": 5,  # parallelism
-        "framework": "torch" # if args.torch else "tf",
-    }
-
-    config2 = {
-        "env": "HeartsEnv",
-        "model": {
-            "custom_model": "my_model",
-        },
-        "vf_share_layers": False,
-        #"lr": grid_search([1e-2, 1e-4, 1e-6]),  # try different lrs
-        "num_workers": 0,  # parallelism
-        "framework": "torch" # if args.torch else "tf",
-    }
-
-    config_dqn = {
-        "env": "HeartsEnv",  # or "corridor" if registered above
-        # "env_config": {"n_cards": 6,},
-        # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
-        # "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
-        "model": {
-            "custom_model": "my_model",
-        },
-        "hiddens": [],
-        "dueling": False,
-        #"lr": grid_search([1e-2, 1e-4, 1e-6]),  # try different lrs
-        "num_workers": 5,  # parallelism
         "framework": "torch" # if args.torch else "tf",
     }
 
@@ -125,6 +107,9 @@ if __name__ == "__main__":
         "timesteps_total": 200000,
         #"episode_reward_mean": args.stop_reward,
     }
+
+    config = config_default
+    config["num_workers"] = 5
 
     results = tune.run("PPO", config=config, stop=stop, checkpoint_at_end=True)
     # results = tune.run("DQN", config=config_dqn, stop=stop)
@@ -136,7 +121,9 @@ if __name__ == "__main__":
 
     print(best_checkpoint)
 
-    agent = ppo.PPOTrainer(config=config2, env="HeartsEnv")
+    config["num_workers"] = 0
+
+    agent = ppo.PPOTrainer(config=config, env="HeartsEnv")
     agent.restore(best_checkpoint)
 
     # instantiate env class
