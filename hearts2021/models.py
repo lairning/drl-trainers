@@ -48,13 +48,6 @@ class HeartsNetwork(TorchModelV2, nn.Module):
         self.vf_share_layers = model_config.get("vf_share_layers")
         self.free_log_std = False
 
-        if num_outputs:
-            self._logits = SlimFC(
-                in_size=hiddens[-1],
-                out_size=num_outputs,
-                initializer=normc_initializer(0.01),
-                activation_fn=None)
-
         self._hidden_layers = self._build_hidden_layers(obs_space=obs_space, hiddens=hiddens, activation=activation)
 
         self._value_branch_separate = None
@@ -62,6 +55,12 @@ class HeartsNetwork(TorchModelV2, nn.Module):
             # Build a parallel set of hidden layers for the value net.
             self._value_branch_separate = self._build_hidden_layers(obs_space=obs_space, hiddens=hiddens,
                                                                     activation=activation)
+        self._logits = SlimFC(
+            in_size=hiddens[-1],
+            out_size=num_outputs,
+            initializer=normc_initializer(0.01),
+            activation_fn=None)
+
         self._value_branch = SlimFC(
             in_size=hiddens[-1],
             out_size=1,
