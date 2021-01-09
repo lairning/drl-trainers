@@ -56,11 +56,13 @@ class TorchParametricActionsModel(DQNTorchModel):
         print("### DEBUG input_dict['obs']['obs'] ###",
               input_dict["obs"]["obs"][0].shape,
               input_dict["obs"]["obs"][1].shape)
+
+        obs = torch.cat((input_dict["obs"]["obs"][0],input_dict["obs"]["obs"][1]),1)
         #print(input_dict["obs"]["obs"])
 
         # Compute the predicted action embedding
         action_param, _ = self.action_model({
-            "obs": input_dict["obs"]["obs"]
+            "obs": obs
         })
 
         # Mask out invalid actions (use -inf to tag invalid).
