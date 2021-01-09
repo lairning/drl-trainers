@@ -110,7 +110,7 @@ class FullyConnectedNetwork(TorchModelV2, nn.Module):
         self._logits = None
 
         # Create layers 0 to second-last.
-        for size in hiddens[:]:
+        for size in hiddens[:-1]:
             layers.append(
                 SlimFC(
                     in_size=prev_layer_size,
@@ -118,6 +118,41 @@ class FullyConnectedNetwork(TorchModelV2, nn.Module):
                     initializer=normc_initializer(1.0),
                     activation_fn=activation))
             prev_layer_size = size
+
+        # The last layer is adjusted to be of size num_outputs, but it's a
+        # layer with activation.
+        if no_final_linear and num_outputs:
+            layers.append(
+                SlimFC(
+                    in_size=prev_layer_size,
+                    out_size=num_outputs,
+                    initializer=normc_initializer(1.0),
+                    activation_fn=activation))
+            prev_layer_size = num_outputs
+        # Finish the layers with the provided sizes (`hiddens`), plus -
+        # iff num_outputs > 0 - a last linear layer of size num_outputs.
+        else:
+            if len(hiddens) > 0:
+                layers.append(
+                    SlimFC(
+                        in_size=prev_layer_size,
+                        out_size=hiddens[-1],
+                        initializer=normc_initializer(1.0),
+                        activation_fn=activation))
+                prev_layer_size = hiddens[-1]
+            if num_outputs:
+                self._logits = SlimFC(
+                    in_size=prev_layer_size,
+                    out_size=num_outputs,
+                    initializer=normc_initializer(0.01),
+                    activation_fn=None)
+            else:
+                self.num_outputs = (
+                    [int(np.product(obs_space.shape))] + hiddens[-1:])[-1]
+
+        # Layer to add the log std vars to the state-dependent means.
+        if self.free_log_std and self._logits:
+            self._append_free_log_std = AppendBiasLayer(num_outputs)
 
         self._hidden_layers = nn.Sequential(*layers)
 
