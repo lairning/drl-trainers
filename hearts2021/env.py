@@ -203,7 +203,7 @@ while not done:
     print("Card {}, Points {}".format(c,points))
 '''
 # TRUE_OBSERVATION_SPACE = Box(0,1,shape=(4*HAND_SIZE,))
-TRUE_OBSERVATION_SPACE = Box(low=0, high=4*HAND_SIZE-1)
+TRUE_OBSERVATION_SPACE = Box(low=0, high=4*HAND_SIZE-1, shape=(1,))
 
 class HeartsParametricEnv:
 
@@ -211,7 +211,7 @@ class HeartsParametricEnv:
         self.env = HeartsEnv0(n_cards)
         self.action_space = Discrete(4*HAND_SIZE)
         self.observation_space = Dict({
-            "obs": Box(low=0, high=4*HAND_SIZE-1), #We are going to create an embbedd
+            "obs": Box(low=0, high=4*HAND_SIZE-1, shape=(1,)), #We are going to create an embbedd
             "action_mask": Box(low=0, high=1, shape=(self.action_space.n, ))
         })
 
