@@ -203,7 +203,9 @@ while not done:
     obs, points, done, _ = he.step(c)
     print("Card {}, Points {}".format(c,points))
 '''
-TRUE_OBSERVATION_SPACE = Box(0,1,shape=(4*HAND_SIZE,))
+#TRUE_OBSERVATION_SPACE = Box(0,1,shape=(4*HAND_SIZE,))
+TRUE_OBSERVATION_SPACE = Box(low=[0,0,0,0,card.ACE - HAND_SIZE + 1],
+                             high=[1,1,1,1,card.ACE + 1])
 
 class HeartsParametricEnv:
 
