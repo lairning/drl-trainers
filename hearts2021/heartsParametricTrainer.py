@@ -17,7 +17,7 @@ from ray.rllib.utils.framework import try_import_torch
 from ray.rllib.utils.torch_ops import FLOAT_MIN, FLOAT_MAX
 
 from env import HeartsParametricEnv, TRUE_OBSERVATION_SPACE
-from models import FullyConnectedNetwork #HeartsNetwork
+from models import FullyConnectedNetwork, HeartsNetwork
 
 torch, nn = try_import_torch()
 
@@ -44,7 +44,7 @@ class TorchParametricActionsModel(DQNTorchModel):
         DQNTorchModel.__init__(self, obs_space, action_space, num_outputs,
                                model_config, name, **kw)
 
-        self.action_model = FullyConnectedNetwork(
+        self.action_model = HeartsNetwork(
             TRUE_OBSERVATION_SPACE, action_space, num_outputs,
             model_config, name + "_custom_hearts")
 

@@ -72,8 +72,6 @@ class HeartsNetwork(TorchModelV2, nn.Module):
         # Holds the last input, in case value branch is separate.
         self._last_flat_in = None
 
-        self._logits = None
-
     @override(TorchModelV2)
     def forward(self, input_dict: Dict[str, TensorType],
                 state: List[TensorType],
