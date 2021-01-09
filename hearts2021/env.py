@@ -236,6 +236,14 @@ class HeartsParametricEnv:
     def reset(self):
         (table_card, possible_cards) = self.env.reset()
         obs = {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}
+        tmp_space = Box(low=0, high=1, shape=(self.action_space.n, ))
+        assert tmp_space.contains(obs["action_mask"]), \
+            "Invalid Obervation {} for {}".format(obs["action_mask"],tmp_space)
+        tmp_space = Tuple((Discrete(len(NAIPE_SET)),
+                          Box(low=card.ACE - HAND_SIZE + 1, high=card.ACE + 1, shape=(1,))))
+        assert tmp_space.contains(obs["obs"]), \
+            "Invalid Obervation {} for {}".format(obs["obs"],tmp_space)
+        assert self.observation_space.contains(obs), "Invalid Obervation {}".format(obs)
         assert self.observation_space.contains(obs), "Invalid Obervation {}".format(obs)
         return obs
 
