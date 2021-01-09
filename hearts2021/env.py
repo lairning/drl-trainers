@@ -173,9 +173,14 @@ class HeartsEnv0(gym.Env):
         else:
             if played_card.naipe == "C" and self.table_card.naipe == "C":
                 if played_card.number >= self.table_card.number:
-                    points = -4
+                    points = -2
                 else:
-                    points = 4
+                    points = 2
+            elif played_card.naipe == self.table_card.naipe:
+                if played_card.number >= self.table_card.number:
+                    points = -1
+                else:
+                    points = 1
             elif played_card.naipe == "C" or self.table_card.naipe == "C":
                 points = 1
         self.me.remove(played_card)
