@@ -44,7 +44,7 @@ class TorchParametricActionsModel(DQNTorchModel):
         DQNTorchModel.__init__(self, obs_space, action_space, num_outputs,
                                model_config, name, **kw)
 
-        self.action_model = HeartsNetwork(
+        self.action_model = FullyConnectedNetwork(
             TRUE_OBSERVATION_SPACE, action_space, num_outputs,
             model_config, name + "_custom_hearts")
 
