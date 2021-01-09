@@ -21,6 +21,7 @@ CARD_DE_POINTS = HAND_SIZE
 CARD_SET = [card.Card(naipe, number) for naipe in ["P", "O", "E", "C"] for number in
             range(card.ACE - HAND_SIZE + 1, card.ACE + 1)]
 
+NAIPE_SET = ["P","O","E","C"]
 
 class HeartsEnv(gym.Env):
 
@@ -210,7 +211,8 @@ class HeartsParametricEnv:
         self.env = HeartsEnv0(n_cards)
         self.action_space = Discrete(4*HAND_SIZE)
         self.observation_space = Dict({
-            "obs": Discrete(4*HAND_SIZE),
+            "obs": Tuple((Discrete(len(NAIPE_SET)),
+                          Box(low=card.ACE - HAND_SIZE + 1, high=card.ACE + 1, shape=(1,)))),
             "action_mask": Box(low=0, high=1, shape=(self.action_space.n, ))
         })
 
@@ -224,7 +226,7 @@ class HeartsParametricEnv:
     def _encode_card(self,c):
         if c == CARD_NULL:
             return 0
-        return CARD_SET.index(c)
+        return [NAIPE_SET.index(c.naipe),[c.number]]
 
     def _decode_card(self, i):
         return CARD_SET[i]
