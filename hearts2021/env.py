@@ -235,12 +235,16 @@ class HeartsParametricEnv:
 
     def reset(self):
         (table_card, possible_cards) = self.env.reset()
-        return {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}
+        obs = {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}
+        assert self.observation_space.contains(obs), "Invalid Obervation {}".format(obs)
+        return obs
 
     def step(self, action):
         c = self._decode_card(action)
         (table_card, possible_cards), rew, done, info = self.env.step(c)
-        return {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}, rew, done, info
+        obs = {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}
+        assert self.observation_space.contains(obs), "Invalid Obervation {}".format(obs)
+        return obs, rew, done, info
 
 class HeartsAlphaEnv(HeartsParametricEnv):
 
