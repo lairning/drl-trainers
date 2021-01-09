@@ -5,6 +5,7 @@ This example shows:
   - using Tune for grid search
 You can visualize experiment results in ~/ray_results using TensorBoard.
 """
+import numpy as np
 
 import ray
 from ray import tune
@@ -52,7 +53,7 @@ class TorchParametricActionsModel(DQNTorchModel):
         # Extract the available actions tensor from the observation.
         action_mask = input_dict["obs"]["action_mask"]
 
-        print("### DEBUG input_dict['obs']['obs'] ###", input_dict["obs"]["obs"].shape)
+        print("### DEBUG input_dict['obs']['obs'] ###", np.array(input_dict["obs"]["obs"]).shape)
         #print(input_dict["obs"]["obs"])
 
         # Compute the predicted action embedding
