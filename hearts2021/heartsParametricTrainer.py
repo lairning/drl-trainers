@@ -48,13 +48,14 @@ class TorchParametricActionsModel(DQNTorchModel):
             TRUE_OBSERVATION_SPACE, action_space, num_outputs,
             model_config, name + "_custom_hearts")
 
-        print(self.action_model)
+        print("### DEBUG obs_space ###",obs_space)
 
 
     def forward(self, input_dict, state, seq_lens):
         # Extract the available actions tensor from the observation.
         action_mask = input_dict["obs"]["action_mask"]
 
+        print("### DEBUG input_dict['obs']['obs'] ###", input_dict["obs"]["obs"])
         #print(input_dict["obs"]["obs"])
 
         # Compute the predicted action embedding
