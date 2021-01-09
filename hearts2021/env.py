@@ -204,8 +204,8 @@ while not done:
     print("Card {}, Points {}".format(c,points))
 '''
 #TRUE_OBSERVATION_SPACE = Box(0,1,shape=(4*HAND_SIZE,))
-TRUE_OBSERVATION_SPACE = Box(low=[0,0,0,0,card.ACE - HAND_SIZE + 1],
-                             high=[1,1,1,1,card.ACE + 1])
+TRUE_OBSERVATION_SPACE = Box(low=np.array([0,0,0,0,card.ACE - HAND_SIZE + 1]),
+                             high=np.array([1,1,1,1,card.ACE + 1]))
 
 class HeartsParametricEnv:
 
