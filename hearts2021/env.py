@@ -21,7 +21,6 @@ CARD_DE_POINTS = HAND_SIZE
 CARD_SET = [card.Card(naipe, number) for naipe in ["P", "O", "E", "C"] for number in
             range(card.ACE - HAND_SIZE + 1, card.ACE + 1)]
 
-NAIPE_SET = ["P","O","E","C"]
 
 class HeartsEnv(gym.Env):
 
@@ -203,9 +202,7 @@ while not done:
     obs, points, done, _ = he.step(c)
     print("Card {}, Points {}".format(c,points))
 '''
-#TRUE_OBSERVATION_SPACE = Box(0,1,shape=(4*HAND_SIZE,))
-TRUE_OBSERVATION_SPACE = Box(low=np.array([0,0,0,0,card.ACE - HAND_SIZE + 1]),
-                             high=np.array([1,1,1,1,card.ACE + 1]))
+TRUE_OBSERVATION_SPACE = Box(0,1,shape=(4*HAND_SIZE,))
 
 class HeartsParametricEnv:
 
@@ -213,8 +210,7 @@ class HeartsParametricEnv:
         self.env = HeartsEnv0(n_cards)
         self.action_space = Discrete(4*HAND_SIZE)
         self.observation_space = Dict({
-            "obs": Tuple((Discrete(len(NAIPE_SET)),
-                          Box(low=card.ACE - HAND_SIZE + 1, high=card.ACE + 1, shape=(1,)))),
+            "obs": Discrete(4*HAND_SIZE),
             "action_mask": Box(low=0, high=1, shape=(self.action_space.n, ))
         })
 
@@ -227,36 +223,20 @@ class HeartsParametricEnv:
 
     def _encode_card(self,c):
         if c == CARD_NULL:
-            return [0,[card.ACE - HAND_SIZE + 1]]
-        return [NAIPE_SET.index(c.naipe),[c.number]]
+            return 0
+        return CARD_SET.index(c)
 
     def _decode_card(self, i):
         return CARD_SET[i]
 
     def reset(self):
         (table_card, possible_cards) = self.env.reset()
-        obs = {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}
-        tmp_space = Box(low=0, high=1, shape=(self.action_space.n, ))
-        assert tmp_space.contains(obs["action_mask"]), \
-            "Invalid Obervation {} for {}".format(obs["action_mask"],tmp_space)
-        tmp_space = Tuple((Discrete(len(NAIPE_SET)),
-                          Box(low=card.ACE - HAND_SIZE + 1, high=card.ACE + 1, shape=(1,))))
-        assert tmp_space.contains(obs["obs"]), \
-            "Invalid Obervation {} for {}".format(obs["obs"],tmp_space)
-        return obs
+        return {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}
 
     def step(self, action):
         c = self._decode_card(action)
         (table_card, possible_cards), rew, done, info = self.env.step(c)
-        obs = {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}
-        tmp_space = Box(low=0, high=1, shape=(self.action_space.n, ))
-        assert tmp_space.contains(obs["action_mask"]), \
-            "Invalid Obervation {} for {}".format(obs["action_mask"],tmp_space)
-        tmp_space = Tuple((Discrete(len(NAIPE_SET)),
-                          Box(low=card.ACE - HAND_SIZE + 1, high=card.ACE + 1, shape=(1,))))
-        assert tmp_space.contains(obs["obs"]), \
-            "Invalid Obervation {} for {}".format(obs["obs"],tmp_space)
-        return obs, rew, done, info
+        return {"obs": self._encode_card(table_card), "action_mask": self._get_mask(possible_cards)}, rew, done, info
 
 class HeartsAlphaEnv(HeartsParametricEnv):
 
