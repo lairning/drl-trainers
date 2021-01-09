@@ -50,7 +50,7 @@ class HeartsNetwork(TorchModelV2, nn.Module):
 
         if num_outputs:
             self._logits = SlimFC(
-                in_size=prev_layer_size,
+                in_size=hiddens[-1],
                 out_size=num_outputs,
                 initializer=normc_initializer(0.01),
                 activation_fn=None)
@@ -115,7 +115,7 @@ class FullyConnectedNetwork(TorchModelV2, nn.Module):
         self._logits = None
 
         # Create layers 0 to second-last.
-        for size in hiddens[:]:
+        for size in hiddens:
             layers.append(
                 SlimFC(
                     in_size=prev_layer_size,
