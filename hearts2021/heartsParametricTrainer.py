@@ -53,7 +53,9 @@ class TorchParametricActionsModel(DQNTorchModel):
         # Extract the available actions tensor from the observation.
         action_mask = input_dict["obs"]["action_mask"]
 
-        print("### DEBUG input_dict['obs']['obs'] ###", input_dict["obs"]["obs"])
+        print("### DEBUG input_dict['obs']['obs'] ###",
+              input_dict["obs"]["obs"][0].shape,
+              input_dict["obs"]["obs"][1].shape)
         #print(input_dict["obs"]["obs"])
 
         # Compute the predicted action embedding
