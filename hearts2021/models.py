@@ -119,6 +119,10 @@ class FullyConnectedNetwork(TorchModelV2, nn.Module):
                     activation_fn=activation))
             prev_layer_size = size
 
+
+        print("### DEBUG ####",no_final_linear)
+        print("### DEBUG ####",num_outputs)
+        print("### DEBUG ####",hiddens)
         # The last layer is adjusted to be of size num_outputs, but it's a
         # layer with activation.
         if no_final_linear and num_outputs:
