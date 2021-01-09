@@ -115,7 +115,7 @@ if __name__ == "__main__":
     }
 
     config = config_default
-    config["num_workers"] = 0
+    config["num_workers"] = 5
 
     results = tune.run("PPO", config=config, stop=stop, checkpoint_at_end=True)
     # results = tune.run("DQN", config=config_dqn, stop=stop)
