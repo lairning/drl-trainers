@@ -224,7 +224,7 @@ class HeartsParametricEnv:
 
     def _encode_card(self,c):
         if c == CARD_NULL:
-            return 0
+            return np.array([0])
         return np.array([CARD_SET.index(c)])
 
     def _decode_card(self, i):
