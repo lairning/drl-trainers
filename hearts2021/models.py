@@ -81,12 +81,12 @@ class HeartsNetwork(TorchModelV2, nn.Module):
     def forward(self, input_dict: Dict[str, TensorType],
                 state: List[TensorType],
                 seq_lens: TensorType) -> (TensorType, List[TensorType]):
-        print("### DEBUG input_dict['obs_flat'][0] ###",input_dict['obs_flat'].shape,input_dict['obs_flat'][0])
+        #print("### DEBUG input_dict['obs_flat'][0] ###",input_dict['obs_flat'].shape,input_dict['obs_flat'][0])
         obs = input_dict["obs_flat"].long() #.float()
         print("### DEBUG obs ###",obs[0])
         obs_emb = self._embedd(obs)
+        print("### DEBUG obs_emb[0] ###", obs_emb[0])
         self._last_flat_in = obs.reshape(obs_emb.shape[0], -1)
-        print("### DEBUG last_flat_in ###",self._last_flat_in[0])
         self._features = self._hidden_layers(self._last_flat_in)
         print("### DEBUG _features ###",self._features[0])
         logits = self._logits(self._features) if self._logits else \
