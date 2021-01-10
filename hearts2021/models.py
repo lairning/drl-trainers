@@ -82,7 +82,7 @@ class HeartsNetwork(TorchModelV2, nn.Module):
                 state: List[TensorType],
                 seq_lens: TensorType) -> (TensorType, List[TensorType]):
         # print("### DEBUG input_dict['obs_flat'].shape ###",input_dict['obs_flat'].shape)
-        obs = input_dict["obs_flat"].float()
+        obs = input_dict["obs_flat"] #.float()
         obs_emb = self._embedd(obs)
         self._last_flat_in = obs.reshape(obs_emb.shape[0], -1)
         self._features = self._hidden_layers(self._last_flat_in)
