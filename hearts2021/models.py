@@ -52,7 +52,7 @@ class HeartsNetwork(TorchModelV2, nn.Module):
         self.vf_share_layers = model_config.get("vf_share_layers")
         self.free_log_std = False
 
-        self._embedd = nn.Embedding(int(obs_space.high[0]),EMBEDD_SIZE)
+        self._embedd = nn.Embedding(int(obs_space.high[0])+1,EMBEDD_SIZE)
 
         self._hidden_layers = self._build_hidden_layers(obs_space=obs_space, hiddens=hiddens, activation=activation)
 
