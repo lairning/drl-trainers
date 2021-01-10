@@ -209,9 +209,10 @@ class HeartsParametricEnv:
 
     def __init__(self, n_cards):
         self.env = HeartsEnv0(n_cards)
+        self.card_set = [CARD_NULL]+CARD_SET
         self.action_space = Discrete(4*HAND_SIZE)
         self.observation_space = Dict({
-            "obs": Box(low=0, high=4*HAND_SIZE-1, shape=(1,)), #We are going to create an embbedd
+            "obs": Box(low=0, high=len(self.card_set)-1, shape=(1,)), #We are going to create an embbedd
             "action_mask": Box(low=0, high=1, shape=(self.action_space.n, ))
         })
 
@@ -223,9 +224,7 @@ class HeartsParametricEnv:
         return mask
 
     def _encode_card(self,c):
-        if c == CARD_NULL:
-            return np.array([0])
-        return np.array([CARD_SET.index(c)])
+        return np.array([self.card_set.index(c)])
 
     def _decode_card(self, i):
         return CARD_SET[i]

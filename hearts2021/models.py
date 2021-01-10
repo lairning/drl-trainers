@@ -13,7 +13,9 @@ class HeartsNetwork(TorchModelV2, nn.Module):
     """Customized PPO network."""
 
     def _build_hidden_layers(self, obs_space: gym.spaces.Space, hiddens: list, activation: str):
+
         layers = []
+
         prev_layer_size = int(np.product(obs_space.shape))
 
         # Create layers. Assumes no_final_linear = False
@@ -75,6 +77,7 @@ class HeartsNetwork(TorchModelV2, nn.Module):
     def forward(self, input_dict: Dict[str, TensorType],
                 state: List[TensorType],
                 seq_lens: TensorType) -> (TensorType, List[TensorType]):
+        print("### DEBUG input_dict['obs_flat'].shape ###",input_dict['obs_flat'].shape)
         obs = input_dict["obs_flat"].float()
         self._last_flat_in = obs.reshape(obs.shape[0], -1)
         self._features = self._hidden_layers(self._last_flat_in)
