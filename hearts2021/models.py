@@ -9,7 +9,7 @@ from ray.rllib.models.torch.misc import SlimFC, normc_initializer, AppendBiasLay
 
 torch, nn = try_import_torch()
 
-EMBEDD_SIZE = 3
+EMBEDD_SIZE = 2
 
 class HeartsNetwork(TorchModelV2, nn.Module):
     """Customized PPO network."""
@@ -43,7 +43,7 @@ class HeartsNetwork(TorchModelV2, nn.Module):
         # Nonlinearity for fully connected net (tanh, relu). Default: "tanh"
         activation = model_config.get("fcnet_activation")
         # Number of hidden layers for fully connected net. Default: [256, 256]
-        hiddens = model_config.get("fcnet_hiddens", [])
+        hiddens = [64,64]#model_config.get("fcnet_hiddens", [])
         # Whether to skip the final linear layer used to resize the hidden layer
         # outputs to size `num_outputs`. If True, then the last hidden layer
         # should already match num_outputs.
