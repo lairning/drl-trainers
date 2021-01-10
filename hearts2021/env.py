@@ -124,6 +124,20 @@ class HeartsEnv(gym.Env):
 
         return obs, obs_points, done, {}
 
+# Hearts Environment simplification (only the last trick is considered)
+class HeartsEnv1(HeartsEnv):
+
+    def __init__(self, other_players: list, hand_size=7):
+        super(HeartsEnv1, self).__init__(other_players,hand_size)
+
+    def reset(self):
+        obs, possible_cards = super(HeartsEnv1, self).reset()
+        return (obs[-1], possible_cards)
+
+    def step(self, played_card: card.Card):
+        obs, obs_points, done, info = super(HeartsEnv1, self).step(played_card)
+
+
 ''' Environment Test
 he = HeartsEnv(other_players=[RandomPlayer("P1"), RandomPlayer("P2"), RandomPlayer("P3")], hand_size=13)
 

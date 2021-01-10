@@ -57,8 +57,10 @@ class HeartsNetwork(TorchModelV2, nn.Module):
         self._hidden_layers = self._build_hidden_layers(obs_space=obs_space, hiddens=hiddens, activation=activation)
 
         self._value_branch_separate = None
+        self._value_embedding = None
         if not self.vf_share_layers:
             # Build a parallel set of hidden layers for the value net.
+            self._value_embedding = nn.Embedding(int(obs_space.high[0]) + 1, EMBEDD_SIZE)
             self._value_branch_separate = self._build_hidden_layers(obs_space=obs_space, hiddens=hiddens,
                                                                     activation=activation)
         self._logits = SlimFC(
@@ -82,10 +84,13 @@ class HeartsNetwork(TorchModelV2, nn.Module):
                 state: List[TensorType],
                 seq_lens: TensorType) -> (TensorType, List[TensorType]):
         obs = input_dict["obs_flat"].long() #.float()
-        obs_emb = self._embedd(obs)
-        self._last_flat_in = obs_emb.reshape(obs_emb.shape[0], -1)
-        self._features = self._hidden_layers(self._last_flat_in)
+#        obs_emb = self._embedd(obs)
+#        self._last_flat_in = obs_emb.reshape(obs_emb.shape[0], -1)
+#        self._features = self._hidden_layers(self._last_flat_in)
         #print("### DEBUG _features ###",self._features[0])
+        self._last_flat_in = obs.reshape(obs.shape[0], -1)
+        obs_emb = self._embedd(self._last_flat_in)
+        self._features = self._hidden_layers(obs_emb.reshape(obs_emb.shape[0], -1))
         logits = self._logits(self._features) if self._logits else \
             self._features
         if self.free_log_std:
@@ -95,9 +100,10 @@ class HeartsNetwork(TorchModelV2, nn.Module):
     @override(TorchModelV2)
     def value_function(self) -> TensorType:
         assert self._features is not None, "must call forward() first"
+        obs_emb = self._value_embedding(self._last_flat_in)
         if self._value_branch_separate:
             return self._value_branch(
-                self._value_branch_separate(self._last_flat_in)).squeeze(1)
+                self._value_branch_separate(obs_emb.reshape(obs_emb.shape[0], -1))).squeeze(1)
         else:
             return self._value_branch(self._features).squeeze(1)
 
