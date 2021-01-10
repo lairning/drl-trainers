@@ -43,7 +43,7 @@ class HeartsNetwork(TorchModelV2, nn.Module):
         # Nonlinearity for fully connected net (tanh, relu). Default: "tanh"
         activation = model_config.get("fcnet_activation")
         # Number of hidden layers for fully connected net. Default: [256, 256]
-        hiddens = [128,128]#model_config.get("fcnet_hiddens", [])
+        hiddens = [256,256] # model_config.get("fcnet_hiddens", [])
         # Whether to skip the final linear layer used to resize the hidden layer
         # outputs to size `num_outputs`. If True, then the last hidden layer
         # should already match num_outputs.
@@ -52,7 +52,7 @@ class HeartsNetwork(TorchModelV2, nn.Module):
         self.vf_share_layers = model_config.get("vf_share_layers")
         self.free_log_std = False
 
-        self._embedd = nn.Embedding(21,EMBEDD_SIZE)
+        self._embedd = nn.Embedding(int(obs_space.high[0]),EMBEDD_SIZE)
 
         self._hidden_layers = self._build_hidden_layers(obs_space=obs_space, hiddens=hiddens, activation=activation)
 
