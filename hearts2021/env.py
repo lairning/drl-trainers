@@ -14,7 +14,7 @@ Gym Environment Used to Train a DRL Agent
 A Random Play opponent will be first implemented
 '''
 N_PLAYERS = 4
-HAND_SIZE = 8
+HAND_SIZE = 13
 CHEAT_POINTS = 2 * HAND_SIZE
 MAX_POINTS = 2 * HAND_SIZE
 CARD_DE_POINTS = HAND_SIZE
