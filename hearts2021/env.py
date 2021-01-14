@@ -68,6 +68,7 @@ class HeartsEnv(gym.Env):
         # The pair (None, CARD_NULL) corresponds to (player, card)
         self.observation = [[(None, CARD_NULL) for _ in range(N_PLAYERS)] for _ in range(self.hand_size)]
         deck = CARD_SET.copy()
+        tmp = deck.copy()
         for p in self.players:
             for i in range(self.hand_size):
                 c = random.sample(deck, 1)[0]
@@ -75,7 +76,7 @@ class HeartsEnv(gym.Env):
                 p.cards.add(c)
             # p.player_list = player_list
         if sum(len(p.cards) for p in self.players):
-            print("DEBUG 00", deck)
+            print("DEBUG 00", tmp)
             print("DEBUG 01", {p.name: p.cards for p in self.players})
         first_player = None
         for p in self.players:
