@@ -151,7 +151,7 @@ if __name__ == "__main__":
             obs, reward, done, info = he.step(action)
             episode_reward += reward
             #print("Points :",reward)
-        for l in print(he.env.observation):
+        for l in he.env.observation:
             print(l)
         print("Total:",episode_reward)
 
