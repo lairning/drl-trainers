@@ -1,5 +1,7 @@
 """Example of using training on CartPole."""
 
+# ToDo: report Error in compute actions
+
 import argparse
 
 import ray
@@ -66,7 +68,7 @@ if __name__ == "__main__":
     # run until episode ends
     episode_reward = 0
     done = False
-    obs = env.reset()
+    obs = env.reset
     while not done:
         print(obs)
         action = agent.compute_action(obs)
