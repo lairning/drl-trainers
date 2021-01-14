@@ -127,7 +127,7 @@ if __name__ == "__main__":
 
         print(best_checkpoint)
     else:
-        best_checkpoint = "/home/md/ray_results/PPO/PPO_HeartsEnv_f33bc_00000_0_2021-01-14_22-17-47/checkpoint_100/checkpoint-100"
+        best_checkpoint = "/home/md/ray_results/PPO/PPO_HeartsEnv_e0bd8_00000_0_2021-01-14_23-57-29/checkpoint_100/checkpoint-100"
 
     config["num_workers"] = 0
 
