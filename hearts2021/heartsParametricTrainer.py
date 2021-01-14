@@ -16,8 +16,8 @@ import ray.rllib.agents.ppo as ppo
 from ray.rllib.utils.framework import try_import_torch
 from ray.rllib.utils.torch_ops import FLOAT_MIN, FLOAT_MAX
 
-from env import HeartsParametricEnv, TRUE_OBSERVATION_SPACE
-from models import FullyConnectedNetwork, HeartsNetwork
+from env import HeartsParametricEnv1, TRUE_OBSERVATION_SPACE1
+from models import HeartsNetwork
 
 torch, nn = try_import_torch()
 
@@ -45,7 +45,7 @@ class TorchParametricActionsModel(DQNTorchModel):
                                model_config, name, **kw)
 
         self.action_model = HeartsNetwork(
-            TRUE_OBSERVATION_SPACE, action_space, num_outputs,
+            TRUE_OBSERVATION_SPACE1, action_space, num_outputs,
             model_config, name + "_custom_hearts")
 
         #print(self.action_model)
@@ -82,8 +82,7 @@ if __name__ == "__main__":
 
     register_env(
         "HeartsEnv",
-        #lambda _: HeartsEnv()
-        lambda _: HeartsParametricEnv(10)
+        lambda _: HeartsParametricEnv1(random_players=True)
     )
 
     config_default = {
@@ -129,7 +128,7 @@ if __name__ == "__main__":
     agent.restore(best_checkpoint)
 
     # instantiate env class
-    he = HeartsParametricEnv(10)
+    he = HeartsParametricEnv1(random_players=True)
 
     # run until episode ends
     episode_reward = 0

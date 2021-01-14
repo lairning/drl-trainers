@@ -9,16 +9,16 @@ from ray.rllib.models.torch.misc import SlimFC, normc_initializer, AppendBiasLay
 
 torch, nn = try_import_torch()
 
-EMBEDD_SIZE = 3
+CARD_EMBEDD_SIZE = 3
 
 class HeartsNetwork(TorchModelV2, nn.Module):
     """Customized PPO network."""
 
-    def _build_hidden_layers(self, obs_space: gym.spaces.Space, hiddens: list, activation: str):
+    def _build_hidden_layers(self, first_layer_size: int, hiddens: list, activation: str):
 
         layers = []
 
-        prev_layer_size = EMBEDD_SIZE #int(np.product(obs_space.shape))
+        prev_layer_size = first_layer_size
 
         # Create layers. Assumes no_final_linear = False
         for size in hiddens:
@@ -47,21 +47,27 @@ class HeartsNetwork(TorchModelV2, nn.Module):
         # Whether to skip the final linear layer used to resize the hidden layer
         # outputs to size `num_outputs`. If True, then the last hidden layer
         # should already match num_outputs.
-        no_final_linear = False
+        # no_final_linear = False
 
         self.vf_share_layers = model_config.get("vf_share_layers")
         self.free_log_std = False
 
-        self._embedd = nn.Embedding(int(obs_space.high[0])+1,EMBEDD_SIZE)
+        self._embedd = nn.Embedding(int(obs_space['cards'].high[0]) + 1, CARD_EMBEDD_SIZE)
 
-        self._hidden_layers = self._build_hidden_layers(obs_space=obs_space, hiddens=hiddens, activation=activation)
+        # Player Hot Encoded = 3 * Number of Cards Played per trick = 4
+        # CARD_EMBEDD_SIZE * Number of Cards Played per trick = 4
+        first_layer_size = 3*4+CARD_EMBEDD_SIZE*4
+        self._hidden_layers = self._build_hidden_layers(first_layer_size=first_layer_size,
+                                                        hiddens=hiddens,
+                                                        activation=activation)
 
         self._value_branch_separate = None
         self._value_embedding = None
         if not self.vf_share_layers:
             # Build a parallel set of hidden layers for the value net.
-            self._value_embedding = nn.Embedding(int(obs_space.high[0]) + 1, EMBEDD_SIZE)
-            self._value_branch_separate = self._build_hidden_layers(obs_space=obs_space, hiddens=hiddens,
+            self._value_embedding = nn.Embedding(int(obs_space['cards'].high[0]) + 1, CARD_EMBEDD_SIZE)
+            self._value_branch_separate = self._build_hidden_layers(first_layer_size=first_layer_size,
+                                                                    hiddens=hiddens,
                                                                     activation=activation)
         self._logits = SlimFC(
             in_size=hiddens[-1],
@@ -77,20 +83,19 @@ class HeartsNetwork(TorchModelV2, nn.Module):
         # Holds the current "base" output (before logits layer).
         self._features = None
         # Holds the last input, in case value branch is separate.
-        self._last_flat_in = None
+        self._cards_in = None
+        self._players_in = None
 
     @override(TorchModelV2)
     def forward(self, input_dict: Dict[str, TensorType],
                 state: List[TensorType],
                 seq_lens: TensorType) -> (TensorType, List[TensorType]):
-        obs = input_dict["obs_flat"].long() #.float()
-#        obs_emb = self._embedd(obs)
-#        self._last_flat_in = obs_emb.reshape(obs_emb.shape[0], -1)
-#        self._features = self._hidden_layers(self._last_flat_in)
-        #print("### DEBUG _features ###",self._features[0])
-        self._last_flat_in = obs.reshape(obs.shape[0], -1)
-        obs_emb = self._embedd(self._last_flat_in)
-        self._features = self._hidden_layers(obs_emb.reshape(obs_emb.shape[0], -1))
+        self._cards_in = torch.LongTensor(input_dict['obs']['cards'])
+        self._players_in = torch.LongTensor(input_dict['obs']['players'])
+        emb_cards = self._embedd(self._cards_in)
+        obs_flat = torch.cat((self._players_in, emb_cards), 1)
+        print("#######   DEBUG   ######:",input_dict.shape, obs_flat.shape)
+        self._features = self._hidden_layers(obs_flat.reshape(obs_flat.shape[0], -1))
         logits = self._logits(self._features) if self._logits else \
             self._features
         if self.free_log_std:
@@ -100,10 +105,11 @@ class HeartsNetwork(TorchModelV2, nn.Module):
     @override(TorchModelV2)
     def value_function(self) -> TensorType:
         assert self._features is not None, "must call forward() first"
-        obs_emb = self._value_embedding(self._last_flat_in)
         if self._value_branch_separate:
+            emb_cards = self._value_embedding(self._cards_in)
+            obs_flat = torch.cat((self._players_in, emb_cards), 1)
             return self._value_branch(
-                self._value_branch_separate(obs_emb.reshape(obs_emb.shape[0], -1))).squeeze(1)
+                self._value_branch_separate(obs_flat.reshape(obs_flat.shape[0], -1))).squeeze(1)
         else:
             return self._value_branch(self._features).squeeze(1)
 
