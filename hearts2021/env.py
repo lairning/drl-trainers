@@ -229,7 +229,7 @@ class HeartsParametricEnv1:
     def step(self, action):
         c = self._decode_card(action)
         print("DEBUG 02", c)
-        print("### DEBUG 21", ((p.name, p.cards) for p in self.env.players))
+        print("### DEBUG 21", [(p.name, p.cards) for p in self.env.players])
         (table_cards, possible_cards), rew, done, info = self.env.step(c)
         print("DEBUG 03", table_cards, possible_cards)
         obs = self._encode_observation(table_cards)
