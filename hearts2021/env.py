@@ -173,9 +173,12 @@ for _ in range(100):
         print(points, he.status["hand_points"], done)
 
 '''
-players_space = Box(low=0, high=1, shape=(3 * N_PLAYERS,))
-cards_space = Box(low=0, high=len(CARD_SET), shape=(N_PLAYERS,))
-TRUE_OBSERVATION_SPACE1 = Dict({'players': players_space, 'cards': cards_space})
+low = np.array([0] * 4 * N_PLAYERS, dtype=np.float32)
+high = np.array([1] * 3 * N_PLAYERS + [len(CARD_SET)] * N_PLAYERS, dtype=np.float32)
+TRUE_OBSERVATION_SPACE1 = Box(low=low, high=high, dtype=np.float32)
+# players_space = Box(low=0, high=1, shape=(3 * N_PLAYERS,))
+# cards_space = Box(low=0, high=len(CARD_SET), shape=(N_PLAYERS,))
+# TRUE_OBSERVATION_SPACE1 = Dict({'players': players_space, 'cards': cards_space})
 
 
 class HeartsParametricEnv1:
@@ -211,8 +214,8 @@ class HeartsParametricEnv1:
                 player_encode[player_i - 1] = 1
             return player_encode
 
-        return {'players': [n for player, _ in table_cards for n in _encode_player(player)],
-                'cards'  : [_encode_card(self.card_set, tc) for _, tc in table_cards]}
+        return [n for player, _ in table_cards for n in _encode_player(player)] + \
+                [_encode_card(self.card_set, tc) for _, tc in table_cards]
 
     def _decode_card(self, i):
         return CARD_SET[i]
@@ -235,12 +238,12 @@ class HeartsParametricEnv1:
         return {"obs": obs, "action_mask": self._get_mask(possible_cards)}, rew, \
                done, info
 
-'''
+
 import torch
 from torch.nn import Embedding
 
 CARD_EMBEDD_SIZE = 3
-emb = Embedding(int(TRUE_OBSERVATION_SPACE1['cards'].high[0])+1, CARD_EMBEDD_SIZE)
+#emb = Embedding(int(TRUE_OBSERVATION_SPACE1['cards'].high[0])+1, CARD_EMBEDD_SIZE)
 
 N = 1
 total_points = 0
@@ -264,7 +267,7 @@ for _ in range(N):
         total_points += points
 print("POINTS:", total_points / N)
 
-'''
+
 
 # Simple Environment to test Alpha Trainer
 class HeartsEnv0(gym.Env):
