@@ -76,12 +76,6 @@ class HeartsEnv(gym.Env):
                 c = random.sample(deck, 1)[0]
                 deck.remove(c)
                 p.cards.add(c)
-            # p.player_list = player_list
-        p_c_len = [len(p.cards) for p in self.players]
-        if sum(p_c_len) != N_PLAYERS * HAND_SIZE:
-            print("DEBUG 01", p_c_len)
-            print("DEBUG 02", len(tmp))
-            print("DEBUG 03", {p.name: p.cards for p in self.players})
         first_player = None
         for p in self.players:
             if CARD_2P in p.cards:
