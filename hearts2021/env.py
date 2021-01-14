@@ -220,6 +220,7 @@ class HeartsParametricEnv1:
 
     def reset(self):
         table_cards, possible_cards = self.env.reset()
+        print("### DEBUG 11", {p.name: p.cards for p in self.env.players})
         print("DEBUG 01", table_cards, possible_cards)
         obs = self._encode_observation(table_cards)
         # print("DEBUG 02", obs)
