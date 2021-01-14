@@ -28,7 +28,8 @@ parser = argparse.ArgumentParser()
 #parser.add_argument("--as-test", action="store_true")
 parser.add_argument("--stop-iters", type=int, default=50)
 parser.add_argument("--workers", type=int, default=5)
-parser.add_argument("--stop-reward", type=float, default=4)
+parser.add_argument("--stop-demo", type=int, default=1)
+parser.add_argument("--random-players", type=bool, default=True)
 
 
 class TorchParametricActionsModel(DQNTorchModel):
@@ -82,7 +83,7 @@ if __name__ == "__main__":
 
     register_env(
         "HeartsEnv",
-        lambda _: HeartsParametricEnv1(random_players=True)
+        lambda _: HeartsParametricEnv1(random_players=args.random_players)
     )
 
     config_default = {
@@ -110,17 +111,21 @@ if __name__ == "__main__":
     }
 
     config = config_default
-    config["num_workers"] = args.workers
 
-    results = tune.run("PPO", config=config, stop=stop, checkpoint_at_end=True)
-    # results = tune.run("DQN", config=config_dqn, stop=stop)
+    if args.stop_iters > 0:
+        config["num_workers"] = args.workers
 
-    best_checkpoint = results.get_best_checkpoint(trial=results.get_best_trial(metric="episode_reward_mean",
-                                                                               mode="max"),
-                                                  metric="episode_reward_mean",
-                                                  mode="max")
+        results = tune.run("PPO", config=config, stop=stop, checkpoint_at_end=True)
+        # results = tune.run("DQN", config=config_dqn, stop=stop)
 
-    print(best_checkpoint)
+        best_checkpoint = results.get_best_checkpoint(trial=results.get_best_trial(metric="episode_reward_mean",
+                                                                                   mode="max"),
+                                                      metric="episode_reward_mean",
+                                                      mode="max")
+
+        print(best_checkpoint)
+    else:
+        best_checkpoint = "/home/md/ray_results/PPO/PPO_HeartsEnv_f33bc_00000_0_2021-01-14_22-17-47/checkpoint_100/checkpoint-100"
 
     config["num_workers"] = 0
 
@@ -128,19 +133,20 @@ if __name__ == "__main__":
     agent.restore(best_checkpoint)
 
     # instantiate env class
-    he = HeartsParametricEnv1(random_players=True)
+    he = HeartsParametricEnv1(random_players=args.random_players)
 
-    # run until episode ends
-    episode_reward = 0
-    done = False
-    obs = he.reset()
-    while not done:
-        #print(obs)
-        action = agent.compute_action(obs)
-        print(he.env.me, he.env.table_card, he._decode_card(action))
-        obs, reward, done, info = he.step(action)
-        episode_reward += reward
-        print(episode_reward,reward)
+    for _ in range(args.stop_demo):
+        # run until episode ends
+        episode_reward = 0
+        done = False
+        obs = he.reset()
+        while not done:
+            #print(obs)
+            action = agent.compute_action(obs)
+            print(he.env.me, he.env.table_card, he._decode_card(action))
+            obs, reward, done, info = he.step(action)
+            episode_reward += reward
+            print(episode_reward,reward)
 
     ray.shutdown()
 
