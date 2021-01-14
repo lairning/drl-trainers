@@ -143,7 +143,7 @@ if __name__ == "__main__":
         while not done:
             #print(obs)
             action = agent.compute_action(obs)
-            print(he.env.me, he.env.observation[-1], he._decode_card(action))
+            print(he.env.observation[-1], he.env.me.cards, he._decode_card(action))
             obs, reward, done, info = he.step(action)
             episode_reward += reward
             print(episode_reward,reward)
