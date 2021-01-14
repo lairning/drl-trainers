@@ -29,7 +29,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--stop-iters", type=int, default=50)
 parser.add_argument("--workers", type=int, default=5)
 parser.add_argument("--stop-demo", type=int, default=1)
-parser.add_argument("--random-players", type=int, default=1)
+parser.add_argument("--random-players", type=int, default=0)
 
 
 class TorchParametricActionsModel(DQNTorchModel):
