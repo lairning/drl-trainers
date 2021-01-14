@@ -30,7 +30,7 @@ class HeartsEnv(gym.Env):
         self.me = RandomPlayer("ME")
         self.card_set = [CARD_NULL] + CARD_SET
         self.players = [self.me] + other_players
-        self.hand_size = hand_size
+        #self.hand_size = hand_size
         self.idx_plist = None
         self.status = None
         self.observation = None
@@ -66,11 +66,11 @@ class HeartsEnv(gym.Env):
                        "trick_players"     : []}
         # A list of lists containing the tricks and for each trick a dict withe
         # The pair (None, CARD_NULL) corresponds to (player, card)
-        self.observation = [[(None, CARD_NULL) for _ in range(N_PLAYERS)] for _ in range(self.hand_size)]
+        self.observation = [[(None, CARD_NULL) for _ in range(N_PLAYERS)] for _ in range(HAND_SIZE)]
         deck = CARD_SET.copy()
         tmp = deck.copy()
         for p in self.players:
-            for i in range(self.hand_size):
+            for i in range(HAND_SIZE):
                 c = random.sample(deck, 1)[0]
                 deck.remove(c)
                 p.cards.add(c)
