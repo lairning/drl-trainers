@@ -52,8 +52,7 @@ class HeartsNetwork(TorchModelV2, nn.Module):
         self.vf_share_layers = model_config.get("vf_share_layers")
         self.free_log_std = False
 
-        #self._embedd = nn.Embedding(int(obs_space['cards'].high[0]) + 1, CARD_EMBEDD_SIZE)
-        self._embedd = nn.Embedding(int(obs_space[1].high[0]) + 1, CARD_EMBEDD_SIZE)
+        self._embedd = nn.Embedding(int(obs_space['cards'].high[0]) + 1, CARD_EMBEDD_SIZE)
 
         # Player Hot Encoded = 3 * Number of Cards Played per trick = 4
         # CARD_EMBEDD_SIZE * Number of Cards Played per trick = 4
@@ -66,7 +65,7 @@ class HeartsNetwork(TorchModelV2, nn.Module):
         self._value_embedding = None
         if not self.vf_share_layers:
             # Build a parallel set of hidden layers for the value net.
-            self._value_embedding = nn.Embedding(int(obs_space[1].high[0]) + 1, CARD_EMBEDD_SIZE)
+            self._value_embedding = nn.Embedding(int(obs_space['cards'].high[0]) + 1, CARD_EMBEDD_SIZE)
             self._value_branch_separate = self._build_hidden_layers(first_layer_size=first_layer_size,
                                                                     hiddens=hiddens,
                                                                     activation=activation)
@@ -91,12 +90,11 @@ class HeartsNetwork(TorchModelV2, nn.Module):
     def forward(self, input_dict: Dict[str, TensorType],
                 state: List[TensorType],
                 seq_lens: TensorType) -> (TensorType, List[TensorType]):
-        print("#######   DEBUG MODELS  ######:", input_dict.shape, obs_flat.shape)
-        self._cards_in = torch.LongTensor(input_dict['obs'][1])
-        self._players_in = torch.LongTensor(input_dict['obs'][0])
+        print("#######   DEBUG   ######:", input_dict.shape, obs_flat.shape)
+        self._cards_in = torch.LongTensor(input_dict['obs']['cards'])
+        self._players_in = torch.LongTensor(input_dict['obs']['players'])
         emb_cards = self._embedd(self._cards_in)
         obs_flat = torch.cat((self._players_in, emb_cards), 1)
-
         self._features = self._hidden_layers(obs_flat.reshape(obs_flat.shape[0], -1))
         logits = self._logits(self._features) if self._logits else \
             self._features
