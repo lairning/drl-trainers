@@ -26,7 +26,7 @@ CARD_SET += [card.Card(naipe, 2) for naipe in ["P", "O", "E", "C"]]
 
 class HeartsEnv(gym.Env):
 
-    def __init__(self, other_players: list, hand_size):
+    def __init__(self, other_players: list):
         self.me = RandomPlayer("ME")
         self.card_set = [CARD_NULL] + CARD_SET
         self.players = [self.me] + other_players
@@ -143,8 +143,8 @@ class HeartsEnv(gym.Env):
 # Hearts Environment simplification (only the last trick is considered)
 class HeartsEnv1(HeartsEnv):
 
-    def __init__(self, other_players: list, hand_size):
-        super(HeartsEnv1, self).__init__(other_players, hand_size)
+    def __init__(self, other_players: list):
+        super(HeartsEnv1, self).__init__(other_players)
 
     def reset(self):
         obs, possible_cards = super(HeartsEnv1, self).reset()
@@ -191,7 +191,7 @@ class HeartsParametricEnv1:
         else:
             other_players = [BasicPlayer("P1"), BasicPlayer("P2"), BasicPlayer("P3")]
 
-        self.env = HeartsEnv1(other_players=other_players, hand_size=HAND_SIZE)
+        self.env = HeartsEnv1(other_players=other_players)
         self.card_set = [CARD_NULL] + CARD_SET
         self.action_space = Discrete(4 * HAND_SIZE)
         self.observation_space = Dict({
