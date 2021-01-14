@@ -94,7 +94,7 @@ class HeartsNetwork(TorchModelV2, nn.Module):
         #print("#######   DEBUG   ######:", input_dict['obs_flat'])
         self._players_in, self._cards_in = torch.split(input_dict['obs_flat'],[12,4],1)
         self._cards_in = self._cards_in.long()
-        emb_cards = self._embedd(self._cards_in)
+        emb_cards = self._embedd(self._cards_in).reshape(self._cards_in.shape[0],-1)
         obs_flat = torch.cat((self._players_in, emb_cards), 1)
         self._features = self._hidden_layers(obs_flat.reshape(obs_flat.shape[0], -1))
         logits = self._logits(self._features) if self._logits else \
@@ -107,7 +107,7 @@ class HeartsNetwork(TorchModelV2, nn.Module):
     def value_function(self) -> TensorType:
         assert self._features is not None, "must call forward() first"
         if self._value_branch_separate:
-            emb_cards = self._value_embedding(self._cards_in)
+            emb_cards = self._value_embedding(self._cards_in).reshape(self._cards_in.shape[0],-1)
             obs_flat = torch.cat((self._players_in, emb_cards), 1)
             return self._value_branch(
                 self._value_branch_separate(obs_flat.reshape(obs_flat.shape[0], -1))).squeeze(1)
