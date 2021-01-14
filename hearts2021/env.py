@@ -220,9 +220,8 @@ class HeartsParametricEnv1:
 
     def reset(self):
         table_cards, possible_cards = self.env.reset()
-        print()
-        print("### DEBUG 11", {p.name: p.cards for p in self.env.players})
-        print("DEBUG 01", table_cards, possible_cards)
+        print("DEBUG 01", {p.name: p.cards for p in self.env.players})
+        print("DEBUG 11", table_cards, possible_cards)
         obs = self._encode_observation(table_cards)
         # print("DEBUG 02", obs)
         assert self.observation_space['obs'].contains(obs), "{} not in {}".format(obs, self.observation_space['obs'])
@@ -230,10 +229,10 @@ class HeartsParametricEnv1:
 
     def step(self, action):
         c = self._decode_card(action)
-        print("DEBUG 02", c)
-        print("### DEBUG 21", {p.name: p.cards for p in self.env.players})
+        # print("DEBUG 02", c)
+        # print("### DEBUG 21", {p.name: p.cards for p in self.env.players})
         (table_cards, possible_cards), rew, done, info = self.env.step(c)
-        print("DEBUG 03", table_cards, possible_cards)
+        # print("DEBUG 03", table_cards, possible_cards)
         obs = self._encode_observation(table_cards)
         # print("DEBUG 12", obs)
         assert self.observation_space['obs'].contains(obs), "{} not in {}".format(obs, self.observation_space['obs'])
