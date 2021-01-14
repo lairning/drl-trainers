@@ -29,7 +29,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--stop-iters", type=int, default=50)
 parser.add_argument("--workers", type=int, default=5)
 parser.add_argument("--stop-demo", type=int, default=1)
-parser.add_argument("--random-players", type=bool, default=True)
 
 
 class TorchParametricActionsModel(DQNTorchModel):
@@ -83,7 +82,7 @@ if __name__ == "__main__":
 
     register_env(
         "HeartsEnv",
-        lambda _: HeartsParametricEnv1(random_players=args.random_players)
+        lambda _: HeartsParametricEnv1(random_players=False)
     )
 
     config_default = {
@@ -135,20 +134,24 @@ if __name__ == "__main__":
     agent.restore(best_checkpoint)
 
     # instantiate env class
-    he = HeartsParametricEnv1(random_players=args.random_players)
+    he = HeartsParametricEnv1(random_players=False)
 
     for _ in range(args.stop_demo):
         # run until episode ends
         episode_reward = 0
         done = False
         obs = he.reset()
+        print(obs)
+        for p in he.env.players:
+            print(p.name,p.cards)
         while not done:
             #print(obs)
             action = agent.compute_action(obs)
-            print(he.env.observation[-1], he.env.me.cards, he._decode_card(action))
+            #print(he.env.observation[-1], he.env.me.cards, he._decode_card(action))
             obs, reward, done, info = he.step(action)
             episode_reward += reward
-            print("Points :",reward)
+            #print("Points :",reward)
+        print(he.env.observation)
         print("Total:",episode_reward)
 
     ray.shutdown()
