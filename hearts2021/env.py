@@ -237,6 +237,8 @@ class HeartsParametricEnv1:
         return {"obs": obs, "action_mask": self._get_mask(possible_cards)}, rew, \
                done, info
 
+#print(TRUE_OBSERVATION_SPACE1[1].high[0])
+
 '''
 import torch
 from torch.nn import Embedding
