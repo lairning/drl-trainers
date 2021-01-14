@@ -66,6 +66,8 @@ class HeartsEnv(gym.Env):
                        "trick_players"     : []}
         # A list of lists containing the tricks and for each trick a dict withe
         # The pair (None, CARD_NULL) corresponds to (player, card)
+        for p in self.players:
+            p.cards = set()
         self.observation = [[(None, CARD_NULL) for _ in range(N_PLAYERS)] for _ in range(HAND_SIZE)]
         deck = CARD_SET.copy()
         tmp = deck.copy()
