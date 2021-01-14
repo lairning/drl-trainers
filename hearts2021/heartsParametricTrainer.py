@@ -142,7 +142,6 @@ if __name__ == "__main__":
         episode_reward = 0
         done = False
         obs = he.reset()
-        print(obs)
         for p in he.env.players:
             print(p.name,p.cards)
         while not done:
@@ -152,7 +151,8 @@ if __name__ == "__main__":
             obs, reward, done, info = he.step(action)
             episode_reward += reward
             #print("Points :",reward)
-        print(he.env.observation)
+        for l in print(he.env.observation):
+            print(l)
         print("Total:",episode_reward)
 
     ray.shutdown()
