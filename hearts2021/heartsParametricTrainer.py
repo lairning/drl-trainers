@@ -56,7 +56,7 @@ class TorchParametricActionsModel(DQNTorchModel):
         action_mask = input_dict["obs"]["action_mask"]
 
         # print(input_dict["obs"])
-        print("##### DEBUG #####",np.array(input_dict["obs"]["obs"]).shape)
+        print("##### DEBUG #####",np.array(input_dict["obs"]["obs"]))
 
         # Compute the predicted action embedding
         action_param, _ = self.action_model({
