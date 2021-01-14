@@ -175,9 +175,7 @@ for _ in range(100):
 '''
 players_space = Box(low=0, high=1, shape=(3 * N_PLAYERS,))
 cards_space = Box(low=0, high=len(CARD_SET), shape=(N_PLAYERS,))
-# TRUE_OBSERVATION_SPACE1 = Dict({'players': players_space, 'cards': cards_space})
-TRUE_OBSERVATION_SPACE1 = Tuple((players_space, cards_space))
-
+TRUE_OBSERVATION_SPACE1 = Dict({'players': players_space, 'cards': cards_space})
 
 
 class HeartsParametricEnv1:
@@ -213,8 +211,8 @@ class HeartsParametricEnv1:
                 player_encode[player_i - 1] = 1
             return player_encode
 
-        return np.array([[n for player, _ in table_cards for n in _encode_player(player)],
-                [_encode_card(self.card_set, tc) for _, tc in table_cards]])
+        return {'players': [n for player, _ in table_cards for n in _encode_player(player)],
+                'cards'  : [_encode_card(self.card_set, tc) for _, tc in table_cards]}
 
     def _decode_card(self, i):
         return CARD_SET[i]
@@ -236,8 +234,6 @@ class HeartsParametricEnv1:
         assert self.observation_space['obs'].contains(obs), "{} not in {}".format(obs, self.observation_space['obs'])
         return {"obs": obs, "action_mask": self._get_mask(possible_cards)}, rew, \
                done, info
-
-#print(TRUE_OBSERVATION_SPACE1[1].high[0])
 
 '''
 import torch

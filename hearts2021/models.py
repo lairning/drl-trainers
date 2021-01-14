@@ -91,11 +91,12 @@ class HeartsNetwork(TorchModelV2, nn.Module):
     def forward(self, input_dict: Dict[str, TensorType],
                 state: List[TensorType],
                 seq_lens: TensorType) -> (TensorType, List[TensorType]):
+        print("#######   DEBUG MODELS  ######:", input_dict.shape, obs_flat.shape)
         self._cards_in = torch.LongTensor(input_dict['obs'][1])
         self._players_in = torch.LongTensor(input_dict['obs'][0])
         emb_cards = self._embedd(self._cards_in)
         obs_flat = torch.cat((self._players_in, emb_cards), 1)
-        print("#######   DEBUG   ######:",input_dict.shape, obs_flat.shape)
+
         self._features = self._hidden_layers(obs_flat.reshape(obs_flat.shape[0], -1))
         logits = self._logits(self._features) if self._logits else \
             self._features
