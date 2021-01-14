@@ -93,7 +93,7 @@ class HeartsEnv(gym.Env):
     def step(self, played_card: Card):
         # Test Cheating
         if played_card not in self.player_list[self.idx_plist].get_possible_cards(self.status):
-            print("DEBUG1", self.observation[-1], self.me.cards, played_card)
+            print("### WARNING Card not Possible!", self.observation[-1], self.me.cards, played_card)
             return (self.observation, set()), CHEAT_POINTS, True, {}
 
         self._update_status(self.idx_plist, played_card)
@@ -221,8 +221,8 @@ class HeartsParametricEnv1:
 
     def reset(self):
         table_cards, possible_cards = self.env.reset()
-        print("DEBUG 01", {p.name: p.cards for p in self.env.players})
-        print("DEBUG 11", table_cards, possible_cards)
+        # print("DEBUG 01", {p.name: p.cards for p in self.env.players})
+        # print("DEBUG 11", table_cards, possible_cards)
         obs = self._encode_observation(table_cards)
         # print("DEBUG 02", obs)
         assert self.observation_space['obs'].contains(obs), "{} not in {}".format(obs, self.observation_space['obs'])
