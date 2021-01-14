@@ -29,6 +29,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--stop-iters", type=int, default=50)
 parser.add_argument("--workers", type=int, default=5)
 parser.add_argument("--stop-demo", type=int, default=1)
+parser.add_argument("--random-players", type=int, default=1)
 
 
 class TorchParametricActionsModel(DQNTorchModel):
@@ -82,7 +83,7 @@ if __name__ == "__main__":
 
     register_env(
         "HeartsEnv",
-        lambda _: HeartsParametricEnv1(random_players=False)
+        lambda _: HeartsParametricEnv1(random_players=bool(args.random_players))
     )
 
     config_default = {
@@ -111,7 +112,7 @@ if __name__ == "__main__":
 
     config = config_default
 
-    print("--random-players",args.random_players)
+    print("--random-players",bool(args.random_players))
 
     if args.stop_iters > 0:
         config["num_workers"] = args.workers
@@ -134,7 +135,7 @@ if __name__ == "__main__":
     agent.restore(best_checkpoint)
 
     # instantiate env class
-    he = HeartsParametricEnv1(random_players=False)
+    he = HeartsParametricEnv1(random_players=bool(args.random_players))
 
     for _ in range(args.stop_demo):
         # run until episode ends
