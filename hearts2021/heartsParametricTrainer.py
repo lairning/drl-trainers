@@ -112,6 +112,8 @@ if __name__ == "__main__":
 
     config = config_default
 
+    print("--random-players",args.random_players)
+
     if args.stop_iters > 0:
         config["num_workers"] = args.workers
 
