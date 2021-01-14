@@ -213,8 +213,8 @@ class HeartsParametricEnv1:
                 player_encode[player_i - 1] = 1
             return player_encode
 
-        return [[n for player, _ in table_cards for n in _encode_player(player)],
-                [_encode_card(self.card_set, tc) for _, tc in table_cards]]
+        return np.array([[n for player, _ in table_cards for n in _encode_player(player)],
+                [_encode_card(self.card_set, tc) for _, tc in table_cards]])
 
     def _decode_card(self, i):
         return CARD_SET[i]
