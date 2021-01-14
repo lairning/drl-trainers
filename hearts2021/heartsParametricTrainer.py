@@ -146,7 +146,8 @@ if __name__ == "__main__":
             print(he.env.observation[-1], he.env.me.cards, he._decode_card(action))
             obs, reward, done, info = he.step(action)
             episode_reward += reward
-            print(episode_reward,reward)
+            print("Points :",reward)
+        print("Total:",episode_reward)
 
     ray.shutdown()
 
