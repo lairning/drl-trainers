@@ -75,7 +75,7 @@ class HeartsEnv(gym.Env):
                 deck.remove(c)
                 p.cards.add(c)
             # p.player_list = player_list
-        print("DEBUG 01", sum(len(p.cards) for p in self.players))
+        print("DEBUG 01", [len(p.cards) for p in self.players])
         print("DEBUG 02", tmp)
         print("DEBUG 03", {p.name: p.cards for p in self.players})
         first_player = None
