@@ -101,7 +101,7 @@ class RandomPlayer:
         possible_cards = self.get_possible_cards(hand_status)
 
         if len(possible_cards) == 0:
-            print(self.name, self.cards)
+            print("##### DEBUG BASIC PLAYER ####", self.name, self.cards)
             raise Exception()
 
         return random.choice(list(possible_cards))
