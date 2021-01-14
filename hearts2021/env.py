@@ -75,9 +75,9 @@ class HeartsEnv(gym.Env):
                 deck.remove(c)
                 p.cards.add(c)
             # p.player_list = player_list
-        if sum(len(p.cards) for p in self.players):
-            print("DEBUG 00", tmp)
-            print("DEBUG 01", {p.name: p.cards for p in self.players})
+        print("DEBUG 01", sum(len(p.cards) for p in self.players))
+        print("DEBUG 02", tmp)
+        print("DEBUG 03", {p.name: p.cards for p in self.players})
         first_player = None
         for p in self.players:
             if CARD_2P in p.cards:
