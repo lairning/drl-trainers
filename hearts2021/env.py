@@ -78,7 +78,7 @@ class HeartsEnv(gym.Env):
         p_c_len = [len(p.cards) for p in self.players]
         if sum(p_c_len) != N_PLAYERS * HAND_SIZE:
             print("DEBUG 01", p_c_len)
-            print("DEBUG 02", tmp)
+            print("DEBUG 02", len(tmp))
             print("DEBUG 03", {p.name: p.cards for p in self.players})
         first_player = None
         for p in self.players:
