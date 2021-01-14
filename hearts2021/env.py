@@ -238,7 +238,7 @@ class HeartsParametricEnv1:
         return {"obs": obs, "action_mask": self._get_mask(possible_cards)}, rew, \
                done, info
 
-
+'''
 import torch
 from torch.nn import Embedding
 
@@ -267,7 +267,7 @@ for _ in range(N):
         total_points += points
 print("POINTS:", total_points / N)
 
-
+'''
 
 # Simple Environment to test Alpha Trainer
 class HeartsEnv0(gym.Env):
