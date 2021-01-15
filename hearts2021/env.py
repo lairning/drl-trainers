@@ -40,8 +40,6 @@ class HeartsEnv(gym.Env):
         self.player_list[player_i].cards.remove(played_card)
         self.status["trick_cards_played"].append(played_card)
         self.observation[-1][player_i] = (self.players.index(self.player_list[player_i]), played_card)
-        # self.observation[self.status["trick_number"]][player_i] = (self.players.index(self.player_list[player_i]),
-        #                                                            played_card)
 
     def _start_trick(self, first_player):
         self.status["trick_cards_played"] = []
@@ -271,6 +269,32 @@ for _ in range(N):
 print("POINTS:", total_points / N)
 
 '''
+
+class HeartsAlphaEnv1(HeartsParametricEnv1):
+
+    def __init__(self, random_players=False):
+        super(HeartsParametricEnv1, self).__init__(random_players)
+        self.running_reward = 0
+
+    def reset(self):
+        self.running_reward = 0
+        return super(HeartsParametricEnv1, self).reset()
+
+    def step(self, action):
+        obs, rew, done, info = super(HeartsParametricEnv1, self).step(action)
+        self.running_reward += rew
+        score = self.running_reward if done else 0
+        return obs, score, done, info
+
+    def set_state(self, state):
+        self.running_reward = state[1]
+        self.env = deepcopy(state[0])
+        return {"obs": self._encode_observation(self.env.observation[-1]),
+                "action_mask": self._get_mask(self.env.me.get_possible_cards(self.env.status))}
+
+    def get_state(self):
+        return deepcopy(self.env), self.running_reward
+
 
 # Simple Environment to test Alpha Trainer
 class HeartsEnv0(gym.Env):

@@ -11,6 +11,8 @@ torch, nn = try_import_torch()
 
 CARD_EMBEDD_SIZE = 3
 
+FIRST_LAYER_SIZE = 3 * 4 + CARD_EMBEDD_SIZE * 4
+
 class HeartsNetwork(TorchModelV2, nn.Module):
     """Customized PPO network."""
 
@@ -56,8 +58,8 @@ class HeartsNetwork(TorchModelV2, nn.Module):
 
         # Player Hot Encoded = 3 * Number of Cards Played per trick = 4
         # CARD_EMBEDD_SIZE * Number of Cards Played per trick = 4
-        first_layer_size = 3*4+CARD_EMBEDD_SIZE*4
-        self._hidden_layers = self._build_hidden_layers(first_layer_size=first_layer_size,
+
+        self._hidden_layers = self._build_hidden_layers(first_layer_size=FIRST_LAYER_SIZE,
                                                         hiddens=hiddens,
                                                         activation=activation)
 
@@ -66,7 +68,7 @@ class HeartsNetwork(TorchModelV2, nn.Module):
         if not self.vf_share_layers:
             # Build a parallel set of hidden layers for the value net.
             self._value_embedding = nn.Embedding(int(obs_space.high[-1]) + 1, CARD_EMBEDD_SIZE)
-            self._value_branch_separate = self._build_hidden_layers(first_layer_size=first_layer_size,
+            self._value_branch_separate = self._build_hidden_layers(first_layer_size=FIRST_LAYER_SIZE,
                                                                     hiddens=hiddens,
                                                                     activation=activation)
         self._logits = SlimFC(
@@ -114,94 +116,67 @@ class HeartsNetwork(TorchModelV2, nn.Module):
         else:
             return self._value_branch(self._features).squeeze(1)
 
-class FullyConnectedNetwork(TorchModelV2, nn.Module):
-    """Generic fully connected network."""
 
-    def __init__(self, obs_space: gym.spaces.Space,
-                 action_space: gym.spaces.Space, num_outputs: int,
-                 model_config: ModelConfigDict, name: str):
-        TorchModelV2.__init__(self, obs_space, action_space, num_outputs,
-                              model_config, name)
-        nn.Module.__init__(self)
+from ray.rllib.contrib.alpha_zero.models.custom_torch_models import ActorCriticModel, convert_to_tensor
+from ray.rllib.models.modelv2 import restore_original_dimensions
+from ray.rllib.utils.torch_ops import FLOAT_MIN, FLOAT_MAX
 
-        activation = model_config.get("fcnet_activation")
-        hiddens = model_config.get("fcnet_hiddens", [])
-        no_final_linear = model_config.get("no_final_linear")
-        self.vf_share_layers = model_config.get("vf_share_layers")
-        self.free_log_std = model_config.get("free_log_std")
+class AlphaHeartsModel(ActorCriticModel):
+    def __init__(self, obs_space, action_space, num_outputs, model_config,
+                 name):
+        ActorCriticModel.__init__(self, obs_space, action_space, num_outputs,
+                                  model_config, name)
 
-        layers = []
-        prev_layer_size = int(np.product(obs_space.shape))
-        self._logits = None
+        self._embedd = nn.Embedding(int(obs_space.high[-1]) + 1, CARD_EMBEDD_SIZE)
 
-        # Create layers 0 to second-last.
-        for size in hiddens:
-            layers.append(
-                SlimFC(
-                    in_size=prev_layer_size,
-                    out_size=size,
-                    initializer=normc_initializer(1.0),
-                    activation_fn=activation))
-            prev_layer_size = size
+        #print("## DEBUG obs_space.original_space ###", obs_space.original_space)
+        N_NEURONS = 256
+        self.shared_layers = nn.Sequential(
+            nn.Linear(
+                in_features= FIRST_LAYER_SIZE,
+                out_features=N_NEURONS),
+            nn.Linear(in_features=N_NEURONS, out_features=N_NEURONS)
+        )
+        self.actor_layers = nn.Sequential(
+            nn.Linear(in_features=N_NEURONS, out_features=action_space.n))
+        self.critic_layers = nn.Sequential(
+            nn.Linear(in_features=N_NEURONS, out_features=1))
+        self._value_out = None
 
+    def compute_priors_and_value(self, obs):
+        obs = convert_to_tensor([self.preprocessor.transform(obs)])
+        input_dict = restore_original_dimensions(obs, self.obs_space, "torch")
 
-        print("### DEBUG ####",no_final_linear)
-        print("### DEBUG ####",num_outputs)
-        print("### DEBUG ####",hiddens)
-        # The last layer is adjusted to be of size num_outputs, but it's a
-        # layer with activation.
-        if num_outputs:
-            self._logits = SlimFC(
-                in_size=prev_layer_size,
-                out_size=num_outputs,
-                initializer=normc_initializer(0.01),
-                activation_fn=None)
+        with torch.no_grad():
+            model_out = self.forward(input_dict, None, [1])
+            logits, _ = model_out
+            value = self.value_function()
+            logits, value = torch.squeeze(logits), torch.squeeze(value)
+            priors = nn.Softmax(dim=-1)(logits)
 
-        self._hidden_layers = nn.Sequential(*layers)
+            priors = priors.cpu().numpy()
+            value = value.cpu().numpy()
 
-        self._value_branch_separate = None
-        if not self.vf_share_layers:
-            # Build a parallel set of hidden layers for the value net.
-            prev_vf_layer_size = int(np.product(obs_space.shape))
-            vf_layers = []
-            for size in hiddens:
-                vf_layers.append(
-                    SlimFC(
-                        in_size=prev_vf_layer_size,
-                        out_size=size,
-                        activation_fn=activation,
-                        initializer=normc_initializer(1.0)))
-                prev_vf_layer_size = size
-            self._value_branch_separate = nn.Sequential(*vf_layers)
+            return priors, value
 
-        self._value_branch = SlimFC(
-            in_size=prev_layer_size,
-            out_size=1,
-            initializer=normc_initializer(1.0),
-            activation_fn=None)
-        # Holds the current "base" output (before logits layer).
-        self._features = None
-        # Holds the last input, in case value branch is separate.
-        self._last_flat_in = None
+    def forward(self, input_dict, state, seq_lens):
 
-    @override(TorchModelV2)
-    def forward(self, input_dict: Dict[str, TensorType],
-                state: List[TensorType],
-                seq_lens: TensorType) -> (TensorType, List[TensorType]):
-        obs = input_dict["obs_flat"].float()
-        self._last_flat_in = obs.reshape(obs.shape[0], -1)
-        self._features = self._hidden_layers(self._last_flat_in)
-        logits = self._logits(self._features) if self._logits else \
-            self._features
-        if self.free_log_std:
-            logits = self._append_free_log_std(logits)
-        return logits, state
+        action_mask = input_dict["action_mask"]
 
-    @override(TorchModelV2)
-    def value_function(self) -> TensorType:
-        assert self._features is not None, "must call forward() first"
-        if self._value_branch_separate:
-            return self._value_branch(
-                self._value_branch_separate(self._last_flat_in)).squeeze(1)
-        else:
-            return self._value_branch(self._features).squeeze(1)
+        x = input_dict["obs"]
+
+        self._players_in, self._cards_in = torch.split(input_dict['obs'],[12,4],1)
+        self._cards_in = self._cards_in.long()
+        emb_cards = self._embedd(self._cards_in).reshape(self._cards_in.shape[0],-1)
+        x = torch.cat((self._players_in, emb_cards), 1)
+
+        x = self.shared_layers(x)
+        # actor outputs
+        logits = self.actor_layers(x)
+
+        # compute value
+        self._value_out = self.critic_layers(x)
+
+        inf_mask = torch.clamp(torch.log(action_mask), FLOAT_MIN, FLOAT_MAX)
+        return logits + inf_mask, None
+
