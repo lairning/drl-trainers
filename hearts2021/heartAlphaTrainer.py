@@ -53,7 +53,7 @@ if __name__ == "__main__":
              }
 
     config = config_default
-    config["num_workers"] = 5
+    config["num_workers"] = 0
 
     results = tune.run(
         "contrib/AlphaZero",
