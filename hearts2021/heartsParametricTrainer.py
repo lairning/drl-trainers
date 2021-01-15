@@ -100,9 +100,10 @@ if __name__ == "__main__":
         "model": {
             "custom_model": "my_model",
         },
-        "vf_share_layers": False,
+        "vf_share_layers": True,
+        "vf_loss_coeff": tune.grid_search([1.0, 0.5, 0.2]),
         #"lr": grid_search([1e-2, 1e-4, 1e-6]),  # try different lrs
-        "framework": "torch" # if args.torch else "tf",
+        "framework": "torch"
     }
 
     stop = {
@@ -110,7 +111,7 @@ if __name__ == "__main__":
         #"episode_reward_mean": args.stop_reward,
     }
 
-    config = config_default
+    config = config_tuned
 
     print("--random-players",bool(args.random_players))
 
