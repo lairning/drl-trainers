@@ -140,14 +140,14 @@ class HeartsEnv(gym.Env):
 class HeartsEnv1(HeartsEnv):
 
     def __init__(self, other_players: list):
-        super(HeartsEnv1, self).__init__(other_players)
+        super().__init__(other_players)
 
     def reset(self):
-        obs, possible_cards = super(HeartsEnv1, self).reset()
+        obs, possible_cards = super().reset()
         return (obs[-1], possible_cards)
 
     def step(self, played_card: Card):
-        obs_step, obs_points, done, info = super(HeartsEnv1, self).step(played_card)
+        obs_step, obs_points, done, info = super().step(played_card)
         obs, possible_cards = obs_step
         return (obs[-1], possible_cards), obs_points, done, info
 
@@ -273,15 +273,15 @@ print("POINTS:", total_points / N)
 class HeartsAlphaEnv1(HeartsParametricEnv1):
 
     def __init__(self, random_players=False):
-        super(HeartsParametricEnv1, self).__init__(self, random_players)
+        super().__init__(random_players)
         self.running_reward = 0
 
     def reset(self):
         self.running_reward = 0
-        return super(HeartsParametricEnv1, self).reset()
+        return super().reset()
 
     def step(self, action):
-        obs, rew, done, info = super(HeartsParametricEnv1, self).step(action)
+        obs, rew, done, info = super().step(action)
         self.running_reward += rew
         score = self.running_reward if done else 0
         return obs, score, done, info
