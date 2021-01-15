@@ -273,7 +273,7 @@ print("POINTS:", total_points / N)
 class HeartsAlphaEnv1(HeartsParametricEnv1):
 
     def __init__(self, random_players=False):
-        super(HeartsParametricEnv1, self).__init__(random_players)
+        super(HeartsParametricEnv1, self).__init__(self, random_players)
         self.running_reward = 0
 
     def reset(self):
