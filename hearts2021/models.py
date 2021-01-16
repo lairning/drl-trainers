@@ -177,5 +177,5 @@ class AlphaHeartsModel(ActorCriticModel):
         # print(logits)
         # print(inf_mask)
         # print(logits + inf_mask)
-        return logits + inf_mask, None
+        return logits + inf_mask, state
 

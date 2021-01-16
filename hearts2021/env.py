@@ -94,7 +94,6 @@ class HeartsEnv(gym.Env):
             print("### WARNING Card not Possible!",
                   self.observation[-1], self.me.cards,
                   self.me.get_possible_cards(self.status),played_card)
-            raise Exception()
             return (self.observation, set()), CHEAT_POINTS, True, {}
 
         self._update_status(self.idx_plist, played_card)
