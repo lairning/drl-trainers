@@ -102,7 +102,7 @@ if __name__ == "__main__":
         },
         "vf_share_layers": True,
         "vf_loss_coeff": 1.0,
-        "lr": tune.grid_search([0.005,1e-5]),
+        "lr": tune.grid_search([0.0005,1e-5]),
         "framework": "torch"
     }
 
