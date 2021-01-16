@@ -144,11 +144,8 @@ class AlphaHeartsModel(ActorCriticModel):
         self._value_out = None
 
     def compute_priors_and_value(self, obs):
-        print(obs)
         obs = convert_to_tensor([self.preprocessor.transform(obs)])
-        print(obs)
         input_dict = restore_original_dimensions(obs, self.obs_space, "torch")
-        print(input_dict)
         with torch.no_grad():
             model_out = self.forward(input_dict, None, [1])
             logits, _ = model_out
@@ -164,8 +161,6 @@ class AlphaHeartsModel(ActorCriticModel):
     def forward(self, input_dict, state, seq_lens):
 
         action_mask = input_dict["action_mask"]
-
-        x = input_dict["obs"]
 
         self._players_in, self._cards_in = torch.split(input_dict['obs'],[12,4],1)
         self._cards_in = self._cards_in.long()
