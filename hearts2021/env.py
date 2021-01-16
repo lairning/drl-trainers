@@ -23,7 +23,6 @@ CARD_SET = [card.Card(naipe, number) for naipe in ["P", "O", "E", "C"] for numbe
             range(card.ACE - HAND_SIZE + 2, card.ACE + 1)]
 CARD_SET += [card.Card(naipe, 2) for naipe in ["P", "O", "E", "C"]]
 
-
 class HeartsEnv(gym.Env):
 
     def __init__(self, other_players: list):
