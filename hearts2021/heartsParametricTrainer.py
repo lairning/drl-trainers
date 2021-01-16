@@ -100,9 +100,8 @@ if __name__ == "__main__":
         "model": {
             "custom_model": "my_model",
         },
-        "vf_share_layers": tune.grid_search([True,False]),
-        "vf_loss_coeff": 1.0,
-        #"lr": grid_search([1e-2, 1e-4, 1e-6]),  # try different lrs
+        "vf_share_layers": True,
+        "vf_loss_coeff": tune.grid_search([1.0,0.2,0.1]),
         "framework": "torch"
     }
 
