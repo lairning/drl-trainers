@@ -127,8 +127,8 @@ class AlphaHeartsModel(ActorCriticModel):
         ActorCriticModel.__init__(self, obs_space, action_space, num_outputs,
                                   model_config, name)
 
-        print("###### obs_space")
-        print(obs_space)
+        print("###### obs_space.high")
+        print(obs_space.high)
         self._embedd = nn.Embedding(int(obs_space.high[-1]) + 1, CARD_EMBEDD_SIZE)
 
         #print("## DEBUG obs_space.original_space ###", obs_space.original_space)
