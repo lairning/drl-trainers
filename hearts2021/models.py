@@ -173,9 +173,9 @@ class AlphaHeartsModel(ActorCriticModel):
         self._value_out = self.critic_layers(x)
 
         inf_mask = torch.clamp(torch.log(action_mask), FLOAT_MIN, FLOAT_MAX)
-        print("##############  DEBUG")
-        print(logits)
-        print(inf_mask)
-        print(logits + inf_mask)
+        # print("##############  DEBUG")
+        # print(logits)
+        # print(inf_mask)
+        # print(logits + inf_mask)
         return logits + inf_mask, None
 
