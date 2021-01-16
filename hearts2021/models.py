@@ -92,8 +92,6 @@ class HeartsNetwork(TorchModelV2, nn.Module):
     def forward(self, input_dict: Dict[str, TensorType],
                 state: List[TensorType],
                 seq_lens: TensorType) -> (TensorType, List[TensorType]):
-        #print("#######   DEBUG   ######:", input_dict['obs'])
-        #print("#######   DEBUG   ######:", input_dict['obs_flat'])
         self._players_in, self._cards_in = torch.split(input_dict['obs_flat'],[12,4],1)
         self._cards_in = self._cards_in.long()
         emb_cards = self._embedd(self._cards_in).reshape(self._cards_in.shape[0],-1)
@@ -175,5 +173,9 @@ class AlphaHeartsModel(ActorCriticModel):
         self._value_out = self.critic_layers(x)
 
         inf_mask = torch.clamp(torch.log(action_mask), FLOAT_MIN, FLOAT_MAX)
+        print("##############  DEBUG")
+        print(logits)
+        print(inf_mask)
+        print(logits + inf_mask)
         return logits + inf_mask, None
 
