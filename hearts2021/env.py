@@ -91,7 +91,9 @@ class HeartsEnv(gym.Env):
     def step(self, played_card: Card):
         # Test Cheating
         if played_card not in self.player_list[self.idx_plist].get_possible_cards(self.status):
-            print("### WARNING Card not Possible!", self.observation[-1], self.me.cards, played_card)
+            print("### WARNING Card not Possible!",
+                  self.observation[-1], self.me.cards,
+                  self.me.get_possible_cards(self.status),played_card)
             return (self.observation, set()), CHEAT_POINTS, True, {}
 
         self._update_status(self.idx_plist, played_card)
