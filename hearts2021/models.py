@@ -163,9 +163,14 @@ class AlphaHeartsModel(ActorCriticModel):
         action_mask = input_dict["action_mask"]
 
         self._players_in, self._cards_in = torch.split(input_dict['obs'],[12,4],1)
-
+        print("###### self._players_in")
+        print(self._players_in)
         self._cards_in = self._cards_in.long()
+        print("###### self._cards_in")
+        print(self._cards_in)
         emb_cards = self._embedd(self._cards_in).reshape(self._cards_in.shape[0],-1)
+        print("###### emb_cards")
+        print(emb_cards)
         x = torch.cat((self._players_in, emb_cards), 1)
 
         x = self.shared_layers(x)
