@@ -101,7 +101,7 @@ if __name__ == "__main__":
             "custom_model": "my_model",
         },
         "vf_share_layers": True,
-        "vf_loss_coeff": tune.grid_search([1.0,0.2,0.1]),
+        "vf_loss_coeff": tune.grid_search([0.05,2.0]),
         "framework": "torch"
     }
 
