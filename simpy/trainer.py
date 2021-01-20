@@ -32,10 +32,10 @@ if __name__ == "__main__":
 
     ppo_config = {
         "env"           : "SimpyEnv",
-        "vf_clip_param" : tune.grid_search([100.0, 1000.0, 10000.0]),
+        "vf_clip_param" : tune.grid_search([20.0, 100.0]),
         "num_workers"   : 5,
-        #"lr"            : tune.grid_search([1e-3, 1e-4, 1e-5]),
-        "batch_mode"    : tune.grid_search(["truncate_episodes","complete_episodes"])
+        "lr"            : tune.grid_search([1e-3, 1e-5]),
+        "batch_mode"    : "complete_episodes"
     }
 
     stop = {
