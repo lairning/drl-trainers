@@ -22,19 +22,27 @@ if __name__ == "__main__":
         lambda _: SimpyEnv()
     )
 
-    config = {
-        "env": "SimpyEnv",
-        "vf_clip_param": 10000.0,
-        "num_workers": 5
+    dqn_config = {
+        "v_min"       : -40000.0,
+        "v_max"       :   1200.0,
+        "env"         : "SimpyEnv",
+        "num_workers" : 5
+        }
+
+    ppo_config = {
+        "env"           : "SimpyEnv",
+        "vf_clip_param" : 10000.0,
+        "num_workers"   : 5
     }
 
     stop = {
         "training_iteration": args.stop
     }
 
-    # results_dqn = tune.run(dqn.DQNTrainer, config=dqn_config, stop=stop)
 
-    results = tune.run("PPO", config=config, stop=stop)
+    results_dqn = tune.run(dqn.DQNTrainer, config=dqn_config, stop=stop)
+
+    # results = tune.run("PPO", config=ppo_config, stop=stop)
 
     # results_sac = tune.run(sac.SACTrainer, config=sac_config, stop=stop)
 
