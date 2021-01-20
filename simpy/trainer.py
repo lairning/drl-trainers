@@ -32,8 +32,10 @@ if __name__ == "__main__":
 
     ppo_config = {
         "env"           : "SimpyEnv",
-        "vf_clip_param" : 1000.0,
-        "num_workers"   : 5
+        "vf_clip_param" : tune.grid_search([100.0, 1000.0, 10000.0]),
+        "num_workers"   : 5,
+        #"lr"            : tune.grid_search([1e-3, 1e-4, 1e-5]),
+        "batch_mode"    : tune.grid_search(["truncate_episodes","complete_episodes"])
     }
 
     stop = {
@@ -41,9 +43,9 @@ if __name__ == "__main__":
     }
 
 
-    results_dqn = tune.run(dqn.DQNTrainer, config=dqn_config, stop=stop)
+    # results_dqn = tune.run(dqn.DQNTrainer, config=dqn_config, stop=stop)
 
-    #results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop)
+    results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop)
 
 
     ray.shutdown()

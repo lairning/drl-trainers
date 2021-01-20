@@ -53,8 +53,8 @@ def tank_truck(env, fuel_pump):
     ammount = fuel_pump.capacity - fuel_pump.level
     dprint('Tank truck refuelling %.1f liters.' % ammount)
     env.actual_revenue -= TRUCK_COST
-    env.truck_revenue = env.actual_revenue - env.last_revenue
-    env.last_revenue = env.actual_revenue
+    # env.truck_revenue = env.actual_revenue - env.last_revenue
+    # env.last_revenue = env.actual_revenue
     env.free_truck = 1
     if ammount > 0:
         yield fuel_pump.put(ammount)
@@ -104,7 +104,7 @@ class Sim(BaseSim):
         self.process(car_generator(self, self.gas_station, self.fuel_pump))
         self.actual_revenue = 0
         self.last_revenue = 0
-        self.truck_revenue = 0
+        # self.truck_revenue = 0
         self.free_truck = 1
 
     def get_observation(self):
@@ -113,8 +113,10 @@ class Sim(BaseSim):
         return np.array(env_status)
 
     def get_reward(self):
-        revenue = self.truck_revenue
-        self.truck_revenue = 0
+        revenue = self.actual_revenue - self.last_revenue
+        self.last_revenue = self.actual_revenue
+        # revenue = self.truck_revenue
+        # self.truck_revenue = 0
         done = self.now >= self.sim_time
         return revenue, done, {} # Reward, Done, Info
 
@@ -158,7 +160,7 @@ class SimpyEnv(gym.Env):
         assert self.observation_space.contains(obs), "{} not in {}".format(obs, self.observation_space)
         return obs, reward, done, info
 
-if DEBUG:
+if False:
     for level in [35,45,55,65]:
         N = 200
         total = 0
