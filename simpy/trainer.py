@@ -24,7 +24,8 @@ if __name__ == "__main__":
 
     config = {
         "env": "SimpyEnv",
-        "num_workers": 0
+        "vf_clip_param": 10000.0,
+        "num_workers": 5
     }
 
     stop = {
