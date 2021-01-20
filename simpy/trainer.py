@@ -26,7 +26,7 @@ if __name__ == "__main__":
         "v_min"       : -30000.0,
         "v_max"       :   1000.0,
         "env"         : "SimpyEnv",
-        ""
+        "hiddens"     : [256, 256],
         "num_workers" : 5
         }
 
@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     results_dqn = tune.run(dqn.DQNTrainer, config=dqn_config, stop=stop)
 
-    results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop)
+    #results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop)
 
 
     ray.shutdown()

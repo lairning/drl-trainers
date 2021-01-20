@@ -158,20 +158,20 @@ class SimpyEnv(gym.Env):
         assert self.observation_space.contains(obs), "{} not in {}".format(obs, self.observation_space)
         return obs, reward, done, info
 
-
-for level in [65]:
-    N = 1
-    total = 0
-    for i in range(N):
-        env = SimpyEnv()
-        obs = env.reset()
-        done = False
-        while not done:
-            dprint(obs)
-            action = obs[0] < level and obs[3]
-            #action = np.random.randint(N_ACTIONS)
-            obs, reward, done, info = env.step(action)
-            dprint("Decision {} with {} revenue".format(action, reward))
-        total += env.sim.actual_revenue
-    print("Average Revenue for level {}:".format(level), total/ N)
+if DEBUG:
+    for level in [35,45,55,65]:
+        N = 200
+        total = 0
+        for i in range(N):
+            env = SimpyEnv()
+            obs = env.reset()
+            done = False
+            while not done:
+                dprint(obs)
+                action = obs[0] < level and obs[3]
+                #action = np.random.randint(N_ACTIONS)
+                obs, reward, done, info = env.step(action)
+                dprint("Decision {} with {} revenue".format(action, reward))
+            total += env.sim.actual_revenue
+        print("Average Revenue for level {}:".format(level), total/ N)
 
