@@ -113,7 +113,7 @@ class Sim(BaseSim):
         revenue = self.actual_revenue - self.last_revenue
         self.last_revenue = self.actual_revenue
         done = self.now >= self.sim_time
-        return revenue, done, None # Reward, Done, Info
+        return revenue, done, {} # Reward, Done, Info
 
     def exec_action(self, action):
         if action:
