@@ -39,7 +39,7 @@ CAR_INTERVAL = [[40, 120] for _ in range(7)]+[[5,10] for _ in range(3)]+[[20,80]
 CAR_INTERVAL += [[5,40] for _ in range(2)]+[[20,80] for _ in range(3)]
 CAR_INTERVAL += [[5,20] for _ in range(3)]+[[20,80] for _ in range(3)]
 
-DEBUG = True
+DEBUG = False
 
 def dprint(*args):
     if DEBUG:
