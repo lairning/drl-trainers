@@ -34,7 +34,7 @@ if __name__ == "__main__":
         "env"           : "SimpyEnv",
         "vf_clip_param" : tune.grid_search([20.0, 100.0]),
         "num_workers"   : 5,
-        "lr"            : tune.grid_search([1e-3, 1e-5]),
+        "lr"            : tune.grid_search([1e-4, 1e-6]),
         "batch_mode"    : "complete_episodes"
     }
 
