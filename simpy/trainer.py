@@ -17,7 +17,7 @@ if __name__ == "__main__":
     ray.init()
 
     config = {
-        "env": SimpyEnv,
+        "env_config": {},
         "num_workers": 0
     }
 
@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     # results_dqn = tune.run(dqn.DQNTrainer, config=dqn_config, stop=stop)
 
-    results = tune.run(ppo.PPOTrainer, config=config, stop=stop)
+    results = tune.run(ppo.PPOTrainer, env=SimpyEnv, config=config, stop=stop)
 
     # results_sac = tune.run(sac.SACTrainer, config=sac_config, stop=stop)
 
