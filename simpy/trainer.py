@@ -23,15 +23,16 @@ if __name__ == "__main__":
     )
 
     dqn_config = {
-        "v_min"       : -40000.0,
-        "v_max"       :   1200.0,
+        "v_min"       : -30000.0,
+        "v_max"       :   1000.0,
         "env"         : "SimpyEnv",
+        ""
         "num_workers" : 5
         }
 
     ppo_config = {
         "env"           : "SimpyEnv",
-        "vf_clip_param" : 10000.0,
+        "vf_clip_param" : 1000.0,
         "num_workers"   : 5
     }
 
@@ -42,9 +43,8 @@ if __name__ == "__main__":
 
     results_dqn = tune.run(dqn.DQNTrainer, config=dqn_config, stop=stop)
 
-    # results = tune.run("PPO", config=ppo_config, stop=stop)
+    results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop)
 
-    # results_sac = tune.run(sac.SACTrainer, config=sac_config, stop=stop)
 
     ray.shutdown()
 

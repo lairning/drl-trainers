@@ -30,7 +30,7 @@ GAS_STATION_SIZE = 200     # liters
 CAR_TANK_SIZE = 50         # liters
 CAR_TANK_LEVEL = [2, 20]   # Min/max levels of fuel tanks (in liters)
 REFUELING_SPEED = 1        # liters / minute
-TANK_TRUCK_TIME = 90       # Minutes it takes the tank truck to arrive
+TANK_TRUCK_TIME = 60       # Minutes it takes the tank truck to arrive
 PUMP_NUMBER = 2            # Number of Pumps
 MARGIN_PER_LITRE = 1       # Gas margin er litre, excluding truck transportation fixed cost
 TRUCK_COST = 150           # Fixed Transportation Cost
@@ -39,7 +39,7 @@ CAR_INTERVAL = [[40, 120] for _ in range(7)]+[[5,10] for _ in range(3)]+[[20,80]
 CAR_INTERVAL += [[5,40] for _ in range(2)]+[[20,80] for _ in range(3)]
 CAR_INTERVAL += [[5,20] for _ in range(3)]+[[20,80] for _ in range(3)]
 
-DEBUG = False
+DEBUG = True
 
 def dprint(*args):
     if DEBUG:
@@ -53,6 +53,8 @@ def tank_truck(env, fuel_pump):
     ammount = fuel_pump.capacity - fuel_pump.level
     dprint('Tank truck refuelling %.1f liters.' % ammount)
     env.actual_revenue -= TRUCK_COST
+    env.truck_revenue = env.actual_revenue - env.last_revenue
+    env.last_revenue = env.actual_revenue
     env.free_truck = 1
     if ammount > 0:
         yield fuel_pump.put(ammount)
@@ -102,6 +104,7 @@ class Sim(BaseSim):
         self.process(car_generator(self, self.gas_station, self.fuel_pump))
         self.actual_revenue = 0
         self.last_revenue = 0
+        self.truck_revenue = 0
         self.free_truck = 1
 
     def get_observation(self):
@@ -110,8 +113,8 @@ class Sim(BaseSim):
         return np.array(env_status)
 
     def get_reward(self):
-        revenue = self.actual_revenue - self.last_revenue
-        self.last_revenue = self.actual_revenue
+        revenue = self.truck_revenue
+        self.truck_revenue = 0
         done = self.now >= self.sim_time
         return revenue, done, {} # Reward, Done, Info
 
@@ -155,9 +158,9 @@ class SimpyEnv(gym.Env):
         assert self.observation_space.contains(obs), "{} not in {}".format(obs, self.observation_space)
         return obs, reward, done, info
 
-'''
-for level in [45,50,55,60,65,70,75,80,85]:
-    N = 100
+
+for level in [65]:
+    N = 1
     total = 0
     for i in range(N):
         env = SimpyEnv()
@@ -171,4 +174,4 @@ for level in [45,50,55,60,65,70,75,80,85]:
             dprint("Decision {} with {} revenue".format(action, reward))
         total += env.sim.actual_revenue
     print("Average Revenue for level {}:".format(level), total/ N)
-'''
+
