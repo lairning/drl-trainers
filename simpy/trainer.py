@@ -17,7 +17,7 @@ if __name__ == "__main__":
     ray.init()
 
     config = {
-        "env": SimpyEnv(),
+        "env": SimpyEnv,
         "num_workers": 0
     }
 
