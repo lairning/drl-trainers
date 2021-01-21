@@ -1,6 +1,8 @@
 import ray
 from ray import tune
 from ray.tune.registry import register_env
+from ray.rllib.contrib.alpha_zero.models.custom_torch_models import DenseModel
+from ray.rllib.models.catalog import ModelCatalog
 
 import argparse
 
@@ -23,6 +25,8 @@ if __name__ == "__main__":
         "SimAlphaEnv",
         lambda _: SimAlphaEnv()
     )
+
+    ModelCatalog.register_custom_model("dense_model", DenseModel)
 
     dqn_config = {
         "v_min"      : -30000.0,
@@ -53,6 +57,9 @@ if __name__ == "__main__":
         },
         "ranked_rewards": {
             "enable": True,
+        },
+        "model": {
+            "custom_model": "dense_model",
         },
     }
 
