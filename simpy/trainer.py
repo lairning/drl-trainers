@@ -27,7 +27,7 @@ class DenseModel(ActorCriticModel):
         nn.Module.__init__(self)
         self.shared_layers = nn.Sequential(
             nn.Linear(
-                in_features=obs_space.original_space["obs"].shape[0],
+                in_features=obs_space.shape[0],
                 out_features=256), nn.Linear(
                     in_features=256, out_features=256))
         self.actor_layers = nn.Sequential(
