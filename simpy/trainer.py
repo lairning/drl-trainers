@@ -4,6 +4,8 @@ from ray.tune.registry import register_env
 from ray.rllib.contrib.alpha_zero.models.custom_torch_models import ActorCriticModel
 from ray.rllib.models.catalog import ModelCatalog
 from ray.rllib.utils.framework import try_import_torch
+from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
+from ray.rllib.models.preprocessors import get_preprocessor
 
 torch, nn = try_import_torch()
 
@@ -14,10 +16,15 @@ from simpy_model import SimpyEnv, SimAlphaEnv
 class DenseModel(ActorCriticModel):
     def __init__(self, obs_space, action_space, num_outputs, model_config,
                  name):
-        print("################# obs_space:",obs_space)
+        #print("################# obs_space:",obs_space)
+        '''
         ActorCriticModel.__init__(self, obs_space, action_space, num_outputs,
                                   model_config, name)
-
+        '''
+        self.preprocessor = get_preprocessor(obs_space)(obs_space)
+        TorchModelV2.__init__(self, obs_space, action_space, num_outputs,
+                              model_config, name)
+        nn.Module.__init__(self)
         self.shared_layers = nn.Sequential(
             nn.Linear(
                 in_features=obs_space.original_space["obs"].shape[0],
