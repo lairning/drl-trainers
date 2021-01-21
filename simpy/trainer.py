@@ -1,12 +1,33 @@
 import ray
 from ray import tune
 from ray.tune.registry import register_env
-from ray.rllib.contrib.alpha_zero.models.custom_torch_models import DenseModel
+from ray.rllib.contrib.alpha_zero.models.custom_torch_models import ActorCriticModel
 from ray.rllib.models.catalog import ModelCatalog
+from ray.rllib.utils.framework import try_import_torch
+
+torch, nn = try_import_torch()
 
 import argparse
 
 from simpy_model import SimpyEnv, SimAlphaEnv
+
+class DenseModel(ActorCriticModel):
+    def __init__(self, obs_space, action_space, num_outputs, model_config,
+                 name):
+        print("################# obs_space:",obs_space)
+        ActorCriticModel.__init__(self, obs_space, action_space, num_outputs,
+                                  model_config, name)
+
+        self.shared_layers = nn.Sequential(
+            nn.Linear(
+                in_features=obs_space.original_space["obs"].shape[0],
+                out_features=256), nn.Linear(
+                    in_features=256, out_features=256))
+        self.actor_layers = nn.Sequential(
+            nn.Linear(in_features=256, out_features=action_space.n))
+        self.critic_layers = nn.Sequential(
+            nn.Linear(in_features=256, out_features=1))
+        self._value_out = None
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--stop", type=int, default=1)
