@@ -3,7 +3,7 @@ import itertools
 import gym
 import numpy as np
 import simpy
-from gym.spaces import Discrete, Box
+from gym.spaces import Discrete, Box, Dict
 
 
 class BaseSim(simpy.Environment):
@@ -168,10 +168,21 @@ class SimpyEnv(gym.Env):
 
 from copy import deepcopy
 
-
 class SimAlphaEnv(SimpyEnv):
+
     def __init__(self):
         super().__init__()
+        self.observation_space = Dict({
+            "obs"        : Box(low=np.array([0, 0, 0, 0]),
+                               high=np.array([GAS_STATION_SIZE, PUMP_NUMBER, 23, 1]),
+                               dtype=np.float64),
+            "action_mask": Box(low=0, high=1, shape=(self.action_space.n,))
+        })
+
+    def reset(self):
+        obs = super().reset()
+        action_mask = [1, 1-obs[3]]
+        return {'obs': obs, "action_mask": action_mask}
 
     def step(self, action):
         obs, _, done, info = super().step(action)
@@ -179,6 +190,8 @@ class SimAlphaEnv(SimpyEnv):
             reward = self.sim.actual_revenue
         else:
             reward = 0
+        action_mask = [1, 1 - obs[3]]
+        obs = {'obs': obs, "action_mask": action_mask}
         return obs, reward, done, info
 
     def set_state(self, state):
