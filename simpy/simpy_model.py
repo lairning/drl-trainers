@@ -181,7 +181,7 @@ class SimAlphaEnv(SimpyEnv):
 
     def reset(self):
         obs = super().reset()
-        action_mask = [1, 1-obs[3]]
+        action_mask = np.array([1, 1-obs[3]])
         return {'obs': obs, "action_mask": action_mask}
 
     def step(self, action):
@@ -190,7 +190,7 @@ class SimAlphaEnv(SimpyEnv):
             reward = self.sim.actual_revenue
         else:
             reward = 0
-        action_mask = [1, 1 - obs[3]]
+        action_mask = np.array([1, 1-obs[3]])
         obs = {'obs': obs, "action_mask": action_mask}
         return obs, reward, done, info
 
