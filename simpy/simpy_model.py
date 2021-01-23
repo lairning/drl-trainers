@@ -168,10 +168,11 @@ class SimpyEnv(gym.Env):
 
 from copy import deepcopy
 
-class SimAlphaEnv(SimpyEnv):
+class SimAlphaEnv:
 
     def __init__(self):
-        super().__init__()
+        self.env = SimpyEnv()
+        self.action_space = Discrete(N_ACTIONS)
         self.observation_space = Dict({
             "obs"        : Box(low=np.array([0, 0, 0, 0]),
                                high=np.array([GAS_STATION_SIZE, PUMP_NUMBER, 23, 1]),
@@ -180,14 +181,14 @@ class SimAlphaEnv(SimpyEnv):
         })
 
     def reset(self):
-        obs = super().reset()
+        obs = self.env.reset()
         action_mask = np.array([1, 1-obs[3]])
         return {'obs': obs, "action_mask": action_mask}
 
     def step(self, action):
-        obs, _, done, info = super().step(action)
+        obs, _, done, info = self.env.step(action)
         if done:
-            reward = self.sim.actual_revenue
+            reward = self.env.sim.actual_revenue
         else:
             reward = 0
         action_mask = np.array([1, 1-obs[3]])
@@ -195,11 +196,13 @@ class SimAlphaEnv(SimpyEnv):
         return obs, reward, done, info
 
     def set_state(self, state):
-        self.sim = deepcopy(state)
-        return self.sim.get_observation()
+        self.env = deepcopy(state)
+        obs = self.env.sim.get_observation()
+        action_mask = np.array([1, 1 - obs[3]])
+        return {'obs': obs, "action_mask": action_mask}
 
     def get_state(self):
-        return deepcopy(self.sim)
+        return deepcopy(self.env)
 
 
 '''
