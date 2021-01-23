@@ -48,66 +48,13 @@ def dprint(*args):
         print(*args)
 
 
-def tank_truck(env, fuel_pump):
-    """Arrives at the gas station after a certain delay and refuels it."""
-    env.free_truck = 0
-    yield env.timeout(TANK_TRUCK_TIME)
-    dprint('Tank truck arriving at time %d' % env.now)
-    ammount = fuel_pump.capacity - fuel_pump.level
-    dprint('Tank truck refuelling %.1f liters.' % ammount)
-    env.actual_revenue -= TRUCK_COST
-    # env.truck_revenue = env.actual_revenue - env.last_revenue
-    # env.last_revenue = env.actual_revenue
-    env.free_truck = 1
-    if ammount > 0:
-        yield fuel_pump.put(ammount)
-
-
-def car(name, env, gas_station, fuel_pump):
-    """A car arrives at the gas station for refueling.
-    It requests one of the gas station's fuel pumps and tries to get the
-    desired amount of gas from it. If the stations reservoir is
-    depleted, the car has to wait for the tank truck to arrive.
-    """
-    fuel_tank_level = np.random.randint(*CAR_TANK_LEVEL)
-    dprint('%s arriving at gas station at %.1f' % (name, env.now))
-    with gas_station.request() as req:
-        start = env.now
-        # Request one of the gas pumps or leave if it take to long
-        result = yield req | env.timeout(np.random.randint(*DRIVER_PATIENCE))
-
-        if req in result:
-
-            # Get the required amount of fuel
-            liters_required = CAR_TANK_SIZE - fuel_tank_level
-            yield fuel_pump.get(liters_required)
-
-            # Pay the fuel
-            env.actual_revenue += liters_required * MARGIN_PER_LITRE
-
-            # The "actual" refueling process takes some time
-            yield env.timeout(liters_required / REFUELING_SPEED)
-
-            dprint('%s finished refueling in %.1f minutes.' % (name, env.now - start))
-        else:
-            dprint("{} waited {} minutes and left without refueling".format(name, env.now - start))
-
-
-def car_generator(env, gas_station, fuel_pump):
-    """Generate new cars that arrive at the gas station."""
-    for i in itertools.count():
-        hour = (env.now // 60) % 24
-        yield env.timeout(np.random.randint(*CAR_INTERVAL[hour]))
-        env.process(car('Car %d' % i, env, gas_station, fuel_pump))
-
-
 class Sim(BaseSim):
     def __init__(self, sim_time, step_time=1):
         super().__init__(step_time)
         self.sim_time = sim_time
         self.fuel_pump = simpy.Container(self, GAS_STATION_SIZE, init=GAS_STATION_SIZE / 2)
         self.gas_station = simpy.Resource(self, PUMP_NUMBER)
-        self.process(car_generator(self, self.gas_station, self.fuel_pump))
+        self.process(self.car_generator(self.gas_station, self.fuel_pump))
         self.actual_revenue = 0
         self.last_revenue = 0
         # self.truck_revenue = 0
@@ -128,8 +75,59 @@ class Sim(BaseSim):
 
     def exec_action(self, action):
         if action:
-            self.process(tank_truck(self, self.fuel_pump))
+            self.process(self.tank_truck(self.fuel_pump))
 
+    def tank_truck(self, fuel_pump):
+        """Arrives at the gas station after a certain delay and refuels it."""
+        self.free_truck = 0
+        yield self.timeout(TANK_TRUCK_TIME)
+        dprint('Tank truck arriving at time %d' % self.now)
+        ammount = fuel_pump.capacity - fuel_pump.level
+        dprint('Tank truck refuelling %.1f liters.' % ammount)
+        self.actual_revenue -= TRUCK_COST
+        # env.truck_revenue = env.actual_revenue - env.last_revenue
+        # env.last_revenue = env.actual_revenue
+        self.free_truck = 1
+        if ammount > 0:
+            yield fuel_pump.put(ammount)
+
+
+    def car(self, name, gas_station, fuel_pump):
+        """A car arrives at the gas station for refueling.
+        It requests one of the gas station's fuel pumps and tries to get the
+        desired amount of gas from it. If the stations reservoir is
+        depleted, the car has to wait for the tank truck to arrive.
+        """
+        fuel_tank_level = np.random.randint(*CAR_TANK_LEVEL)
+        dprint('%s arriving at gas station at %.1f' % (name, self.now))
+        with gas_station.request() as req:
+            start = self.now
+            # Request one of the gas pumps or leave if it take to long
+            result = yield req | self.timeout(np.random.randint(*DRIVER_PATIENCE))
+
+            if req in result:
+
+                # Get the required amount of fuel
+                liters_required = CAR_TANK_SIZE - fuel_tank_level
+                yield fuel_pump.get(liters_required)
+
+                # Pay the fuel
+                self.actual_revenue += liters_required * MARGIN_PER_LITRE
+
+                # The "actual" refueling process takes some time
+                yield self.timeout(liters_required / REFUELING_SPEED)
+
+                dprint('%s finished refueling in %.1f minutes.' % (name, self.now - start))
+            else:
+                dprint("{} waited {} minutes and left without refueling".format(name, self.now - start))
+
+
+    def car_generator(self, gas_station: simpy.Resource, fuel_pump: simpy.Container):
+        """Generate new cars that arrive at the gas station."""
+        for i in itertools.count():
+            hour = (self.now // 60) % 24
+            yield self.timeout(np.random.randint(*CAR_INTERVAL[hour]))
+            self.process(self.car('Car %d' % i, gas_station, fuel_pump))
 
 N_ACTIONS = 2  # 0 - DoNothing; 1 - Send the Truck
 SIM_TIME = 5 * 24 * 60  # Simulation time in Time units (minutes)
@@ -206,8 +204,8 @@ class SimAlphaEnv:
 
 
 '''
-for level in [35,45,55,65]:
-    N = 200
+for level in [45,55,65,75,85]:
+    N = 100
     total = 0
     for i in range(N):
         env = SimpyEnv()
