@@ -66,7 +66,7 @@ if __name__ == "__main__":
         "model": {
             "custom_model": "dense_model",
         },
-        "num_workers": 5
+        "num_workers": 0
     }
 
     stop = {
