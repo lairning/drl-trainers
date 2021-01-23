@@ -13,6 +13,8 @@ parser.add_argument("--stop", type=int, default=1)
 if __name__ == "__main__":
     args = parser.parse_args()
 
+    ray.init()
+
     register_env(
         "SimpyEnv",
         lambda _: SimpyEnv()
@@ -44,3 +46,6 @@ if __name__ == "__main__":
             obs, reward, done, info = he.step(action)
             episode_reward += reward
         print("Total:",episode_reward)
+
+
+    ray.shutdown()
