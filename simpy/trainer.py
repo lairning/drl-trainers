@@ -40,7 +40,7 @@ if __name__ == "__main__":
         "training_iteration": args.stop
     }
 
-    results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop)
+    results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop, checkpoint_at_end=True)
 
     best_checkpoint = results_ppo.get_best_checkpoint(trial=results_ppo.get_best_trial(metric="episode_reward_mean",
                                                                                mode="max"),
