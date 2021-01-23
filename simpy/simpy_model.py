@@ -196,13 +196,13 @@ class SimAlphaEnv:
         return obs, reward, done, info
 
     def set_state(self, state):
-        self.env = state
+        self.env = state[0]
         obs = self.env.sim.get_observation()
         action_mask = np.array([1, 1 - obs[3]])
         return {'obs': obs, "action_mask": action_mask}
 
     def get_state(self):
-        return deepcopy(self.env)
+        return deepcopy(self.env), None
 
 
 '''
