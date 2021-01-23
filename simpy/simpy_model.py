@@ -47,6 +47,10 @@ def dprint(*args):
     if DEBUG:
         print(*args)
 
+def hot_encode(n, N):
+    encode = [0]*N
+    encode[n] = 1
+    return encode
 
 class Sim(BaseSim):
     def __init__(self, sim_time, step_time=1):
@@ -61,8 +65,8 @@ class Sim(BaseSim):
         self.free_truck = 1
 
     def get_observation(self):
-        hour = (self.now // 60) % 24
-        env_status = [self.fuel_pump.level, self.gas_station.count, hour, self.free_truck]
+        hour_mask = hot_encode((self.now // 60) % 24, 24)
+        env_status = [self.fuel_pump.level, self.gas_station.count, self.free_truck]+hour_mask
         return np.array(env_status)
 
     def get_reward(self):
@@ -133,14 +137,15 @@ N_ACTIONS = 2  # 0 - DoNothing; 1 - Send the Truck
 SIM_TIME = 5 * 24 * 60  # Simulation time in Time units (minutes)
 STEP_TIME = 10  # Time units (minutes) between each step
 
+OBSERVATION_SPACE = Box(low=np.array([0, 0, 0]+[0]*24),
+                             high=np.array([GAS_STATION_SIZE, PUMP_NUMBER, 1]+[1]*24),
+                             dtype=np.float64)
 
 class SimpyEnv(gym.Env):
 
     def __init__(self):
         self.action_space = Discrete(N_ACTIONS)
-        self.observation_space = Box(low=np.array([0, 0, 0, 0]),
-                                     high=np.array([GAS_STATION_SIZE, PUMP_NUMBER, 23, 1]),
-                                     dtype=np.float64)
+        self.observation_space = OBSERVATION_SPACE
         self.sim = None
 
     def reset(self):
@@ -172,9 +177,7 @@ class SimAlphaEnv:
         self.env = SimpyEnv()
         self.action_space = Discrete(N_ACTIONS)
         self.observation_space = Dict({
-            "obs"        : Box(low=np.array([0, 0, 0, 0]),
-                               high=np.array([GAS_STATION_SIZE, PUMP_NUMBER, 23, 1]),
-                               dtype=np.float64),
+            "obs"        : OBSERVATION_SPACE,
             "action_mask": Box(low=0, high=1, shape=(self.action_space.n,))
         })
 
@@ -202,22 +205,21 @@ class SimAlphaEnv:
     def get_state(self):
         return deepcopy(self.env), None
 
-
-'''
-for level in [45,55,65,75,85]:
+#for level in [45,55,65,75,85]:
+for level in [65]:
     N = 100
     total = 0
     for i in range(N):
+        # env_ = SimpyEnv()
         env = SimpyEnv()
         obs = env.reset()
         done = False
         while not done:
             dprint(obs)
-            action = obs[0] < level and obs[3]
+            action = obs[0] < level and obs[2]
             #action = np.random.randint(N_ACTIONS)
             obs, reward, done, info = env.step(action)
             dprint("Decision {} with {} revenue".format(action, reward))
         total += env.sim.actual_revenue
     print("Average Revenue for level {}:".format(level), total/ N)
 
-'''
