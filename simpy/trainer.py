@@ -31,7 +31,7 @@ if __name__ == "__main__":
     ppo_config = {
         "env"          : "SimpyEnv",
         "vf_clip_param": 50,  # tune.grid_search([20.0, 100.0]),
-        "num_workers"  : 0,
+        "num_workers"  : 5,
         # "lr"            : tune.grid_search([1e-4, 1e-6]),
         "batch_mode"   : "complete_episodes"
     }

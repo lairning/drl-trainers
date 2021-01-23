@@ -205,6 +205,7 @@ class SimAlphaEnv:
     def get_state(self):
         return deepcopy(self.env), None
 
+'''
 #for level in [45,55,65,75,85]:
 for level in [65]:
     N = 100
@@ -222,4 +223,5 @@ for level in [65]:
             dprint("Decision {} with {} revenue".format(action, reward))
         total += env.sim.actual_revenue
     print("Average Revenue for level {}:".format(level), total/ N)
+'''
 
