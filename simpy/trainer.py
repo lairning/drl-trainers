@@ -42,4 +42,11 @@ if __name__ == "__main__":
 
     results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop)
 
+    best_checkpoint = results_ppo.get_best_checkpoint(trial=results_ppo.get_best_trial(metric="episode_reward_mean",
+                                                                               mode="max"),
+                                                  metric="episode_reward_mean",
+                                                  mode="max")
+
+    print(best_checkpoint)
+
     ray.shutdown()
