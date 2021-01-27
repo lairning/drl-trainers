@@ -66,7 +66,8 @@ def main():
     }
 
     ray.init()
-    if False:  # args.use_tune:
+    tune = False
+    if tune:  # args.use_tune:
         time_signature = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
         name = f"SlateQ/{args.agent}-{time_signature}"
         if args.agent == "DQN":
@@ -91,8 +92,9 @@ def main():
                     "slateq_strategy": "MYOP", # tune.grid_search(ALL_SLATEQ_STRATEGIES),
                     "env_config"     : env_config,
                 },
-                num_samples=args.tune_num_samples)
-       else:
+                num_samples=args.tune_num_samples
+            )
+    else:
             # directly run using the trainer interface (good for debugging)
             if args.agent == "DQN":
                 config = dqn.DEFAULT_CONFIG.copy()
