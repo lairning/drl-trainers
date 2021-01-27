@@ -41,7 +41,7 @@ def main():
     parser.add_argument(
         "--num-workers",
         type=int,
-        default=0,
+        default=5,
         help="Only used if running with Tune.")
     args = parser.parse_args()
 
@@ -57,7 +57,7 @@ def main():
     ray.init()
     if True:  # args.use_tune:
         time_signature = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
-        name = f"SlateQ/{args.agent}-seed{args.env_seed}-{time_signature}"
+        name = f"SlateQ/{args.agent}-{time_signature}"
         if args.agent == "DQN":
             tune.run(
                 "DQN",
@@ -65,7 +65,6 @@ def main():
                 name=name,
                 config={
                     "env"        : recsim_env_name,
-                    "num_gpus"   : args.num_gpus,
                     "num_workers": args.num_workers,
                     "env_config" : env_config,
                 },
@@ -78,7 +77,6 @@ def main():
                 name=name,
                 config={
                     "env"            : recsim_env_name,
-                    "num_gpus"       : args.num_gpus,
                     "num_workers"    : args.num_workers,
                     "slateq_strategy": tune.grid_search(ALL_SLATEQ_STRATEGIES),
                     "env_config"     : env_config,
