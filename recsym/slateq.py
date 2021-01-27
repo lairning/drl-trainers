@@ -52,7 +52,7 @@ def main():
     parser.add_argument(
         "--workers",
         type=int,
-        default=5,
+        default=0,
         help="Only used if running with Tune.")
     args = parser.parse_args()
 
@@ -61,7 +61,7 @@ def main():
 
     env_config = {
         "slate_size"                      : args.env_slate_size,
-        # "seed": args.env_seed,
+        "seed": args.env_seed,
         "convert_to_discrete_action_space": args.agent == "DQN",
     }
 
