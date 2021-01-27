@@ -7,10 +7,21 @@ import ray
 from ray import tune
 from ray.rllib.agents import slateq
 from ray.rllib.agents import dqn
-from ray.rllib.agents.slateq.slateq import ALL_SLATEQ_STRATEGIES
 from ray.rllib.env.wrappers.recsim_wrapper import env_name as recsim_env_name
 from ray.tune.logger import pretty_print
 
+ALL_SLATEQ_STRATEGIES = [
+    # RANDOM: Randomly select documents for slates.
+    # "RANDOM",
+    # MYOP: Select documents that maximize user click probabilities. This is
+    # a myopic strategy and ignores long term rewards. This is equivalent to
+    # setting a zero discount rate for future rewards.
+    "MYOP",
+    # SARSA: Use the SlateQ SARSA learning algorithm.
+    "SARSA",
+    # QL: Use the SlateQ Q-learning algorithm.
+    "QL",
+]
 
 def main():
     parser = argparse.ArgumentParser()
@@ -53,19 +64,6 @@ def main():
         # "seed": args.env_seed,
         "convert_to_discrete_action_space": args.agent == "DQN",
     }
-
-    ALL_SLATEQ_STRATEGIES = [
-        # RANDOM: Randomly select documents for slates.
-        # "RANDOM",
-        # MYOP: Select documents that maximize user click probabilities. This is
-        # a myopic strategy and ignores long term rewards. This is equivalent to
-        # setting a zero discount rate for future rewards.
-        "MYOP",
-        # SARSA: Use the SlateQ SARSA learning algorithm.
-        "SARSA",
-        # QL: Use the SlateQ Q-learning algorithm.
-        "QL",
-    ]
 
     ray.init()
     if True:  # args.use_tune:
