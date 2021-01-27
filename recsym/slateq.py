@@ -50,7 +50,7 @@ def main():
     parser.add_argument("--env-slate-size", type=int, default=2)
     # parser.add_argument("--env-seed", type=int, default=0)
     parser.add_argument(
-        "--num-workers",
+        "--workers",
         type=int,
         default=5,
         help="Only used if running with Tune.")
@@ -88,7 +88,7 @@ def main():
                 config={
                     "env"            : recsim_env_name,
                     "num_workers"    : args.num_workers,
-                    "slateq_strategy": tune.grid_search(ALL_SLATEQ_STRATEGIES),
+                    "slateq_strategy": "MYOP", # tune.grid_search(ALL_SLATEQ_STRATEGIES),
                     "env_config"     : env_config,
                 },
                 num_samples=args.tune_num_samples)
