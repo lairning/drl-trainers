@@ -54,6 +54,19 @@ def main():
         "convert_to_discrete_action_space": args.agent == "DQN",
     }
 
+    ALL_SLATEQ_STRATEGIES = [
+        # RANDOM: Randomly select documents for slates.
+        # "RANDOM",
+        # MYOP: Select documents that maximize user click probabilities. This is
+        # a myopic strategy and ignores long term rewards. This is equivalent to
+        # setting a zero discount rate for future rewards.
+        "MYOP",
+        # SARSA: Use the SlateQ SARSA learning algorithm.
+        "SARSA",
+        # QL: Use the SlateQ Q-learning algorithm.
+        "QL",
+    ]
+
     ray.init()
     if True:  # args.use_tune:
         time_signature = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
@@ -68,8 +81,7 @@ def main():
                     "num_workers": args.num_workers,
                     "env_config" : env_config,
                 },
-                num_samples=args.tune_num_samples,
-                verbose=1)
+                num_samples=args.tune_num_samples)
         else:
             tune.run(
                 "SlateQ",
@@ -81,8 +93,7 @@ def main():
                     "slateq_strategy": tune.grid_search(ALL_SLATEQ_STRATEGIES),
                     "env_config"     : env_config,
                 },
-                num_samples=args.tune_num_samples,
-                verbose=1)
+                num_samples=args.tune_num_samples)
     '''    else:
             # directly run using the trainer interface (good for debugging)
             if args.agent == "DQN":
