@@ -174,11 +174,13 @@ for _ in range(100):
 '''
 low = np.array([0] * 4 * N_PLAYERS, dtype=np.float32)
 high = np.array([1] * 3 * N_PLAYERS + [len(CARD_SET)] * N_PLAYERS, dtype=np.float32)
-TRUE_OBSERVATION_SPACE1 = Box(low=low, high=high, dtype=np.float32)
+TRUE_OBSERVATION_SPACE1 = Box(low=np.array([low] * HAND_SIZE),
+                              high=np.array([high] * HAND_SIZE), dtype=np.float32)
 # players_space = Box(low=0, high=1, shape=(3 * N_PLAYERS,))
 # cards_space = Box(low=0, high=len(CARD_SET), shape=(N_PLAYERS,))
 # TRUE_OBSERVATION_SPACE1 = Dict({'players': players_space, 'cards': cards_space})
 
+# print(TRUE_OBSERVATION_SPACE1.high[0][-1])
 
 class HeartsParametricEnv1:
 
@@ -188,7 +190,7 @@ class HeartsParametricEnv1:
         else:
             other_players = [BasicPlayer("P1"), BasicPlayer("P2"), BasicPlayer("P3")]
 
-        self.env = HeartsEnv1(other_players=other_players)
+        self.env = HeartsEnv(other_players=other_players)
         self.card_set = [CARD_NULL] + CARD_SET
         self.action_space = Discrete(4 * HAND_SIZE)
         self.observation_space = Dict({
@@ -213,8 +215,8 @@ class HeartsParametricEnv1:
                 player_encode[player_i - 1] = 1
             return player_encode
 
-        return [n for player, _ in table_cards for n in _encode_player(player)] + \
-                [_encode_card(self.card_set, tc) for _, tc in table_cards]
+        return [[n for player, _ in trick for n in _encode_player(player)] + \
+                [_encode_card(self.card_set, tc) for _, tc in trick] for trick in table_cards]
 
     def _decode_card(self, i):
         return CARD_SET[i]
@@ -240,12 +242,24 @@ class HeartsParametricEnv1:
         return {"obs": obs, "action_mask": self._get_mask(possible_cards)}, rew, \
                done, info
 
-'''
+
 import torch
 from torch.nn import Embedding
-
 CARD_EMBEDD_SIZE = 3
-#emb = Embedding(int(TRUE_OBSERVATION_SPACE1['cards'].high[0])+1, CARD_EMBEDD_SIZE)
+emb = Embedding(int(TRUE_OBSERVATION_SPACE1.high[0][-1])+1, CARD_EMBEDD_SIZE)
+GRU_INPUT_SIZE = 3 * 4 + CARD_EMBEDD_SIZE * 4
+GRU_OUTPUT_SIZE = 2* GRU_INPUT_SIZE
+rnn = torch.nn.GRU(GRU_INPUT_SIZE, GRU_OUTPUT_SIZE, 2, batch_first=True)
+hidden_cell = torch.zeros(2,32,GRU_OUTPUT_SIZE)
+
+def test(obs: torch.Tensor):
+    players_in, cards_in = torch.split(obs, [12, 4], 2)
+    cards_in = cards_in.long()
+    emb_cards = emb(cards_in).reshape(cards_in.shape[0],cards_in.shape[1], -1)
+    obs_flat = torch.cat((players_in, emb_cards), 2)
+    print(obs_flat.shape)
+    lstm_out, _hidden_cell = rnn(obs_flat, hidden_cell)
+    print(lstm_out[:,-1,:].shape)
 
 N = 1
 total_points = 0
@@ -253,12 +267,9 @@ for _ in range(N):
     he = HeartsParametricEnv1(random_players=True)
     obs = he.reset()
 
-    # print("DEBUG 20:", obs['obs']['players'], obs['obs']['cards'], )
-    # emb_cards = emb(torch.LongTensor(obs['obs']['cards'])).view(-1)
-    # t_players = torch.Tensor(obs['obs']['players'])
-    # print("DEBUG 21:", t_players, emb_cards)
-    # print("DEBUG 22:", torch.cat((t_players,emb_cards)).shape)
-    done = False
+    test(torch.Tensor([obs['obs'] for _ in range(32)]))
+
+    done = True
     while not done:
         possible_idx = [i for i, v in enumerate(obs['action_mask']) if v]
         ci = random.sample(possible_idx, 1)[0]
@@ -269,7 +280,7 @@ for _ in range(N):
         total_points += points
 print("POINTS:", total_points / N)
 
-'''
+
 
 class HeartsAlphaEnv1(HeartsParametricEnv1):
 
