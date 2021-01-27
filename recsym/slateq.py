@@ -76,7 +76,7 @@ def main():
                 name=name,
                 config={
                     "env"        : recsim_env_name,
-                    "num_workers": args.num_workers,
+                    "num_workers": args.workers,
                     "env_config" : env_config,
                 },
                 num_samples=args.tune_num_samples)
@@ -87,7 +87,7 @@ def main():
                 name=name,
                 config={
                     "env"            : recsim_env_name,
-                    "num_workers"    : args.num_workers,
+                    "num_workers"    : args.workers,
                     "slateq_strategy": "MYOP", # tune.grid_search(ALL_SLATEQ_STRATEGIES),
                     "env_config"     : env_config,
                 },
