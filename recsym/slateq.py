@@ -41,7 +41,7 @@ def main():
                                                  "Default value: QL. Ignored when using Tune."),
     )
     parser.add_argument(
-        "--use-tune",
+        "--tune",
         action="store_true",
         help=("Run with Tune so that the results are logged into Tensorboard. "
               "For debugging, it's easier to run without Ray Tune."),
@@ -66,8 +66,8 @@ def main():
     }
 
     ray.init()
-    tune = False
-    if tune:  # args.use_tune:
+
+    if args.tune:  # args.use_tune:
         time_signature = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
         name = f"SlateQ/{args.agent}-{time_signature}"
         if args.agent == "DQN":
