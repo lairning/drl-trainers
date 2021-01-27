@@ -66,8 +66,8 @@ def main():
     }
 
     ray.init()
-
-    if args.tune:  # args.use_tune:
+    tune = False
+    if tune:  # args.use_tune:
         time_signature = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
         name = f"SlateQ/{args.agent}-{time_signature}"
         if args.agent == "DQN":
