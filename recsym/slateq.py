@@ -48,7 +48,7 @@ def main():
     )
     parser.add_argument("--tune-num-samples", type=int, default=10)
     parser.add_argument("--env-slate-size", type=int, default=2)
-    # parser.add_argument("--env-seed", type=int, default=0)
+    parser.add_argument("--env-seed", type=int, default=0)
     parser.add_argument(
         "--workers",
         type=int,
