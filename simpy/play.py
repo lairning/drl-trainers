@@ -25,7 +25,8 @@ if __name__ == "__main__":
         "vf_clip_param": 50,  # tune.grid_search([20.0, 100.0]),
         "num_workers"  : 0,
         # "lr"            : tune.grid_search([1e-4, 1e-6]),
-        "batch_mode"   : "complete_episodes"
+        "batch_mode"   : "complete_episodes",
+        "framework"    : "torch"
     }
 
     best_checkpoint = "/home/md/ray_results/PPO_2021-01-23_20-53-45/PPO_SimpyEnv_b3e12_00000_0_2021-01-23_20-53-45/checkpoint_120/checkpoint-120"
