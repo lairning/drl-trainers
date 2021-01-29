@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     for _ in range(args.stop):
         result = trainer.train()
-        print(result)
+        print(result['episode_reward_mean'])
         #print(pretty_print(result))
 
     ray.shutdown()
