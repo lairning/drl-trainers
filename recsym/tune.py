@@ -9,7 +9,7 @@ from ray.rllib.env.wrappers.recsim_wrapper import env_name as recsim_env_name
 
 ALL_SLATEQ_STRATEGIES = [
     # RANDOM: Randomly select documents for slates.
-    # "RANDOM",
+    "RANDOM",
     # MYOP: Select documents that maximize user click probabilities. This is
     # a myopic strategy and ignores long term rewards. This is equivalent to
     # setting a zero discount rate for future rewards.
