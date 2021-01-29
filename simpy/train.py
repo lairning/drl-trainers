@@ -33,6 +33,7 @@ if __name__ == "__main__":
 
     for _ in range(args.stop):
         result = trainer.train()
-        print(pretty_print(result))
+        print(result)
+        #print(pretty_print(result))
 
     ray.shutdown()
