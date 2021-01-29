@@ -24,9 +24,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--env-slate-size", type=int, default=2)
     parser.add_argument("--env-seed", type=int, default=0)
+    parser.add_argument("--strategy", type=str, default="SARSA")
     parser.add_argument("--stop", type=int, default=1)
 
     args = parser.parse_args()
+
+    assert args.strategy in ALL_SLATEQ_STRATEGIES, "Invalid  SlateQ Strategy {}".format(args.strategy)
 
     env_config = {
         "slate_size"                      : args.env_slate_size,
@@ -38,7 +41,7 @@ def main():
     # config["num_gpus"] = 0
     config = {}
     config["num_workers"] = 5
-    config["slateq_strategy"] = "QL"
+    config["slateq_strategy"] = args.strategy
     config["env_config"] = env_config
 
     ray.init()
