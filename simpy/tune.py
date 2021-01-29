@@ -43,6 +43,9 @@ if __name__ == "__main__":
         "training_iteration": args.stop
     }
 
+    results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop)
+
+    '''   
     results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop,
                            checkpoint_freq = 1,
                            checkpoint_score_attr="episode_reward_mean")
@@ -51,7 +54,7 @@ if __name__ == "__main__":
                                                                                mode="max"),
                                                   metric="episode_reward_mean",
                                                   mode="max")
-
     print(best_checkpoint)
+    '''
 
     ray.shutdown()

@@ -32,21 +32,18 @@ if __name__ == "__main__":
     trainer = ppo.PPOTrainer(config=ppo_config, env="SimpyEnv")
 
     result = trainer.train()
-    checkpoint = trainer.save()
+    best_checkpoint = trainer.save()
     best_reward = result['episode_reward_mean']
-    best_checkpoint = checkpoint
-    print("Mean Reward {}:{}".format(0, result['episode_reward_mean']))
-    print("Checkpoint at", checkpoint)
+    print("Mean Reward {}:{}".format(1, result['episode_reward_mean']))
+
     for i in range(1, args.stop):
         result = trainer.train()
-        print("Mean Reward {}:{}".format(i, result['episode_reward_mean']))
+        print("Mean Reward {}:{}".format(i+1, result['episode_reward_mean']))
         best_reward = max(best_reward, result['episode_reward_mean'])
         if best_reward == result['episode_reward_mean']:
-            checkpoint = trainer.save()
-            best_checkpoint = checkpoint
-            print("Checkpoint at", checkpoint)
+            best_checkpoint = trainer.save()
 
     print("BEST Mean Reward  :", best_reward)
-    print("BEST Checkpoint at:", checkpoint)
+    print("BEST Checkpoint at:", best_checkpoint)
 
     ray.shutdown()
