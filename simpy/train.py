@@ -37,16 +37,16 @@ if __name__ == "__main__":
     best_checkpoint = checkpoint
     print("Mean Reward {}:{}".format(0, result['episode_reward_mean']))
     print("Checkpoint at", checkpoint)
-    for i in range(1,args.stop):
+    for i in range(1, args.stop):
         result = trainer.train()
-        print("Mean Reward {}:{}".format(i,result['episode_reward_mean']))
-        best_reward = max(best_reward,result['episode_reward_mean'])
-        if best_reward == ['episode_reward_mean']:
+        print("Mean Reward {}:{}".format(i, result['episode_reward_mean']))
+        best_reward = max(best_reward, result['episode_reward_mean'])
+        if best_reward == result['episode_reward_mean']:
             checkpoint = trainer.save()
             best_checkpoint = checkpoint
             print("Checkpoint at", checkpoint)
 
-    print("BEST Mean Reward  :",best_reward)
+    print("BEST Mean Reward  :", best_reward)
     print("BEST Checkpoint at:", checkpoint)
 
     ray.shutdown()
