@@ -51,7 +51,6 @@ if __name__ == "__main__":
                                                   metric="episode_reward_mean",
                                                   mode="max")
 
-    print(pretty_print(results_ppo))
     print(best_checkpoint)
 
     ray.shutdown()
