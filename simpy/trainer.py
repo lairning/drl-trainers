@@ -44,7 +44,8 @@ if __name__ == "__main__":
     }
 
     results_ppo = tune.run(ppo.PPOTrainer, config=ppo_config, stop=stop,
-                           keep_checkpoints_num=1, checkpoint_score_attr="episode_reward_mean")
+                           checkpoint_freq = 1,
+                           checkpoint_score_attr="episode_reward_mean")
 
     best_checkpoint = results_ppo.get_best_checkpoint(trial=results_ppo.get_best_trial(metric="episode_reward_mean",
                                                                                mode="max"),
