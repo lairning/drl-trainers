@@ -6,19 +6,6 @@ import ray
 from ray.rllib.agents import slateq
 from ray.rllib.env.wrappers.recsim_wrapper import env_name as recsim_env_name
 
-ALL_SLATEQ_STRATEGIES = [
-    # RANDOM: Randomly select documents for slates.
-    "RANDOM",
-    # MYOP: Select documents that maximize user click probabilities. This is
-    # a myopic strategy and ignores long term rewards. This is equivalent to
-    # setting a zero discount rate for future rewards.
-    "MYOP",
-    # SARSA: Use the SlateQ SARSA learning algorithm.
-    "SARSA",
-    # QL: Use the SlateQ Q-learning algorithm.
-    "QL",
-]
-
 
 def main():
     parser = argparse.ArgumentParser()
@@ -33,10 +20,9 @@ def main():
         "convert_to_discrete_action_space": False,
     }
 
-    config = {}
-    config["num_workers"] = 0
-    config["slateq_strategy"] = args.strategy
-    config["env_config"] = env_config
+    config = {"num_workers"     : 0,
+              "slateq_strategy" : args.strategy,
+              "env_config"      : env_config}
 
     ray.init()
 
