@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     agent = AlphaZeroTrainer(config=config, env="CartePoleEnv")
 
-    for _ in args.training_iteration:
+    for _ in range(args.training_iteration):
         agent.train()
 
     # instantiate env class
