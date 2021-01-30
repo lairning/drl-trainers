@@ -1,11 +1,11 @@
 import ray
-from ray import tune
 from ray.tune.registry import register_env
 import ray.rllib.agents.ppo as ppo
 
 import argparse
 
-from simpy_model import SimpyEnv
+from simpy_env import SimpyEnv
+from simpy_model import N_ACTIONS, OBSERVATION_SPACE, SimModel
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--stop", type=int, default=1)
@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     register_env(
         "SimpyEnv",
-        lambda _: SimpyEnv()
+        lambda _: SimpyEnv(N_ACTIONS, OBSERVATION_SPACE, SimModel)
     )
 
     ppo_config = {
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     agent.restore(best_checkpoint)
 
     # instantiate env class
-    he = SimpyEnv()
+    he = SimpyEnv(N_ACTIONS, OBSERVATION_SPACE, SimModel)
 
     for _ in range(args.stop):
         # run until episode ends

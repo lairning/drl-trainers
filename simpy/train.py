@@ -1,12 +1,12 @@
 import ray
-from ray import tune
 from ray.tune.registry import register_env
-from ray.tune.logger import pretty_print
 import ray.rllib.agents.ppo as ppo
 
 import argparse
 
-from simpy_model import SimpyEnv
+from simpy_env import SimpyEnv
+from simpy_model import N_ACTIONS, OBSERVATION_SPACE, SimModel
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--stop", type=int, default=1)
@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     register_env(
         "SimpyEnv",
-        lambda _: SimpyEnv()
+        lambda _: SimpyEnv(N_ACTIONS, OBSERVATION_SPACE, SimModel)
     )
 
     ppo_config = {
