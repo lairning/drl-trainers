@@ -7,7 +7,7 @@ import random
 
 # SIM_TIME = 1 * 24 * 60 * 60  # Simulation time in Time units (seconds)
 SIM_TIME = 1 * 1 * 60 * 60  # Simulation time in Time units (seconds)
-STEP_TIME = 20  # Time units (seconds) between each step
+STEP_TIME = 10  # Time units (seconds) between each step
 
 
 class BaseSim(simpy.Environment):
@@ -53,7 +53,7 @@ LIGHTS = ['South/North', 'North/South', 'South/West', 'North/East', 'West/East',
           'East/South']
 MTBC_BASE = [45, 60, 30, 40, 40, 70, 20, 30]
 # Mean Time Between Cars
-MTBC = [x * 0.4 for x in MTBC_BASE]
+MTBC = [x * 0.6 for x in MTBC_BASE]
 
 # List of possible status, 1 Green On; 0 Green Off
 
@@ -139,6 +139,7 @@ class SimModel(BaseSim):
             obs += light.get_observation()
         return obs
 
+    ''' Version 1: Did not work
     def get_reward(self):
         def qwt(light:Light):
             return (self.now if light.stats['total_cars']==0
@@ -148,6 +149,14 @@ class SimModel(BaseSim):
         total_cars += sum(len(light.queue) for light in self.lights)
         waiting_time += sum(qwt(light) for light in self.lights)
         total_reward = 0 if total_cars == 0 else -waiting_time/total_cars
+        reward = total_reward - self.total_reward
+        self.total_reward = total_reward
+        return reward, self.done(), {}  # Reward, Done, Info
+
+    '''
+
+    def get_reward(self):
+        total_reward = - sum(len(light.queue) for light in self.lights)
         reward = total_reward - self.total_reward
         self.total_reward = total_reward
         return reward, self.done(), {}  # Reward, Done, Info
