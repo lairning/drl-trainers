@@ -131,8 +131,6 @@ class SimModel(BaseSim):
         #self.current_status_id = 0
         self.lights = [Light(LIGHTS[i], self, STATUS[0][i], MTBC[i]) for i in range(len(LIGHTS))]
         self.total_reward = 0
-        self.total_cars = 0
-        self.n = 0
 
     def get_observation(self):
         self.run_until_action()
@@ -158,12 +156,9 @@ class SimModel(BaseSim):
     '''
 
     def get_reward(self):
-        total_cars = self.total_cars + sum(len(light.queue) for light in self.lights)
-        n = self.n +1
-        reward = - total_cars / n - self.total_reward
-        self.total_reward += reward
-        self.total_cars = total_cars
-        self.n = n
+        total_reward = - sum(len(light.queue) for light in self.lights)
+        reward = total_reward - self.total_reward
+        self.total_reward = total_reward
         return reward, self.done(), {}  # Reward, Done, Info
 
     # Executes an action
@@ -240,5 +235,4 @@ if __name__ == "__main__":
         reward = baseline.run(policy)
         total += reward
         print_stats(baseline.sim)
-        print("### Reward:", reward)
     print("### Average Rewards", total/n)
