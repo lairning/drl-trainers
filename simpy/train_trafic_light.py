@@ -25,10 +25,10 @@ if __name__ == "__main__":
     )
 
     ppo_config = {
-        # "vf_clip_param": 10,  # tune.grid_search([20.0, 100.0]),
+        "vf_clip_param": 10,  # tune.grid_search([20.0, 100.0]),
         "num_workers"  : 5,
         # "lr"            : tune.grid_search([1e-4, 1e-6]),
-        # "batch_mode"   : "complete_episodes",
+        "batch_mode"   : "complete_episodes",
         "framework"    : "torch"
     }
 

@@ -5,7 +5,7 @@ import ray.rllib.agents.ppo as ppo
 import argparse
 
 from simpy_env import SimpyEnv
-from gas_station_model import N_ACTIONS, OBSERVATION_SPACE, SimModel
+from trafic_light_model import N_ACTIONS, OBSERVATION_SPACE, SimModel
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--stop", type=int, default=1)
@@ -21,15 +21,14 @@ if __name__ == "__main__":
     )
 
     ppo_config = {
-        "env"          : "SimpyEnv",
-        "vf_clip_param": 50,  # tune.grid_search([20.0, 100.0]),
-        "num_workers"  : 0,
+        "vf_clip_param": 10,  # tune.grid_search([20.0, 100.0]),
+        "num_workers"  : 5,
         # "lr"            : tune.grid_search([1e-4, 1e-6]),
         "batch_mode"   : "complete_episodes",
         "framework"    : "torch"
     }
 
-    best_checkpoint = "/home/md/ray_results/PPO_SimpyEnv_2021-01-30_17-30-30fk_2tj3w/checkpoint_2/checkpoint-2"
+    best_checkpoint = "/home/md/ray_results/PPO_SimpyEnv_2021-02-06_17-03-29jc3f_6p1/checkpoint_99/checkpoint-99"
 
     agent = ppo.PPOTrainer(config=ppo_config, env="SimpyEnv")
     agent.restore(best_checkpoint)
