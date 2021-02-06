@@ -1,6 +1,7 @@
 import ray
 from ray.tune.registry import register_env
 import ray.rllib.agents.ppo as ppo
+import ray.rllib.agents.dqn as dqn
 
 import argparse
 
@@ -24,14 +25,23 @@ if __name__ == "__main__":
     )
 
     ppo_config = {
-        "vf_clip_param": 10,  # tune.grid_search([20.0, 100.0]),
+        # "vf_clip_param": 10,  # tune.grid_search([20.0, 100.0]),
         "num_workers"  : 5,
         # "lr"            : tune.grid_search([1e-4, 1e-6]),
-        "batch_mode"   : "complete_episodes",
+        # "batch_mode"   : "complete_episodes",
         "framework"    : "torch"
     }
 
-    trainer = ppo.PPOTrainer(config=ppo_config, env="SimpyEnv")
+    dqn_config = {
+        "v_min": -1000.0,
+        "v_max": 0,
+        "hiddens": [256,256],
+        "noisy": True,
+        "n_atoms": 2
+    }
+
+    # trainer = ppo.PPOTrainer(config=ppo_config, env="SimpyEnv")
+    trainer = dqn.DQNTrainer(config=dqn_config, env="SimpyEnv")
 
     result = trainer.train()
     best_checkpoint = trainer.save()

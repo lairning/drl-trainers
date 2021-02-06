@@ -67,6 +67,8 @@ STATUS_N = [
 ]
 STATUS = [[bool(n) for n in status] for status in STATUS_N]
 
+MAX_QUEUE = np.inf # 400.0
+
 class Light(simpy.PriorityResource):
     def __init__(self, name: str, env: simpy.Environment, green_on: bool, mtbc: float):
         super().__init__(env, capacity=1)
@@ -114,14 +116,13 @@ class Light(simpy.PriorityResource):
             self.stats['total_cars'] += 1
 
     def get_observation(self):
-        return [1 if self.green_on else 0]+[len(self.queue)]
-
+        return [1 if self.green_on else 0]+[max(len(self.queue),MAX_QUEUE)]
 
 # An action corresponds to the selection of a status
 N_ACTIONS = len(STATUS)
 
 OBSERVATION_SPACE = Box(low=np.array([0,0]*len(LIGHTS)),
-                        high=np.array([1, np.inf]*len(LIGHTS)),
+                        high=np.array([1, MAX_QUEUE]*len(LIGHTS)),
                         dtype=np.float64)
 
 class SimModel(BaseSim):
