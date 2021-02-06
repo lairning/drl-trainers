@@ -11,13 +11,16 @@ STEP_TIME = 10  # Time units (minutes) between each step
 class BaseSim(simpy.Environment):
     def __init__(self):
         super().__init__()
-
+        self.sim_time = SIM_TIME
         self.time = self.now
         self.step_time = STEP_TIME  # Time Units to run between gym env steps
 
     def run_until_action(self):
         self.run(until=self.time + self.step_time)
         self.time = self.now
+
+    def done(self):
+        return self.now >= self.sim_time
 
     def exec_action(self, action):
         raise Exception("Not Implemented!!!")
@@ -35,7 +38,7 @@ CAR_TANK_LEVEL = [2, 20]  # Min/max levels of fuel tanks (in liters)
 REFUELING_SPEED = 1  # liters / minute
 TANK_TRUCK_TIME = 60  # Minutes it takes the tank truck to arrive
 PUMP_NUMBER = 2  # Number of Pumps
-MARGIN_PER_LITRE = 1  # Gas margin er litre, excluding truck transportation fixed cost
+MARGIN_PER_LITRE = 1  # Gas margin per litre, excluding truck transportation fixed cost
 TRUCK_COST = 150  # Fixed Transportation Cost
 DRIVER_PATIENCE = [1, 8]  # Min/max level of driver patience
 CAR_INTERVAL = [[40, 120] for _ in range(7)] + [[5, 10] for _ in range(3)] + [[20, 80] for _ in range(3)]
@@ -57,15 +60,14 @@ def hot_encode(n, N):
 
 
 N_ACTIONS = 2  # 0 - DoNothing; 1 - Send the Truck
-
 OBSERVATION_SPACE = Box(low=np.array([0, 0, 0] + [0] * 24),
                         high=np.array([GAS_STATION_SIZE, PUMP_NUMBER, 1] + [1] * 24),
                         dtype=np.float64)
 
+
 class SimModel(BaseSim):
     def __init__(self):
         super().__init__()
-        self.sim_time = SIM_TIME
         self.fuel_pump = simpy.Container(self, GAS_STATION_SIZE, init=GAS_STATION_SIZE / 2)
         self.gas_station = simpy.Resource(self, PUMP_NUMBER)
         self.process(self.car_generator(self.gas_station, self.fuel_pump))
@@ -74,6 +76,7 @@ class SimModel(BaseSim):
         self.free_truck = 1
 
     def get_observation(self):
+        self.run_until_action()
         hour_mask = hot_encode((self.now // 60) % 24, 24)
         env_status = [self.fuel_pump.level, self.gas_station.count, self.free_truck] + hour_mask
         return np.array(env_status)
@@ -81,13 +84,14 @@ class SimModel(BaseSim):
     def get_reward(self):
         revenue = self.actual_revenue - self.last_revenue
         self.last_revenue = self.actual_revenue
-        done = self.now >= self.sim_time
-        return revenue, done, {}  # Reward, Done, Info
+        return revenue, self.done(), {}  # Reward, Done, Info
 
+    # Executes an action
     def exec_action(self, action):
         if action:
             self.process(self.tank_truck(self.fuel_pump))
 
+    # Process: Gas Tank Refuel by a Tank Truck
     def tank_truck(self, fuel_pump):
         """Arrives at the gas station after a certain delay and refuels it."""
         self.free_truck = 0
@@ -100,6 +104,7 @@ class SimModel(BaseSim):
         if ammount > 0:
             yield fuel_pump.put(ammount)
 
+    # Process: Car Refuel
     def car(self, name, gas_station, fuel_pump):
         """A car arrives at the gas station for refueling.
         It requests one of the gas station's fuel pumps and tries to get the
@@ -129,6 +134,7 @@ class SimModel(BaseSim):
             else:
                 dprint("{} waited {} minutes and left without refueling".format(name, self.now - start))
 
+    # Generator: Generate car arrivals at the gas station
     def car_generator(self, gas_station: simpy.Resource, fuel_pump: simpy.Container):
         """Generate new cars that arrive at the gas station."""
         for i in itertools.count():
@@ -137,22 +143,21 @@ class SimModel(BaseSim):
             self.process(self.car('Car %d' % i, gas_station, fuel_pump))
 
 
-'''
-#for level in [45,55,65,75,85]:
-for level in [65]:
-    N = 100
-    total = 0
-    for i in range(N):
-        # env_ = SimpyEnv()
-        env = SimpyEnv()
-        obs = env.reset()
-        done = False
-        while not done:
-            dprint(obs)
-            action = obs[0] < level and obs[2]
-            #action = np.random.randint(N_ACTIONS)
-            obs, reward, done, info = env.step(action)
-            dprint("Decision {} with {} revenue".format(action, reward))
-        total += env.sim.actual_revenue
-    print("Average Revenue for level {}:".format(level), total/ N)
-'''
+if __name__ == "__main__":
+    for level in [65]:
+        N = 100
+        total = 0
+        for i in range(N):
+            # env_ = SimpyEnv()
+            env = SimpyEnv()
+            obs = env.reset()
+            done = False
+            while not done:
+                dprint(obs)
+                action = obs[0] < level and obs[2]
+                #action = np.random.randint(N_ACTIONS)
+                obs, reward, done, info = env.step(action)
+                dprint("Decision {} with {} revenue".format(action, reward))
+            total += env.sim.actual_revenue
+        print("Average Revenue for level {}:".format(level), total/ N)
+

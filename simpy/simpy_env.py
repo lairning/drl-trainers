@@ -14,7 +14,6 @@ class SimpyEnv(gym.Env):
         self.sim = self.sim_model()
 
         # Start processes and initialize resources
-        self.sim.run_until_action()
         obs = self.sim.get_observation()
         assert self.observation_space.contains(obs), "{} not in {}".format(obs, self.observation_space)
         return obs
@@ -23,7 +22,6 @@ class SimpyEnv(gym.Env):
         assert action in range(self.action_space.n)
 
         self.sim.exec_action(action)
-        self.sim.run_until_action()
         obs = self.sim.get_observation()
         reward, done, info = self.sim.get_reward()
 

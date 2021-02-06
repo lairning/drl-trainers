@@ -5,13 +5,15 @@ import ray.rllib.agents.ppo as ppo
 import argparse
 
 from simpy_env import SimpyEnv
-from simpy_model import N_ACTIONS, OBSERVATION_SPACE, SimModel
 
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--stop", type=int, default=1)
 
 if __name__ == "__main__":
+
+    from trafic_light_model import N_ACTIONS, OBSERVATION_SPACE, SimModel
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--stop", type=int, default=1)
+
     args = parser.parse_args()
 
     ray.init()

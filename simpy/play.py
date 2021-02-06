@@ -5,7 +5,7 @@ import ray.rllib.agents.ppo as ppo
 import argparse
 
 from simpy_env import SimpyEnv
-from simpy_model import N_ACTIONS, OBSERVATION_SPACE, SimModel
+from gas_station_model import N_ACTIONS, OBSERVATION_SPACE, SimModel
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--stop", type=int, default=1)
