@@ -213,7 +213,9 @@ def print_stats(sim: SimModel):
     total_cars = sum(light.stats['total_cars'] for light in sim.lights)
     waiting_time = sum(light.stats['waiting_time'] for light in sim.lights)
     print("### Total Cars: {}; Average waiting: {:.2f}".format(total_cars, waiting_time / total_cars))
-
+    q_cars = [len(light.queue) for light in sim.lights]
+    print("### Queued Cars: {}; Std: {:.2f}".format(sum(q_cars), np.std(q_cars)))
+    '''
     q_total_cars = sum(len(light.queue) for light in sim.lights)
     q_estimated_time = sum(light.stats['waiting_time'] * len(light.queue) / light.stats['total_cars'] for i, light in
                            enumerate(sim.lights))
@@ -222,7 +224,7 @@ def print_stats(sim: SimModel):
     w_waiting_time = sum(light.stats['waiting_time'] for light in sim.lights) + q_estimated_time
     print("### Reward: {:.2f}".format(-w_waiting_time / total_cars))
     print("### STD: {:.2f}".format(np.std(l_waiting_time)))
-
+    '''
 
 if __name__ == "__main__":
     n = 20
