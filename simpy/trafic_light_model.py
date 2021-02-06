@@ -6,8 +6,8 @@ from gym.spaces import Box
 import random
 
 # SIM_TIME = 1 * 24 * 60 * 60  # Simulation time in Time units (seconds)
-SIM_TIME = 1 * 4 * 60 * 60  # Simulation time in Time units (seconds)
-STEP_TIME = 20  # Time units (seconds) between each step
+SIM_TIME = 1 * 1 * 60 * 60  # Simulation time in Time units (seconds)
+STEP_TIME = 10  # Time units (seconds) between each step
 
 
 class BaseSim(simpy.Environment):
@@ -53,7 +53,7 @@ LIGHTS = ['South/North', 'North/South', 'South/West', 'North/East', 'West/East',
           'East/South']
 MTBC_BASE = [45, 60, 30, 40, 40, 70, 20, 30]
 # Mean Time Between Cars
-MTBC = [x * 0.6 for x in MTBC_BASE]
+MTBC = [x * 0.4 for x in MTBC_BASE]
 
 # List of possible status, 1 Green On; 0 Green Off
 
