@@ -33,10 +33,10 @@ if __name__ == "__main__":
     }
 
     dqn_config = {
-        "v_min": -1000.0,
+        "v_min": -1000,
         "v_max": 0,
         "hiddens": [256,256],
-        "noisy": True,
+        # "noisy": True,
         "num_atoms": 2,
         "framework": "torch"
     }
