@@ -37,7 +37,7 @@ if __name__ == "__main__":
         "v_max": 0,
         "hiddens": [256,256],
         # "noisy": True,
-        "num_atoms": 2,
+        # "num_atoms": 2,
         # "num_workers"  : 5,
         "framework": "torch"
     }
