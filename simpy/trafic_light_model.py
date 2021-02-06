@@ -5,7 +5,8 @@ import simpy
 from gym.spaces import Box
 import random
 
-SIM_TIME = 1 * 24 * 60 * 60  # Simulation time in Time units (seconds)
+# SIM_TIME = 1 * 24 * 60 * 60  # Simulation time in Time units (seconds)
+SIM_TIME = 1 * 4 * 60 * 60  # Simulation time in Time units (seconds)
 STEP_TIME = 20  # Time units (seconds) between each step
 
 
@@ -52,7 +53,7 @@ LIGHTS = ['South/North', 'North/South', 'South/West', 'North/East', 'West/East',
           'East/South']
 MTBC_BASE = [45, 60, 30, 40, 40, 70, 20, 30]
 # Mean Time Between Cars
-MTBC = [x * 1 for x in MTBC_BASE]
+MTBC = [x * 0.6 for x in MTBC_BASE]
 
 # List of possible status, 1 Green On; 0 Green Off
 
@@ -197,8 +198,8 @@ def print_stats(sim: SimModel):
     for light in sim.lights:
         waiting_time = 0 if light.stats['total_cars'] == 0 else light.stats['waiting_time'] / light.stats['total_cars']
         l_waiting_time += [waiting_time]
-        # print("{} - Total Cars: {}; Average Waiting Time: {:.2f}; {} Cars Stopped".
-        #      format(light.name, light.stats['total_cars'], waiting_time, len(light.queue)))
+        print("{} - Total Cars: {}; Average Waiting Time: {:.2f}; {} Cars Stopped".
+             format(light.name, light.stats['total_cars'], waiting_time, len(light.queue)))
     total_cars = sum(light.stats['total_cars'] for light in sim.lights)
     waiting_time = sum(light.stats['waiting_time'] for light in sim.lights)
     print("### Total Cars: {}; Average waiting: {:.2f}".format(total_cars, waiting_time / total_cars))
@@ -210,7 +211,7 @@ def print_stats(sim: SimModel):
     total_cars += q_total_cars
     w_waiting_time = sum(light.stats['waiting_time'] for light in sim.lights) + q_estimated_time
     # print("### Reward: {:.2f}".format(-w_waiting_time / total_cars))
-    print("### MAX: {:.2f}".format(np.std(l_waiting_time)))
+    print("### STD: {:.2f}".format(np.std(l_waiting_time)))
 
 
 if __name__ == "__main__":
