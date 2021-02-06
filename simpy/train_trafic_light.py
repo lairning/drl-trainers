@@ -41,8 +41,8 @@ if __name__ == "__main__":
         "framework": "torch"
     }
 
-    # trainer = ppo.PPOTrainer(config=ppo_config, env="SimpyEnv")
-    trainer = dqn.DQNTrainer(config=dqn_config, env="SimpyEnv")
+    trainer = ppo.PPOTrainer(config=ppo_config, env="SimpyEnv")
+    # trainer = dqn.DQNTrainer(config=dqn_config, env="SimpyEnv")
 
     result = trainer.train()
     best_checkpoint = trainer.save()
