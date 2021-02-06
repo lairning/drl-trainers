@@ -240,4 +240,5 @@ if __name__ == "__main__":
         reward = baseline.run(policy)
         total += reward
         print_stats(baseline.sim)
+        print("### Reward:", reward)
     print("### Average Rewards", total/n)
