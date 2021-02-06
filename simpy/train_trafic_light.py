@@ -37,7 +37,7 @@ if __name__ == "__main__":
         "v_max": 0,
         "hiddens": [256,256],
         "noisy": True,
-        "n_atoms": 2
+        "num_atoms": 2
     }
 
     # trainer = ppo.PPOTrainer(config=ppo_config, env="SimpyEnv")
