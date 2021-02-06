@@ -39,10 +39,10 @@ if __name__ == "__main__":
         "framework": "torch"
     }
 
-    # best_checkpoint = "/home/md/ray_results/PPO_SimpyEnv_2021-02-06_18-37-187sykt315/checkpoint_95/checkpoint-95"
-    # agent = ppo.PPOTrainer(config=ppo_config, env="SimpyEnv")
-    best_checkpoint = "/home/md/ray_results/DQN_SimpyEnv_2021-02-06_21-07-35qthgy5z5/checkpoint_95/checkpoint-95"
-    agent = dqn.DQNTrainer(config=dqn_config, env="SimpyEnv")
+    best_checkpoint = "/home/md/ray_results/PPO_SimpyEnv_2021-02-06_21-41-46plq82chz/checkpoint_91/checkpoint-91"
+    agent = ppo.PPOTrainer(config=ppo_config, env="SimpyEnv")
+    # best_checkpoint = "/home/md/ray_results/DQN_SimpyEnv_2021-02-06_21-07-35qthgy5z5/checkpoint_95/checkpoint-95"
+    # agent = dqn.DQNTrainer(config=dqn_config, env="SimpyEnv")
 
     agent.restore(best_checkpoint)
 
