@@ -67,7 +67,7 @@ STATUS_N = [
 ]
 STATUS = [[bool(n) for n in status] for status in STATUS_N]
 
-MAX_QUEUE = 400 # np.inf # 400.0
+MAX_QUEUE = np.inf # 400.0
 
 class Light(simpy.PriorityResource):
     def __init__(self, name: str, env: simpy.Environment, green_on: bool, mtbc: float):
@@ -116,7 +116,7 @@ class Light(simpy.PriorityResource):
             self.stats['total_cars'] += 1
 
     def get_observation(self):
-        return [1 if self.green_on else 0]+[max(len(self.queue),MAX_QUEUE)]
+        return [1 if self.green_on else 0]+[min(len(self.queue),MAX_QUEUE)]
 
 # An action corresponds to the selection of a status
 N_ACTIONS = len(STATUS)
