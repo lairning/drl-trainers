@@ -34,7 +34,7 @@ class BaseSim(simpy.Environment):
         raise Exception("Not Implemented!!!")
 
 
-DEBUG = True
+DEBUG = False
 
 
 def dprint(*args):

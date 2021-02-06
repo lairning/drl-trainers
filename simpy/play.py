@@ -5,7 +5,7 @@ import ray.rllib.agents.ppo as ppo
 import argparse
 
 from simpy_env import SimpyEnv
-from trafic_light_model import N_ACTIONS, OBSERVATION_SPACE, SimModel
+from trafic_light_model import N_ACTIONS, OBSERVATION_SPACE, SimModel, print_stats
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--stop", type=int, default=1)
@@ -46,6 +46,7 @@ if __name__ == "__main__":
             obs, reward, done, info = he.step(action)
             episode_reward += reward
         print("Total:",episode_reward)
+        print_stats(he.sim)
 
 
     ray.shutdown()
