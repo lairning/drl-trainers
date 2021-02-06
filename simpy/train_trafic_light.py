@@ -36,7 +36,7 @@ if __name__ == "__main__":
         "v_min": -1000,
         "v_max": 0,
         "hiddens": [256,256],
-        "noisy": True,
+        # "noisy": True,
         # "num_atoms": 2,
         "framework": "torch"
     }
