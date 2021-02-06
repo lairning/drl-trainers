@@ -199,8 +199,8 @@ def print_stats(sim: SimModel):
     for light in sim.lights:
         waiting_time = 0 if light.stats['total_cars'] == 0 else light.stats['waiting_time'] / light.stats['total_cars']
         l_waiting_time += [waiting_time]
-        # print("{} - Total Cars: {}; Average Waiting Time: {:.2f}; {} Cars Stopped".
-        #      format(light.name, light.stats['total_cars'], waiting_time, len(light.queue)))
+        print("{} - Total Cars: {}; Average Waiting Time: {:.2f}; {} Cars Stopped".
+              format(light.name, light.stats['total_cars'], waiting_time, len(light.queue)))
     total_cars = sum(light.stats['total_cars'] for light in sim.lights)
     waiting_time = sum(light.stats['waiting_time'] for light in sim.lights)
     print("### Total Cars: {}; Average waiting: {:.2f}".format(total_cars, waiting_time / total_cars))
