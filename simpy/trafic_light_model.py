@@ -192,15 +192,15 @@ class Baseline:
             self.sim.exec_action(action)
             reward, done, _ = self.sim.get_reward()
             total_reward += reward
-
+        return total_reward
 
 def print_stats(sim: SimModel):
     l_waiting_time = []
     for light in sim.lights:
         waiting_time = 0 if light.stats['total_cars'] == 0 else light.stats['waiting_time'] / light.stats['total_cars']
         l_waiting_time += [waiting_time]
-        print("{} - Total Cars: {}; Average Waiting Time: {:.2f}; {} Cars Stopped".
-             format(light.name, light.stats['total_cars'], waiting_time, len(light.queue)))
+        # print("{} - Total Cars: {}; Average Waiting Time: {:.2f}; {} Cars Stopped".
+        #      format(light.name, light.stats['total_cars'], waiting_time, len(light.queue)))
     total_cars = sum(light.stats['total_cars'] for light in sim.lights)
     waiting_time = sum(light.stats['waiting_time'] for light in sim.lights)
     print("### Total Cars: {}; Average waiting: {:.2f}".format(total_cars, waiting_time / total_cars))
@@ -211,12 +211,17 @@ def print_stats(sim: SimModel):
 
     total_cars += q_total_cars
     w_waiting_time = sum(light.stats['waiting_time'] for light in sim.lights) + q_estimated_time
-    # print("### Reward: {:.2f}".format(-w_waiting_time / total_cars))
+    print("### Reward: {:.2f}".format(-w_waiting_time / total_cars))
     print("### STD: {:.2f}".format(np.std(l_waiting_time)))
 
 
 if __name__ == "__main__":
-    baseline = Baseline()
-    policy = baseline.RoundRobin(5)
-    baseline.run(policy)
-    print_stats(baseline.sim)
+    n = 20
+    total = 0
+    for _ in range(n):
+        baseline = Baseline()
+        policy = baseline.RoundRobin(10)
+        reward = baseline.run(policy)
+        total += reward
+        print_stats(baseline.sim)
+    print("### Average Rewards", total/n)

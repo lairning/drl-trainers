@@ -28,7 +28,7 @@ if __name__ == "__main__":
         "framework"    : "torch"
     }
 
-    best_checkpoint = "/home/md/ray_results/PPO_SimpyEnv_2021-02-06_17-03-29jc3f_6p1/checkpoint_99/checkpoint-99"
+    best_checkpoint = "/home/md/ray_results/PPO_SimpyEnv_2021-02-06_18-37-187sykt315/checkpoint_95/checkpoint-95"
 
     agent = ppo.PPOTrainer(config=ppo_config, env="SimpyEnv")
     agent.restore(best_checkpoint)
