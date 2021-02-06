@@ -34,7 +34,7 @@ class BaseSim(simpy.Environment):
         raise Exception("Not Implemented!!!")
 
 
-DEBUG = True
+DEBUG = False
 
 
 def dprint(*args):
@@ -51,9 +51,9 @@ def hot_encode(n, N):
 # LIGHTS = ['sn','ns','sw','ne','we','ew','wn','es']
 LIGHTS = ['South/North', 'North/South', 'South/West', 'North/East', 'West/East', 'East/West', 'West/North',
           'East/South']
-MTBC_BASE = [45, 60, 30, 40, 40, 70, 20, 30]
+MTBC_BASE = [40, 30, 50, 60, 40, 20, 70, 60]
 # Mean Time Between Cars
-MTBC = [x * 0.6 for x in MTBC_BASE]
+MTBC = [x * 0.5 for x in MTBC_BASE]
 
 # List of possible status, 1 Green On; 0 Green Off
 
