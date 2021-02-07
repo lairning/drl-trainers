@@ -16,8 +16,8 @@ class Trainer():
         "framework"    : "torch"
     }
 
-    def __init__(self, n_actions: int, observation_space: Space, sim_model: simpy.Environment, trainer_config):
-        _config = ppo_config.copy()
+    def __init__(self, n_actions: int, observation_space: Space, sim_model, trainer_config: dict):
+        _config = self.ppo_config.copy()
         _config.update(trainer_config)
         _config["env"] = SimpyEnv2
         _config["env_config"] = {"n_actions" : n_actions,
@@ -50,11 +50,12 @@ class Trainer():
 if __name__ == "__main__":
 
     from trafic_light_model import N_ACTIONS, OBSERVATION_SPACE, SimModel
+    import argparse
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--stop", type=int, default=1)
 
     args = parser.parse_args()
 
-    trainer = Trainer(N_ACTIONS, OBSERVATION_SPACE, SimModel)
+    trainer = Trainer(N_ACTIONS, OBSERVATION_SPACE, SimModel, {})
     trainer.run(2)
