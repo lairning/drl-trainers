@@ -21,14 +21,13 @@ class Trainer():
         _config["env_config"] = {"n_actions" : n_actions,
                                  "observation_space" : observation_space,
                                  "sim_model" : sim_model}
+
+    def run(self, sessions: int, log: bool = False):
+
         ray.init()
 
         self._trainer = ppo.PPOTrainer(config=_config)
 
-    def __del__(self):
-        ray.shutdown()
-
-    def run(self, sessions: int, log: bool = False):
         result_list = []
         result = self._trainer.train()
         best_checkpoint = self._trainer.save()
@@ -46,6 +45,8 @@ class Trainer():
 
         if log: print("BEST Mean Reward  :", best_reward)
         if log: print("BEST Checkpoint at:", best_checkpoint)
+
+        ray.shutdown()
 
         return best_checkpoint, result_list
 
