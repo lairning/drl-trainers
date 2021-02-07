@@ -34,7 +34,7 @@ class BaseSim(simpy.Environment):
         raise Exception("Not Implemented!!!")
 
 
-DEBUG = True
+DEBUG = False
 
 
 def dprint(*args):
@@ -201,7 +201,7 @@ class Baseline:
             self.sim.exec_action(action)
             reward, done, _ = self.sim.get_reward()
             total_reward += reward
-        return total_reward
+        return - total_reward
 
 def print_stats(sim: SimModel):
     l_waiting_time = []
@@ -231,7 +231,7 @@ if __name__ == "__main__":
     total = 0
     for _ in range(n):
         baseline = Baseline()
-        policy = baseline.RoundRobin(10)
+        policy = baseline.RoundRobin(6)
         reward = baseline.run(policy)
         total += reward
         print_stats(baseline.sim)
