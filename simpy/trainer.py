@@ -10,7 +10,8 @@ class Trainer():
         "num_workers"  : 5,
         # "lr"            : tune.grid_search([1e-4, 1e-6]),
         "batch_mode"   : "complete_episodes",
-        "framework"    : "torch"
+        "framework"    : "torch",
+        "log_level"    : "ERROR"
     }
 
     def __init__(self, n_actions: int, observation_space: Space, sim_model, trainer_config: dict = {}):
