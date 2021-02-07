@@ -15,10 +15,10 @@ class Trainer():
     }
 
     def __init__(self, n_actions: int, observation_space: Space, sim_model, trainer_config: dict = {}):
-        _config = self.ppo_config.copy()
-        _config.update(trainer_config)
-        _config["env"] = SimpyEnv2
-        _config["env_config"] = {"n_actions" : n_actions,
+        self._config = self.ppo_config.copy()
+        self._config.update(trainer_config)
+        self._config["env"] = SimpyEnv2
+        self._config["env_config"] = {"n_actions" : n_actions,
                                  "observation_space" : observation_space,
                                  "sim_model" : sim_model}
 
@@ -26,7 +26,7 @@ class Trainer():
 
         ray.init()
 
-        self._trainer = ppo.PPOTrainer(config=_config)
+        self._trainer = ppo.PPOTrainer(config=self._config)
 
         result_list = []
         result = self._trainer.train()
