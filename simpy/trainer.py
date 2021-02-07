@@ -1,9 +1,6 @@
 import ray
-from ray.tune.registry import register_env
 import ray.rllib.agents.ppo as ppo
-import ray.rllib.agents.dqn as dqn
 from gym.spaces import Space
-import simpy
 
 from simpy_env import SimpyEnv2
 
@@ -16,7 +13,7 @@ class Trainer():
         "framework"    : "torch"
     }
 
-    def __init__(self, n_actions: int, observation_space: Space, sim_model, trainer_config: dict):
+    def __init__(self, n_actions: int, observation_space: Space, sim_model, trainer_config: dict = {}):
         _config = self.ppo_config.copy()
         _config.update(trainer_config)
         _config["env"] = SimpyEnv2
@@ -30,25 +27,26 @@ class Trainer():
     def __del__(self):
         ray.shutdown()
 
-    def run(self, sessions: int):
-
+    def run(self, sessions: int, log: bool = False):
+        result_list = []
         result = self._trainer.train()
         best_checkpoint = self._trainer.save()
         best_reward = result['episode_reward_mean']
-        print("Mean Reward {}:{}".format(1, result['episode_reward_mean']))
+        if log: print("Mean Reward {}:{}".format(1, result['episode_reward_mean']))
+        result_list.append(result['episode_reward_mean'])
 
         for i in range(1, sessions):
             result = self._trainer.train()
-            print("Mean Reward {}:{}".format(i + 1, result['episode_reward_mean']))
+            if log: print("Mean Reward {}:{}".format(i + 1, result['episode_reward_mean']))
+            result_list.append(result['episode_reward_mean'])
             best_reward = max(best_reward, result['episode_reward_mean'])
             if best_reward == result['episode_reward_mean']:
                 best_checkpoint = self._trainer.save()
 
-        print("BEST Mean Reward  :", best_reward)
-        print("BEST Checkpoint at:", best_checkpoint)
+        if log: print("BEST Mean Reward  :", best_reward)
+        if log: print("BEST Checkpoint at:", best_checkpoint)
 
-        ray.shutdown()
-
+        return best_checkpoint, result_list
 
 if __name__ == "__main__":
 
