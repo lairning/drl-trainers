@@ -23,11 +23,14 @@ class Trainer():
         _config["env_config"] = {"n_actions" : n_actions,
                                  "observation_space" : observation_space,
                                  "sim_model" : sim_model}
+        ray.init()
+
         self._trainer = ppo.PPOTrainer(config=_config, env="SimpyEnv")
 
-    def run(self, sessions: int):
+    def __del__(self):
+        ray.shutdown()
 
-        ray.init()
+    def run(self, sessions: int):
 
         result = self._trainer.train()
         best_checkpoint = self._trainer.save()
@@ -53,9 +56,9 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--stop", type=int, default=1)
+    parser.add_argument("--stop", type=int, default=2)
 
     args = parser.parse_args()
 
     trainer = Trainer(N_ACTIONS, OBSERVATION_SPACE, SimModel, {})
-    trainer.run(2)
+    trainer.run(args.stop)
