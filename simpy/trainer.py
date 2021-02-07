@@ -25,7 +25,7 @@ class Trainer():
                                  "sim_model" : sim_model}
         ray.init()
 
-        self._trainer = ppo.PPOTrainer(config=_config, env="SimpyEnv")
+        self._trainer = ppo.PPOTrainer(config=_config)
 
     def __del__(self):
         ray.shutdown()
