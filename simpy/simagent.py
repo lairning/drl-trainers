@@ -6,8 +6,8 @@ from simpy_env import SimpyEnv2
 
 def get_train_result(result: dict):
     dic = result.copy()
-    dic = dic.pop("config")
-    dic = dic.pop("hist_stats")
+    dic.pop("config", None)
+    dic.pop("hist_stats", None)
     return dic
 
 
