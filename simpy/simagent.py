@@ -67,8 +67,7 @@ class AISimAgent():
 
         self.training_session.append({"best_iteration":best_iteration,"result": result_list})
 
-        print(self.training_session[0])
-        print(self.training_session[1])
+        print(self.training_session)
 
         if log: print("BEST Mean Reward  :", best_reward)
         if log: print("BEST Checkpoint at:", best_checkpoint)
