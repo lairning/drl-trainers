@@ -46,7 +46,7 @@ class AISimAgent():
 
         result_list = []
         result = self._trainer.train()
-        print(filter(result))
+        # print(filter(result))
         best_checkpoint = self._trainer.save()
         #best_reward = result['episode_reward_mean']
         if log: print("Mean Reward {}:{}".format(1, result['episode_reward_mean']))
