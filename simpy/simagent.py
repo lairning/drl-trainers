@@ -4,6 +4,10 @@ from gym.spaces import Space
 
 from simpy_env import SimpyEnv2
 
+def get_train_result(result: dict):
+    return result.copy().pop("config").pop("hist_stats")
+
+
 class AISimAgent():
     ppo_config = {
         "vf_clip_param": 10,  # tune.grid_search([20.0, 100.0]),
@@ -40,8 +44,7 @@ class AISimAgent():
 
         result_list = []
         result = self._trainer.train()
-        print(result.keys())
-        print(result["hist_stats"])
+        print(get_train_result(result))
         best_checkpoint = self._trainer.save()
         best_reward = result['episode_reward_mean']
         if log: print("Mean Reward {}:{}".format(1, result['episode_reward_mean']))
