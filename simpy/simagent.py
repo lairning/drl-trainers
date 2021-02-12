@@ -5,7 +5,10 @@ from gym.spaces import Space
 from simpy_env import SimpyEnv2
 
 def get_train_result(result: dict):
-    return result.copy().pop("config").pop("hist_stats")
+    dic = result.copy()
+    dic = dic.pop("config")
+    dic = dic.pop("hist_stats")
+    return dic
 
 
 class AISimAgent():
