@@ -16,7 +16,7 @@ class AISimAgent():
 
     def __init__(self, n_actions: int, observation_space: Space, sim_model, agent_config=None):
         if agent_config is None:
-            trainer_config = {}
+            agent_config = {}
         else:
             assert isinstance(agent_config, dict), "Config {} must be a dict!".format(agent_config)
         self._config = self.ppo_config.copy()
