@@ -4,7 +4,7 @@ from gym.spaces import Space
 
 from simpy_env import SimpyEnv2
 
-class Trainer():
+class AISimAgent():
     ppo_config = {
         "vf_clip_param": 10,  # tune.grid_search([20.0, 100.0]),
         "num_workers"  : 5,
@@ -14,15 +14,25 @@ class Trainer():
         "log_level"    : "ERROR"
     }
 
-    def __init__(self, n_actions: int, observation_space: Space, sim_model, trainer_config: dict = {}):
+    def __init__(self, n_actions: int, observation_space: Space, sim_model, agent_config=None):
+        if agent_config is None:
+            trainer_config = {}
+        else:
+            assert isinstance(agent_config, dict), "Config {} must be a dict!".format(agent_config)
         self._config = self.ppo_config.copy()
-        self._config.update(trainer_config)
+        self._config.update(agent_config)
         self._config["env"] = SimpyEnv2
         self._config["env_config"] = {"n_actions" : n_actions,
                                  "observation_space" : observation_space,
                                  "sim_model" : sim_model}
+        self.runs = None
 
-    def run(self, sessions: int, log: bool = False):
+    def train(self, sessions: int = 1, config=None, log: bool = False):
+
+        if config is None:
+            config = dict()
+        else:
+            assert isinstance(config, dict), "Config {} must be a dict!".format(config)
 
         ray.init()
 
@@ -30,6 +40,8 @@ class Trainer():
 
         result_list = []
         result = self._trainer.train()
+        print(result.keys())
+        print(result["hist_stats"])
         best_checkpoint = self._trainer.save()
         best_reward = result['episode_reward_mean']
         if log: print("Mean Reward {}:{}".format(1, result['episode_reward_mean']))
@@ -60,5 +72,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    trainer = Trainer(N_ACTIONS, OBSERVATION_SPACE, SimModel, {})
-    trainer.run(args.stop)
+    trainer = AISimAgent(N_ACTIONS, OBSERVATION_SPACE, SimModel, {})
+    trainer.train(args.stop)

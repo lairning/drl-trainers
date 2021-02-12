@@ -169,7 +169,7 @@ class SimModel(BaseSim):
         self.current_status_id = action
 
 
-class Baseline:
+class SimBaseline:
     def __init__(self):
         self.sim = SimModel()
 
@@ -201,7 +201,7 @@ class Baseline:
             self.sim.exec_action(action)
             reward, done, _ = self.sim.get_reward()
             total_reward += reward
-        return - total_reward
+        return total_reward
 
 def print_stats(sim: SimModel):
     l_waiting_time = []
