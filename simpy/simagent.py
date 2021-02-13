@@ -6,7 +6,7 @@ from simpy_env import SimpyEnv2
 
 def filter(result: dict):
     keys = {'episode_reward_max','episode_reward_min','episode_reward_mean', 'info', 'training_iteration',
-            'experiment_id', 'date', 'timestamp', 'time_this_iter_s'}
+            'experiment_id', 'date', 'timestamp', 'time_this_iter_s', 'check_point'}
     return {key:result[key] for key in keys}
 
 
