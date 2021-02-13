@@ -32,17 +32,23 @@ class AISimAgent():
                                  "observation_space" : observation_space,
                                  "sim_model" : sim_model}
         self.training_session = [] # a list of training session
+        self.running_session = []
 
     def train(self, sessions: int = 1, config=None, log: bool = False):
 
-        if config is None:
-            config = dict()
-        else:
+        if config is not None:
             assert isinstance(config, dict), "Config {} must be a dict!".format(config)
+            config.pop("env",None)
+            config.pop("env_config",None)
+        else:
+            config = {}
+
+        _config = self._config.copy()
+        _config.update(config)
 
         ray.init()
 
-        self._trainer = ppo.PPOTrainer(config=self._config)
+        self._trainer = ppo.PPOTrainer(config=_config)
 
         result_list = []
         result = self._trainer.train()
@@ -65,16 +71,52 @@ class AISimAgent():
             result['check_point'] = best_checkpoint
             result_list.append(filter(result))
 
-        self.training_session.append({"best_iteration":best_iteration,"result": result_list})
+        self.training_session.append({"best_iteration":best_iteration,"result": result_list, "config":_config})
 
         print(self.training_session)
 
-        if log: print("BEST Mean Reward  :", best_reward)
+        if log: print("BEST Mean Reward  :", result_list[best_iteration]['episode_reward_mean'])
         if log: print("BEST Checkpoint at:", best_checkpoint)
 
         ray.shutdown()
 
         return best_checkpoint, result_list
+
+    def run(self, simulations: int = 1, training_session=0, baseline=None, baseline_policy=None):
+
+        assert len(self.training_session) >= training_session, \
+            "'training_session' {} is higher than the current number of {} Training Sessions ".\
+                format(training_session,len(self.training_session))
+
+        config = self.training_session[training_session]['config']
+        check_point = self.training_session[training_session]['check_point']
+
+        ray.init()
+
+        agent = ppo.PPOTrainer(config=config)
+        agent.restore(check_point)
+
+        # instantiate env class
+        he = SimpyEnv2(config["env_config"])
+
+        result_list = []
+        for _ in range(simulations):
+            # run until episode ends
+            episode_reward = 0
+            done = False
+            obs = he.reset()
+            while not done:
+                action = agent.compute_action(obs)
+                obs, reward, done, info = he.step(action)
+                episode_reward += reward
+            result_list.append(episode_reward)
+        self.training_session.append({"type": "AI", "result": result_list})
+
+        result_list = [baseline(baseline_policy) for _ in range(simulations)]
+        self.training_session.append({"type": "AI", "result": result_list})
+
+        ray.shutdown()
+
 
 if __name__ == "__main__":
 
