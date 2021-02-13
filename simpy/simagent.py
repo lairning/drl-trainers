@@ -82,14 +82,19 @@ class AISimAgent():
 
         return best_checkpoint, result_list
 
-    def run(self, simulations: int = 1, training_session=0, baseline=None, baseline_policy=None):
+    def run(self, simulations: int = 1, training_session=None, baseline=None, baseline_policy=None):
+
+        if training_session is None:
+            training_session = len(self.training_session)-1
 
         assert len(self.training_session) >= training_session, \
             "'training_session' {} is higher than the current number of {} Training Sessions ".\
                 format(training_session,len(self.training_session))
 
+
         config = self.training_session[training_session]['config']
-        check_point = self.training_session[training_session]['check_point']
+        best_iteration = self.training_session[training_session]['best_iteration']
+        check_point = self.training_session[training_session]['result'][best_iteration]['check_point']
 
         ray.init()
 
@@ -112,10 +117,13 @@ class AISimAgent():
             result_list.append(episode_reward)
         self.training_session.append({"type": "AI", "result": result_list})
 
-        result_list = [baseline(baseline_policy) for _ in range(simulations)]
-        self.training_session.append({"type": "AI", "result": result_list})
+        if baseline is not None:
+            result_list = [baseline(baseline_policy) for _ in range(simulations)]
+            self.training_session.append({"type": "AI", "result": result_list})
 
         ray.shutdown()
+
+        return self.training_session
 
 
 if __name__ == "__main__":
