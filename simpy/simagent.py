@@ -115,15 +115,15 @@ class AISimAgent():
                 obs, reward, done, info = he.step(action)
                 episode_reward += reward
             result_list.append(episode_reward)
-        self.training_session.append({"type": "AI", "result": result_list})
+        self.running_session.append({"type": "AI", "result": result_list})
 
         if baseline is not None:
             result_list = [baseline(baseline_policy) for _ in range(simulations)]
-            self.training_session.append({"type": "AI", "result": result_list})
+            self.running_session.append({"type": "Baseline", "result": result_list})
 
         ray.shutdown()
 
-        return self.training_session
+        return self.running_session
 
 
 if __name__ == "__main__":
