@@ -170,6 +170,8 @@ class SimModel(BaseSim):
 
 
 class SimBaseline:
+    def __init__(self):
+        self.sim = None
 
     class RandomAction:
         def get(self):
@@ -191,14 +193,14 @@ class SimBaseline:
             return self.i
 
     def run(self, policy = RoundRobin(6)):
-        sim = SimModel()
+        self.sim = SimModel()
         done = False
         total_reward = 0
         while not done:
-            obs = sim.get_observation()
+            obs = self.sim.get_observation()
             action = policy.get()
-            sim.exec_action(action)
-            reward, done, _ = sim.get_reward()
+            self.sim.exec_action(action)
+            reward, done, _ = self.sim.get_reward()
             total_reward += reward
         return total_reward
 
@@ -229,7 +231,7 @@ if __name__ == "__main__":
     n = 20
     total = 0
     for _ in range(n):
-        baseline = Baseline()
+        baseline = SimBaseline()
         policy = baseline.RoundRobin(6)
         reward = baseline.run(policy)
         total += reward
