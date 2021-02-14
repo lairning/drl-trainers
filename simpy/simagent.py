@@ -73,8 +73,6 @@ class AISimAgent():
 
         self.training_session.append({"best_iteration":best_iteration,"result": result_list, "config":_config})
 
-        print(self.training_session)
-
         if log: print("BEST Mean Reward  :", result_list[best_iteration]['episode_reward_mean'])
         if log: print("BEST Checkpoint at:", best_checkpoint)
 
@@ -118,7 +116,7 @@ class AISimAgent():
         self.running_session.append({"type": "AI", "result": result_list})
 
         if baseline is not None:
-            result_list = [baseline(baseline_policy) for _ in range(simulations)]
+            result_list = [baseline.run(baseline_policy) for _ in range(simulations)]
             self.running_session.append({"type": "Baseline", "result": result_list})
 
         ray.shutdown()
