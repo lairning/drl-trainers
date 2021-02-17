@@ -2,6 +2,7 @@ import ray
 import ray.rllib.agents.ppo as ppo
 from datetime import datetime
 import statistics as stats
+import json
 
 from simpy_env import SimpyEnv
 
@@ -65,7 +66,7 @@ class AISimAgent():
         config.pop("env", None)
         config.pop("env_config", None)
         print(config)
-        _session_data = (session_data[0], session_data[1], config)
+        _session_data = (session_data[0], session_data[1], json.dumps(config))
         cursor.execute('''INSERT INTO training_session (
                                         sim_model_id,
                                         time_start,
