@@ -64,7 +64,7 @@ class AISimAgent():
         #config.pop("env", None)
         #config.pop("env_config", None)
         #print(config)
-        _session_data = (session_data[0], session_data[1], json.dumps(config))
+        _session_data = (session_data[0], session_data[1], json.dumps(session_data[2]))
         cursor.execute('''INSERT INTO training_session (
                                         sim_model_id,
                                         time_start,
