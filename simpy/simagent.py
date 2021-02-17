@@ -152,7 +152,7 @@ class AISimAgent():
             best_policy = self._add_iteration(self._training_session_id, iteration_start, best_checkpoint, result)
 
 
-        self._update_session(best_policy, datetime.now()-session_start)
+        self._update_session(best_policy, (datetime.now()-session_start).total_seconds())
 
         ray.shutdown()
 
