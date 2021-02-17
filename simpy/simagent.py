@@ -17,7 +17,6 @@ def cast_non_json(x):
     return x
 
 def filter_dict(dic_in: dict, keys: set):
-    print({key:type(value) for key,value in dic_in['info'].items()})
     return {key:cast_non_json(dic_in[key]) for key in keys}
 
 
@@ -139,6 +138,7 @@ class AISimAgent():
         best_policy = self._add_iteration(self._training_session_id, iteration_start, best_checkpoint, result)
 
         for i in range(1, sessions):
+            iteration_start = datetime.now()
             result = self._trainer.train()
 
             if result['episode_reward_mean'] > best_reward:
@@ -150,6 +150,7 @@ class AISimAgent():
             print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format((i+1) / sessions, best_reward),
                   end="\r")
             best_policy = self._add_iteration(self._training_session_id, iteration_start, best_checkpoint, result)
+
 
         self._update_session(best_policy, datetime.now()-session_start)
 
