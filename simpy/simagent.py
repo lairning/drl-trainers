@@ -82,8 +82,8 @@ class AISimAgent():
         cursor = self.db.cursor()
         iteration_other_data_keys = {'info', 'training_iteration','experiment_id', 'date', 'timestamp', 'time_this_iter_s'}
         iteration_data = (session_id, result['episode_reward_mean'], result['episode_reward_min'],
-                          result['episode_reward_mean'], best_checkpoint,
-                          datetime.now()-start_time, start_time, filter_dict(result,iteration_other_data_keys))
+                          result['episode_reward_mean'], best_checkpoint, (datetime.now()-start_time).total_seconds(),
+                          start_time, filter_dict(result,iteration_other_data_keys))
         print(iteration_data)
         cursor.execute('''INSERT INTO training_iteration (
                                         training_session_id,
