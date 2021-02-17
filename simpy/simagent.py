@@ -39,7 +39,7 @@ class AISimAgent():
         sql = '''SELECT id FROM sim_model WHERE name = {}'''.format(P_MARKER)
         params = (sim_name,)
         row = select_record(self.db, sql=sql, params=params)
-        if self._model_id is None:
+        if row is None:
             cursor = self.db.cursor()
             cursor.execute('''INSERT INTO sim_model (name) VALUES ({})'''.format(P_MARKER),params)
             print("# {} Created!".format(sim_name))
