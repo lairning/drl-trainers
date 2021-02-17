@@ -10,8 +10,6 @@ from utils import db_connect, DB_NAME, P_MARKER, select_record, SQLParamList
 
 
 def filter_dict(dic_in: dict, keys: set):
-    keys = {'episode_reward_max','episode_reward_min','episode_reward_mean', 'info', 'training_iteration',
-            'experiment_id', 'date', 'timestamp', 'time_this_iter_s', 'check_point'}
     return {key:dic_in[key] for key in keys}
 
 
@@ -62,10 +60,10 @@ class AISimAgent():
 
     def _add_session(self, session_data: tuple):
         cursor = self.db.cursor()
-        config = session_data[2].copy()
-        config.pop("env", None)
-        config.pop("env_config", None)
-        print(config)
+        #config = session_data[2].copy()
+        #config.pop("env", None)
+        #config.pop("env_config", None)
+        #print(config)
         _session_data = (session_data[0], session_data[1], json.dumps(config))
         cursor.execute('''INSERT INTO training_session (
                                         sim_model_id,
@@ -128,7 +126,7 @@ class AISimAgent():
         result = self._trainer.train()
         best_checkpoint = self._trainer.save()
         best_reward = result['episode_reward_mean']
-        print("# Progress: {:2.1%} # Best Mean Regard: {:.2%}      ".format(1/sessions,best_reward), end="\r")
+        print("# Progress: {:2.1%} # Best Mean Regard: {:.2f}      ".format(1/sessions,best_reward), end="\r")
         best_iteration = 0
         best_policy = self._add_iteration(self._training_session_id, iteration_start, best_checkpoint, result)
 
@@ -141,7 +139,7 @@ class AISimAgent():
                 best_reward = result['episode_reward_mean']
             else:
                 best_checkpoint = None
-            print("# Progress: {:2.1%} # Best Mean Regard: {:.2%}      ".format((i+1) / sessions, best_reward), end="\r")
+            print("# Progress: {:2.1%} # Best Mean Regard: {:.2f}      ".format((i+1) / sessions, best_reward), end="\r")
             best_policy = self._add_iteration(self._training_session_id, iteration_start, best_checkpoint, result)
 
         self._update_session(best_policy, datetime.now()-session_start)
