@@ -139,7 +139,6 @@ class AISimAgent():
             iteration_start = datetime.now()
             result = self._trainer.train()
 
-            print(result['episode_reward_mean'] , best_reward, result['episode_reward_mean'] > best_reward)
             if result['episode_reward_mean'] > best_reward:
                 best_checkpoint = self._trainer.save()
                 best_reward = result['episode_reward_mean']
