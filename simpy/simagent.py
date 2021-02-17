@@ -25,10 +25,13 @@ class AISimAgent():
     }
 
     def __init__(self, sim_name: str, agent_config=None):
+        exec_locals = {}
         try:
-            exec("from models.{} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel".format(sim_name),{},{})
+            exec("from models.{} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel".format(sim_name),{},exec_locals)
         except Exception as e:
             raise e
+
+        print(exec_locals)
 
         try:
             self.db = db_connect(DB_NAME)
