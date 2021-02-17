@@ -38,13 +38,15 @@ class AISimAgent():
 
         sql = '''SELECT id FROM sim_model WHERE name = {}'''.format(P_MARKER)
         params = (sim_name,)
-        self._model_id = select_record(self.db, sql=sql, params=params)
+        row = select_record(self.db, sql=sql, params=params)
         if self._model_id is None:
             cursor = self.db.cursor()
             cursor.execute('''INSERT INTO sim_model (name) VALUES ({})'''.format(P_MARKER),params)
             print("# {} Created!".format(sim_name))
             self._model_id = cursor.lastrowid
             self.db.commit()
+        else:
+            self._model_id, = row
 
 
         if agent_config is None:
@@ -60,7 +62,6 @@ class AISimAgent():
 
     def _add_session(self, session_data: tuple):
         cursor = self.db.cursor()
-        print(session_data)
         cursor.execute('''INSERT INTO training_session (
                                         sim_model_id,
                                         time_start,
