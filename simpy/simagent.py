@@ -60,6 +60,7 @@ class AISimAgent():
 
     def _add_session(self, session_data: tuple):
         cursor = self.db.cursor()
+        print(session_data)
         cursor.execute('''INSERT INTO training_session (
                                         sim_model_id,
                                         time_start,
