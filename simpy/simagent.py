@@ -3,14 +3,19 @@ import ray.rllib.agents.ppo as ppo
 from datetime import datetime
 import statistics as stats
 import json
+import numpy as np
 
 from simpy_env import SimpyEnv
 
 from utils import db_connect, DB_NAME, P_MARKER, select_record, SQLParamList
 
+def cast_non_json(x):
+    if isinstance(x,np.float32):
+        return float(x)
+    return x
 
 def filter_dict(dic_in: dict, keys: set):
-    return {key:dic_in[key] for key in keys}
+    return {key:cast_non_json(dic_in[key]) for key in keys}
 
 
 class AISimAgent():
@@ -126,7 +131,7 @@ class AISimAgent():
         result = self._trainer.train()
         best_checkpoint = self._trainer.save()
         best_reward = result['episode_reward_mean']
-        print("# Progress: {:2.1%} # Best Mean Regard: {:.2f}      ".format(1/sessions,best_reward), end="\r")
+        print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format(1/sessions,best_reward), end="\r")
         best_iteration = 0
         best_policy = self._add_iteration(self._training_session_id, iteration_start, best_checkpoint, result)
 
@@ -139,7 +144,8 @@ class AISimAgent():
                 best_reward = result['episode_reward_mean']
             else:
                 best_checkpoint = None
-            print("# Progress: {:2.1%} # Best Mean Regard: {:.2f}      ".format((i+1) / sessions, best_reward), end="\r")
+            print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format((i+1) / sessions, best_reward),
+                  end="\r")
             best_policy = self._add_iteration(self._training_session_id, iteration_start, best_checkpoint, result)
 
         self._update_session(best_policy, datetime.now()-session_start)
