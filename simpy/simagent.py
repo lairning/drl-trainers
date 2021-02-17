@@ -84,6 +84,7 @@ class AISimAgent():
         iteration_data = (session_id, result['episode_reward_mean'], result['episode_reward_min'],
                           result['episode_reward_mean'], best_checkpoint,
                           datetime.now()-start_time, start_time, filter_dict(result,iteration_other_data_keys))
+        print(iteration_data)
         cursor.execute('''INSERT INTO training_iteration (
                                         training_session_id,
                                         reward_mean float,
