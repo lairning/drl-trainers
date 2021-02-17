@@ -17,7 +17,7 @@ def cast_non_json(x):
     return x
 
 def filter_dict(dic_in: dict, keys: set):
-    print({key:type(value) for key,value in dic_in['info']})
+    print({key:type(value) for key,value in dic_in['info'].items()})
     return {key:cast_non_json(dic_in[key]) for key in keys}
 
 
