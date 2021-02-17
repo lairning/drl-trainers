@@ -31,8 +31,6 @@ class AISimAgent():
         except Exception as e:
             raise e
 
-        print(exec_locals)
-
         try:
             self.db = db_connect(DB_NAME)
         except Exception as e:
@@ -54,9 +52,9 @@ class AISimAgent():
         self._config = self.ppo_config.copy()
         self._config.update(agent_config)
         self._config["env"] = SimpyEnv
-        self._config["env_config"] = {"n_actions" : N_ACTIONS,
-                                 "observation_space" : OBSERVATION_SPACE,
-                                 "sim_model" : SimModel}
+        self._config["env_config"] = {"n_actions" : exec_locals['N_ACTIONS'],
+                                 "observation_space" : exec_locals['OBSERVATION_SPACE'],
+                                 "sim_model" : exec_locals['SimModel']}
 
     def _add_session(self, session_data: tuple):
         cursor = self.db.cursor()
