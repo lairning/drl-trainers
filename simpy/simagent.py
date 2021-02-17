@@ -150,7 +150,7 @@ class AISimAgent():
                   end="\r")
             best_policy = self._add_iteration(self._training_session_id, iteration_start, best_checkpoint, result)
 
-
+        print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format(1, best_reward))
         self._update_session(best_policy, (datetime.now()-session_start).total_seconds())
 
         ray.shutdown()
