@@ -133,15 +133,14 @@ class AISimAgent():
         best_checkpoint = self._trainer.save()
         best_reward = result['episode_reward_mean']
         print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format(1/sessions,best_reward), end="\r")
-        best_iteration = 0
         best_policy = self._add_iteration(self._training_session_id, iteration_start, best_checkpoint, result)
 
         for i in range(1, sessions):
             iteration_start = datetime.now()
             result = self._trainer.train()
 
+            print(result['episode_reward_mean'] , best_reward, result['episode_reward_mean'] > best_reward)
             if result['episode_reward_mean'] > best_reward:
-                best_iteration = i
                 best_checkpoint = self._trainer.save()
                 best_reward = result['episode_reward_mean']
             else:
