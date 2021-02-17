@@ -28,7 +28,7 @@ def recreate_db():
                     duration float,
                     best_policy integer,
                     config json,
-                    other_data json
+                    other_data json,
                     FOREIGN KEY(sim_model_id) REFERENCES sim_model(id)
                     )''')
 
@@ -41,7 +41,7 @@ def recreate_db():
                     checkpoint unicode,
                     duration float,
                     time_start TIMESTAMP,
-                    other_data json
+                    other_data json,
                     FOREIGN KEY(training_session_id) REFERENCES training_session(id)
                     )''')
 
@@ -51,7 +51,7 @@ def recreate_db():
                     sim_model_id integer,
                     training_iteration integer, -- Only used for AI policies
                     checkpoint unicode,         -- Only used for AI policies
-                    other_data json
+                    other_data json,
                     FOREIGN KEY(sim_model_id) REFERENCES sim_model(id)
                     )''')
 
@@ -60,7 +60,7 @@ def recreate_db():
                     policy_id integer,
                     time_start TIMESTAMP,
                     duration float,
-                    other_data json
+                    other_data json,
                     FOREIGN KEY(policy_id) REFERENCES policy(id)
                     )''')
 
@@ -70,7 +70,7 @@ def recreate_db():
                     reward float,
                     duration float,
                     time_start TIMESTAMP,
-                    other_data json
+                    other_data json,
                     FOREIGN KEY(policy_run_id) REFERENCES policy_run(id)
                     )''')
 
