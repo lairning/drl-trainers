@@ -60,11 +60,10 @@ class AISimAgent():
 
     def _add_session(self, session_data: tuple):
         cursor = self.db.cursor()
-        #config = session_data[2].copy()
-        #config.pop("env", None)
-        #config.pop("env_config", None)
-        #print(config)
-        _session_data = (session_data[0], session_data[1], json.dumps(session_data[2]))
+        config = session_data[2].copy()
+        config.pop("env", None)
+        config.pop("env_config", None)
+        _session_data = (session_data[0], session_data[1], json.dumps(config))
         cursor.execute('''INSERT INTO training_session (
                                         sim_model_id,
                                         time_start,
