@@ -12,10 +12,12 @@ from utils import db_connect, DB_NAME, P_MARKER, select_record, SQLParamList
 def cast_non_json(x):
     if isinstance(x,np.float32):
         return float(x)
+    elif isinstance(x,dict):
+        return {key:cast_non_json(value) for key,value in x.items()}
     return x
 
 def filter_dict(dic_in: dict, keys: set):
-    print({key:type(dic_in[key]) for key in keys})
+    print({key:type(value) for key,value in dic_in['info']})
     return {key:cast_non_json(dic_in[key]) for key in keys}
 
 
