@@ -87,12 +87,12 @@ class AISimAgent():
         print(iteration_data)
         cursor.execute('''INSERT INTO training_iteration (
                                         training_session_id,
-                                        reward_mean float,
-                                        reward_min float,
-                                        reward_max float,
-                                        checkpoint unicode,
-                                        duration float,
-                                        time_start TIMESTAMP,
+                                        reward_mean,
+                                        reward_min,
+                                        reward_max,
+                                        checkpoint,
+                                        duration,
+                                        time_start,
                                         other_data) VALUES ({})'''.format(SQLParamList(8)), iteration_data)
         self.db.commit()
         return cursor.lastrowid
