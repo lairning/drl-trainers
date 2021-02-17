@@ -61,10 +61,14 @@ class AISimAgent():
 
     def _add_session(self, session_data: tuple):
         cursor = self.db.cursor()
+        config = session_data[2].copy()
+        config.pop("env", None)
+        config.pop("env_config", None)
+        _session_data = (session_data[0], session_data[1], config)
         cursor.execute('''INSERT INTO training_session (
                                         sim_model_id,
                                         time_start,
-                                        config) VALUES ({})'''.format(SQLParamList(3)), session_data)
+                                        config) VALUES ({})'''.format(SQLParamList(3)), _session_data)
         self.db.commit()
         return cursor.lastrowid
 
