@@ -48,7 +48,6 @@ class AISimAgent():
         else:
             self._model_id, = row
 
-
         if agent_config is None:
             agent_config = {}
         else:
