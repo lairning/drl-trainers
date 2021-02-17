@@ -44,6 +44,8 @@ class AISimAgent():
             cursor.execute('''INSERT INTO sim_model (name) VALUES ({})'''.format(P_MARKER),params)
             print("# {} Created!".format(sim_name))
             self._model_id = cursor.lastrowid
+            self.db.commit()
+
 
         if agent_config is None:
             agent_config = {}
@@ -62,6 +64,7 @@ class AISimAgent():
                                         sim_model_id,
                                         time_start,
                                         config) VALUES ({})'''.format(SQLParamList(3)), session_data)
+        self.db.commit()
         return cursor.lastrowid
 
     def _update_session(self, best_policy, duration):
@@ -69,6 +72,7 @@ class AISimAgent():
         cursor.execute('''UPDATE training_session SET best_policy = {}, duration = {}
                           WHERE id = {}'''.format(P_MARKER,P_MARKER,P_MARKER), (best_policy, duration,
                                                                                 self._training_session_id))
+        self.db.commit()
 
     def _add_iteration(self, session_id, start_time, best_checkpoint, result):
         cursor = self.db.cursor()
@@ -85,6 +89,7 @@ class AISimAgent():
                                         duration float,
                                         time_start TIMESTAMP,
                                         other_data) VALUES ({})'''.format(SQLParamList(8)), iteration_data)
+        self.db.commit()
         return cursor.lastrowid
 
 
