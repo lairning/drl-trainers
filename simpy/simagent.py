@@ -4,6 +4,7 @@ from datetime import datetime
 import statistics as stats
 import json
 import numpy as np
+import pandas as pd
 
 from simpy_env import SimpyEnv
 
@@ -156,6 +157,15 @@ class AISimAgent():
         print("# Training Session {} ended at {}!".format(self._training_session_id, datetime.now()))
 
         return best_policy
+
+    def get_training_data(self, baseline: bool = False):
+        sql = '''SELECT training_session_id, reward_mean, reward_min, reward_max 
+                 FROM training_iteration
+                 INNER JOIN training_session ON training_iteration.training_session_id = training_session.id
+                 WHERE training_session.sim_model_id = {}'''.format(P_MARKER)
+        params = (self._model_id, )
+        df = pd.read_sql_query(sql, self.db, params=params)
+        return df
 
     def run(self, simulations: int = 1, training_session=None, baseline=None, baseline_policy=None):
 
