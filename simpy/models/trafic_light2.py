@@ -147,7 +147,11 @@ class SimModel(BaseSim):
         return obs
 
     def get_reward(self):
-        total_reward = - sum((self.now-value) for light in self.lights for value in light.queue.values() )
+        total_reward = 0
+        l_cars_q = [self.now-value for light in self.lights for value in light.queue.values()]
+        if len(l_cars_q):
+            total_reward = - sum(l_cars_q)*(1+ np.std(l_cars_q) / np.mean(l_cars_q))
+        # total_reward = - sum((self.now-value) for light in self.lights for value in light.queue.values() )
         # total_reward += - sum(sum(light.stats['waiting_time']) for light in self.lights)
         reward = total_reward - self.total_reward
         self.total_reward = total_reward
@@ -194,7 +198,7 @@ class SimBaseline:
             self.sim.exec_action(action)
             reward, done, _ = self.sim.get_reward()
             total_reward += reward
-            # print(total_reward, reward)
+            print(total_reward, reward)
 
         return total_reward
 
@@ -213,8 +217,6 @@ def print_stats(sim: SimModel):
               format(light.name, cars, waiting_time/cars, cars_q, avg_time_queue))
     print("### Total Cars: {}; Average waiting: {:.2f}".format(total_cars, total_waiting_time / total_cars))
     #print(len([1 for x in light.stats['waiting_time'] if x==0]))
-
-
 
 if __name__ == "__main__":
     n = 1
