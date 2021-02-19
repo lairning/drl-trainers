@@ -173,7 +173,7 @@ class AISimAgent():
         return df
 
     def get_training_data(self, baseline: bool = False):
-        sql = '''SELECT training_session_id, id, reward_mean 
+        sql = '''SELECT training_session_id as session, training_iteration.id as iteration, reward_mean 
                  FROM training_iteration
                  INNER JOIN training_session ON training_iteration.training_session_id = training_session.id
                  WHERE training_session.sim_model_id = {}'''.format(P_MARKER)
