@@ -21,10 +21,10 @@ def filter_dict(dic_in: dict, keys: set):
     return {key:cast_non_json(dic_in[key]) for key in keys}
 
 def ray_init_log():
-    normal_stdout = sys.stdout
-    sys.stdout = open('ray.log', 'w')
+    normal_stderr = sys.stderr
+    sys.stderr = open('ray.log', 'w')
     ray.init()
-    sys.stdout = normal_stdout
+    sys.stderr = normal_stderr
 
 
 class AISimAgent():
