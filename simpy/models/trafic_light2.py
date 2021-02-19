@@ -6,8 +6,8 @@ from gym.spaces import Box
 import random
 
 # SIM_TIME = 1 * 24 * 60 * 60  # Simulation time in Time units (seconds)
-SIM_TIME = 1 * 1 * 60 * 60  # Simulation time in Time units (seconds)
-STEP_TIME = 10  # Time units (seconds) between each step
+SIM_TIME = 1 * 2 * 60 * 60  # Simulation time in Time units (seconds)
+STEP_TIME = 20  # Time units (seconds) between each step
 
 
 class BaseSim(simpy.Environment):
