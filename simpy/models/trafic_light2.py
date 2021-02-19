@@ -197,7 +197,6 @@ class SimBaseline:
             self.sim.exec_action(action)
             reward, done, _ = self.sim.get_reward()
             total_reward += reward
-            print(total_reward, reward)
 
         return total_reward
 
@@ -211,9 +210,10 @@ def print_stats(sim: SimModel):
         waiting_time_q = sum([(sim.now-value) for value in light.queue.values()])
         total_cars += cars + cars_q
         total_waiting_time += waiting_time + waiting_time_q
+        avg_time = 0 if cars==0 else waiting_time/cars
         avg_time_queue = 0 if cars_q==0 else waiting_time_q/cars_q
         print("{} - Total Cars: {}; Average Waiting Time: {:.2f}; {} Cars Stopped with Average Waiting Time: {:.2f}".
-              format(light.name, cars, waiting_time/cars, cars_q, avg_time_queue))
+              format(light.name, cars, avg_time, cars_q, avg_time_queue))
     print("### Total Cars: {}; Average waiting: {:.2f}".format(total_cars, total_waiting_time / total_cars))
     #print(len([1 for x in light.stats['waiting_time'] if x==0]))
 
@@ -222,7 +222,7 @@ if __name__ == "__main__":
     total = 0
     for _ in range(n):
         baseline = SimBaseline()
-        policy = baseline.RoundRobin(6)
+        policy = baseline.RoundRobin(1)
         reward = baseline.run(policy)
         total += reward
         print_stats(baseline.sim)

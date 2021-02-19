@@ -178,7 +178,8 @@ class AISimAgent():
                  INNER JOIN training_session ON training_iteration.training_session_id = training_session.id
                  WHERE training_session.sim_model_id = {}'''.format(P_MARKER)
         params = (self._model_id, )
-        df = pd.read_sql_query(sql, self.db, params=params)
+        df = pd.read_sql_query(sql, self.db, params=params)\
+               .pivot(index='iteration', columns='session', values='reward_mean')
         return df
 
     def run(self, simulations: int = 1, training_session=None, baseline=None, baseline_policy=None):
