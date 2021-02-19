@@ -5,17 +5,22 @@ import simpy
 from gym.spaces import Box
 import random
 
+BASE_CONFIG = {
+    "SIM_HOURS": 2, # Simulation time in hours
+    "ACTION_INTERVAL_SECONDS": 20, # Time between each action can be performed
+    "MTBC_FACTOR": 1.0 # Mean Time Between Cars Factor (lower increases frequency)
+}
+
 # SIM_TIME = 1 * 24 * 60 * 60  # Simulation time in Time units (seconds)
 SIM_TIME = 1 * 2 * 60 * 60  # Simulation time in Time units (seconds)
 STEP_TIME = 20  # Time units (seconds) between each step
 
-
 class BaseSim(simpy.Environment):
-    def __init__(self):
+    def __init__(self, config:dict=None):
         super().__init__()
         self.time = self.now
-        self.sim_time = SIM_TIME
-        self.step_time = STEP_TIME  # Time Units to run between gym env steps
+        self.sim_time = config["SIM_HOURS"] * 60 * 60 # Simulation time in Time units (seconds)
+        self.step_time = config["ACTION_INTERVAL_SECONDS"]  # Time Units to run between gym env steps
 
     def run_until_action(self):
         self.run(until=self.time + self.step_time)
@@ -52,11 +57,8 @@ def hot_encode(n, N):
 LIGHTS = ['South/North', 'North/South', 'South/West', 'North/East', 'West/East', 'East/West', 'West/North',
           'East/South']
 MTBC_BASE = [40, 30, 50, 60, 40, 20, 70, 60]
-# Mean Time Between Cars
-MTBC = [x * 1 for x in MTBC_BASE]
 
 # List of possible status, 1 Green On; 0 Green Off
-
 STATUS_N = [
     [1, 1, 0, 0, 0, 0, 0, 0],
     [1, 0, 1, 0, 0, 0, 0, 0],
@@ -133,9 +135,13 @@ OBSERVATION_SPACE = Box(low=np.array([0,0]*len(LIGHTS)),
                         dtype=np.float64)
 
 class SimModel(BaseSim):
-    def __init__(self):
-        super().__init__()
-        self.lights = [Light(LIGHTS[i], self, STATUS[0][i], MTBC[i]) for i in range(len(LIGHTS))]
+    def __init__(self, config:dict=None):
+        _sim_config = BASE_CONFIG.copy()
+        if config is not None:
+            _sim_config.update(config)
+        super().__init__(_sim_config)
+        mtbc = [x * _sim_config['MTBC_FACTOR'] for x in MTBC_BASE]
+        self.lights = [Light(LIGHTS[i], self, STATUS[0][i], mtbc[i]) for i in range(len(LIGHTS))]
         self.total_reward = 0
 
     def get_observation(self):

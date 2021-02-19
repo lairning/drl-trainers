@@ -12,7 +12,7 @@ class SimpyEnv(GymEnv):
         self.sim_config = config["sim_config"]
 
     def reset(self):
-        self.sim = self.sim_model()
+        self.sim = self.sim_model(config=self.sim_config)
 
         # Start processes and initialize resources
         obs = self.sim.get_observation()

@@ -31,7 +31,7 @@ class AISimAgent():
         "log_level"    : "ERROR"
     }
 
-    def __init__(self, sim_name: str, sim_config=None):
+    def __init__(self, sim_name: str, sim_config:dict=None):
         exec_locals = {}
         try:
             exec("from models.{} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel".format(sim_name),{},exec_locals)
@@ -107,27 +107,29 @@ class AISimAgent():
         return cursor.lastrowid
 
 
-    def train(self, sessions: int = 10, config=None):
+    def train(self, sessions: int = 10, agent_config:dict=None, sim_config:dict=None):
 
-        if config is None:
-            config = {}
-        else:
-            assert isinstance(config, dict), "Config {} must be a dict!".format(config)
-            config.pop("env",None)
-            config.pop("env_config",None)
+        _agent_config = self._config.copy()
 
-        _config = self._config.copy()
-        _config.update(config)
+        if agent_config is not None:
+            assert isinstance(agent_config, dict), "Agent Config {} must be a dict!".format(agent_config)
+            agent_config.pop("env", None)
+            agent_config.pop("env_config", None)
+            _agent_config.update(agent_config)
+
+        if sim_config is not None:
+            assert isinstance(sim_config, dict), "Sim Config {} must be a dict!".format(sim_config)
+            _agent_config["env_config"]["sim_config"].update(sim_config)
 
         session_start = datetime.now()
-        session_data = (self._model_id, session_start, _config)
+        session_data = (self._model_id, session_start, _agent_config)
         self._training_session_id = self._add_session(session_data)
 
         print("# Training Session {} started at {}!".format(self._training_session_id, datetime.now()))
 
         ray.init()
 
-        self._trainer = ppo.PPOTrainer(config=_config)
+        self._trainer = ppo.PPOTrainer(config=_agent_config)
 
         iteration_start = datetime.now()
 
