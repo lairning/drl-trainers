@@ -20,13 +20,6 @@ def cast_non_json(x):
 def filter_dict(dic_in: dict, keys: set):
     return {key:cast_non_json(dic_in[key]) for key in keys}
 
-def ray_init_log():
-    normal_stderr = sys.stderr
-    sys.stderr = open('ray.log', 'w')
-    ray.init(include_dashboard=False, log_to_driver = False, logging_level=0)
-    sys.stderr = normal_stderr
-
-
 class AISimAgent():
     ppo_config = {
         "vf_clip_param": 10,  # tune.grid_search([20.0, 100.0]),
@@ -131,7 +124,7 @@ class AISimAgent():
         session_data = (self._model_id, session_start, _agent_config)
         self._training_session_id = self._add_session(session_data)
 
-        ray_init_log()
+        ray.init(include_dashboard=False, log_to_driver=False, logging_level=0)
 
         print("# Training Session {} started at {}!".format(self._training_session_id, datetime.now()))
 
