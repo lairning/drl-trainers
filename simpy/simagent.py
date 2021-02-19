@@ -23,7 +23,7 @@ def filter_dict(dic_in: dict, keys: set):
 def ray_init_log():
     normal_stderr = sys.stderr
     sys.stderr = open('ray.log', 'w')
-    ray.init(include_dashboard=False, log_to_driver = True)
+    ray.init(include_dashboard=False, log_to_driver = True, configure_logging=True, logging_level=0)
     sys.stderr = normal_stderr
 
 
