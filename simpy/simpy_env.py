@@ -9,6 +9,7 @@ class SimpyEnv(GymEnv):
         self.action_space = Discrete(config["n_actions"])
         self.observation_space = config["observation_space"]
         self.sim_model = config["sim_model"]
+        self.sim_config = config["sim_config"]
 
     def reset(self):
         self.sim = self.sim_model()

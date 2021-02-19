@@ -31,7 +31,7 @@ class AISimAgent():
         "log_level"    : "ERROR"
     }
 
-    def __init__(self, sim_name: str, agent_config=None):
+    def __init__(self, sim_name: str, sim_config=None):
         exec_locals = {}
         try:
             exec("from models.{} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel".format(sim_name),{},exec_locals)
@@ -55,16 +55,17 @@ class AISimAgent():
         else:
             self._model_id, = row
 
-        if agent_config is None:
-            agent_config = {}
-        else:
-            assert isinstance(agent_config, dict), "Config {} must be a dict!".format(agent_config)
         self._config = self.ppo_config.copy()
-        self._config.update(agent_config)
+
+        if sim_config is None:
+            sim_config = {}
+        else:
+            assert isinstance(sim_config, dict), "Simulation Config {} must be a dict!".format(sim_config)
         self._config["env"] = SimpyEnv
         self._config["env_config"] = {"n_actions" : exec_locals['N_ACTIONS'],
                                  "observation_space" : exec_locals['OBSERVATION_SPACE'],
-                                 "sim_model" : exec_locals['SimModel']}
+                                 "sim_model" : exec_locals['SimModel'],
+                                 "sim_config": sim_config}
 
     def _add_session(self, session_data: tuple):
         cursor = self.db.cursor()
@@ -158,8 +159,21 @@ class AISimAgent():
 
         return best_policy
 
+    '''
+    Training Performance
+    - A Line Graph showing the mean_rewards of all (or some) of the Training Sessions of a specific Model 
+    '''
+
+    def get_training_sessions(self):
+        sql = '''SELECT training_session_id 
+                 FROM training_iteration
+                 WHERE sim_model_id = {}'''.format(P_MARKER)
+        params = (self._model_id, )
+        df = pd.read_sql_query(sql, self.db, params=params)
+        return df
+
     def get_training_data(self, baseline: bool = False):
-        sql = '''SELECT training_session_id, reward_mean, reward_min, reward_max 
+        sql = '''SELECT training_session_id, reward_mean 
                  FROM training_iteration
                  INNER JOIN training_session ON training_iteration.training_session_id = training_session.id
                  WHERE training_session.sim_model_id = {}'''.format(P_MARKER)

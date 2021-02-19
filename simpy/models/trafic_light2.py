@@ -6,8 +6,8 @@ from gym.spaces import Box
 import random
 
 # SIM_TIME = 1 * 24 * 60 * 60  # Simulation time in Time units (seconds)
-SIM_TIME = 1 * 2 * 60 * 60  # Simulation time in Time units (seconds)
-STEP_TIME = 20  # Time units (seconds) between each step
+SIM_TIME = 1 * 1 * 60 * 60  # Simulation time in Time units (seconds)
+STEP_TIME = 10  # Time units (seconds) between each step
 
 
 class BaseSim(simpy.Environment):
@@ -135,7 +135,6 @@ OBSERVATION_SPACE = Box(low=np.array([0,0]*len(LIGHTS)),
 class SimModel(BaseSim):
     def __init__(self):
         super().__init__()
-        #self.current_status_id = 0
         self.lights = [Light(LIGHTS[i], self, STATUS[0][i], MTBC[i]) for i in range(len(LIGHTS))]
         self.total_reward = 0
 
@@ -219,7 +218,7 @@ def print_stats(sim: SimModel):
     #print(len([1 for x in light.stats['waiting_time'] if x==0]))
 
 if __name__ == "__main__":
-    n = 1
+    n = 10
     total = 0
     for _ in range(n):
         baseline = SimBaseline()
