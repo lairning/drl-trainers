@@ -11,10 +11,6 @@ BASE_CONFIG = {
     "MTBC_FACTOR": 1.0 # Mean Time Between Cars Factor (lower increases frequency)
 }
 
-# SIM_TIME = 1 * 24 * 60 * 60  # Simulation time in Time units (seconds)
-SIM_TIME = 1 * 2 * 60 * 60  # Simulation time in Time units (seconds)
-STEP_TIME = 20  # Time units (seconds) between each step
-
 class BaseSim(simpy.Environment):
     def __init__(self, config:dict=None):
         super().__init__()
@@ -174,6 +170,7 @@ class SimBaseline:
     def __init__(self):
         self.sim = None
 
+
     class RandomAction:
         def get(self):
             return random.choice(list(range(N_ACTIONS)))
@@ -193,8 +190,8 @@ class SimBaseline:
                     self.i = 0
             return self.i
 
-    def run(self, policy = RoundRobin(6)):
-        self.sim = SimModel()
+    def run(self, policy = RoundRobin(6), sim_config:dict=None):
+        self.sim = SimModel(sim_config)
         done = False
         total_reward = 0
         while not done:
