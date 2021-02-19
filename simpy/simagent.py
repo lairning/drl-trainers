@@ -2,7 +2,7 @@ import ray
 import ray.rllib.agents.ppo as ppo
 from datetime import datetime
 import statistics as stats
-import json
+import json, sys
 import numpy as np
 import pandas as pd
 
@@ -19,6 +19,12 @@ def cast_non_json(x):
 
 def filter_dict(dic_in: dict, keys: set):
     return {key:cast_non_json(dic_in[key]) for key in keys}
+
+def ray_init_log():
+    normal_stdout = sys.stdout
+    sys.stdout = open('ray.log', 'w')
+    ray.init()
+    sys.stdout = normal_stdout
 
 
 class AISimAgent():
@@ -125,9 +131,9 @@ class AISimAgent():
         session_data = (self._model_id, session_start, _agent_config)
         self._training_session_id = self._add_session(session_data)
 
-        print("# Training Session {} started at {}!".format(self._training_session_id, datetime.now()))
+        ray_init_log()
 
-        ray.init()
+        print("# Training Session {} started at {}!".format(self._training_session_id, datetime.now()))
 
         self._trainer = ppo.PPOTrainer(config=_agent_config)
 
