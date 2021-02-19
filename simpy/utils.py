@@ -21,3 +21,8 @@ def select_record(dbcon, sql: str, params: tuple) -> tuple:
     cursor = dbcon.cursor()
     cursor.execute(sql, params)
     return cursor.fetchone()
+
+def select_all(dbcon, sql: str, params: tuple) -> tuple:
+    cursor = dbcon.cursor()
+    cursor.execute(sql, params)
+    return cursor.fetchall()

@@ -8,7 +8,7 @@ import pandas as pd
 
 from simpy_env import SimpyEnv
 
-from utils import db_connect, DB_NAME, P_MARKER, select_record, SQLParamList
+from utils import db_connect, DB_NAME, P_MARKER, select_record, SQLParamList, select_all
 
 def cast_non_json(x):
     if isinstance(x,np.float32):
@@ -159,6 +159,17 @@ class AISimAgent():
         print("# Training Session {} ended at {}!".format(self._training_session_id, datetime.now()))
 
         return best_policy
+
+    def del_training_sessions(self, sessions: [int, list] = None):
+        # policy table updates not implemented yet
+
+        select_sessions_sql = '''SELECT id FROM training_session
+                                 WHERE sim_model_id = {}'''.format(P_MARKER)
+        params = (self._model_id,)
+        sessions = select_all(self.db, sql=select_sessions_sql, params=params)
+        print(sessions)
+
+
 
     '''
     Training Performance

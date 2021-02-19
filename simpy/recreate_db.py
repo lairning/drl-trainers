@@ -50,7 +50,8 @@ def recreate_db():
                    (id INTEGER PRIMARY KEY,
                     policy_type integer,        -- Defines if the policy is AI (1) or Baseline (0)
                     sim_model_id integer,
-                    training_iteration integer, -- Only used for AI policies
+                    training_session integer,   -- Only used for AI policies
+                    training_id integer,        -- Only used for AI policies
                     checkpoint unicode,         -- Only used for AI policies
                     other_data json,
                     FOREIGN KEY(sim_model_id) REFERENCES sim_model(id)
