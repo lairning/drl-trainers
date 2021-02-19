@@ -87,21 +87,22 @@ class AISimAgent():
                                                                                 self._training_session_id))
         self.db.commit()
 
-    def _add_iteration(self, session_id, start_time, best_checkpoint, result):
+    def _add_iteration(self, n, session_id, start_time, best_checkpoint, result):
         cursor = self.db.cursor()
         iteration_other_data_keys = {'info', 'training_iteration','experiment_id', 'date', 'timestamp', 'time_this_iter_s'}
-        iteration_data = (session_id, result['episode_reward_mean'], result['episode_reward_min'],
+        iteration_data = (session_id, n, result['episode_reward_mean'], result['episode_reward_min'],
                           result['episode_reward_max'], best_checkpoint, (datetime.now()-start_time).total_seconds(),
                           start_time, json.dumps(filter_dict(result,iteration_other_data_keys)))
         cursor.execute('''INSERT INTO training_iteration (
                                         training_session_id,
+                                        id,
                                         reward_mean,
                                         reward_min,
                                         reward_max,
                                         checkpoint,
                                         duration,
                                         time_start,
-                                        other_data) VALUES ({})'''.format(SQLParamList(8)), iteration_data)
+                                        other_data) VALUES ({})'''.format(SQLParamList(9)), iteration_data)
         self.db.commit()
         return cursor.lastrowid
 
@@ -124,7 +125,6 @@ class AISimAgent():
 
         print("# Training Session {} started at {}!".format(self._training_session_id, datetime.now()))
 
-
         ray.init()
 
         self._trainer = ppo.PPOTrainer(config=_config)
@@ -135,7 +135,7 @@ class AISimAgent():
         best_checkpoint = self._trainer.save()
         best_reward = result['episode_reward_mean']
         print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format(1/sessions,best_reward), end="\r")
-        best_policy = self._add_iteration(self._training_session_id, iteration_start, best_checkpoint, result)
+        best_policy = self._add_iteration(0, self._training_session_id, iteration_start, best_checkpoint, result)
 
         for i in range(1, sessions):
             iteration_start = datetime.now()
@@ -148,7 +148,7 @@ class AISimAgent():
                 best_checkpoint = None
             print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format((i+1) / sessions, best_reward),
                   end="\r")
-            best_policy = self._add_iteration(self._training_session_id, iteration_start, best_checkpoint, result)
+            best_policy = self._add_iteration(i, self._training_session_id, iteration_start, best_checkpoint, result)
 
         print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format(1, best_reward))
         self._update_session(best_policy, (datetime.now()-session_start).total_seconds())

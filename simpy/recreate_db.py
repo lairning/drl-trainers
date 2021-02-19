@@ -33,8 +33,8 @@ def recreate_db():
                     )''')
 
     db.execute('''create table training_iteration
-                   (id INTEGER PRIMARY KEY,
-                    training_session_id integer,
+                   (training_session_id integer,
+                    id integer,
                     reward_mean float,
                     reward_min float,
                     reward_max float,
@@ -42,6 +42,7 @@ def recreate_db():
                     duration float,
                     time_start TIMESTAMP,
                     other_data json,
+                    PRIMARY KEY(training_session_id, id)
                     FOREIGN KEY(training_session_id) REFERENCES training_session(id)
                     )''')
 
