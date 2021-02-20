@@ -1,8 +1,7 @@
 import ray
 import ray.rllib.agents.ppo as ppo
 from datetime import datetime
-import statistics as stats
-import json, sys
+import json
 import numpy as np
 import pandas as pd
 
@@ -10,17 +9,20 @@ from simpy_env import SimpyEnv
 
 from utils import db_connect, DB_NAME, P_MARKER, select_record, SQLParamList, select_all
 
+
 def cast_non_json(x):
-    if isinstance(x,np.float32):
+    if isinstance(x, np.float32):
         return float(x)
-    elif isinstance(x,dict):
-        return {key:cast_non_json(value) for key,value in x.items()}
+    elif isinstance(x, dict):
+        return {key: cast_non_json(value) for key, value in x.items()}
     return x
 
-def filter_dict(dic_in: dict, keys: set):
-    return {key:cast_non_json(dic_in[key]) for key in keys}
 
-class AISimAgent():
+def filter_dict(dic_in: dict, keys: set):
+    return {key: cast_non_json(dic_in[key]) for key in keys}
+
+
+class AISimAgent:
     ppo_config = {
         "vf_clip_param": 10,  # tune.grid_search([20.0, 100.0]),
         "num_workers"  : 5,
@@ -30,10 +32,11 @@ class AISimAgent():
         "log_level"    : "ERROR"
     }
 
-    def __init__(self, sim_name: str, sim_config:dict=None):
+    def __init__(self, sim_name: str, sim_config: dict = None):
         exec_locals = {}
         try:
-            exec("from models.{} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel".format(sim_name),{},exec_locals)
+            exec("from models.{} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel".format(sim_name), {},
+                 exec_locals)
         except Exception as e:
             raise e
 
@@ -47,7 +50,7 @@ class AISimAgent():
         row = select_record(self.db, sql=sql, params=params)
         if row is None:
             cursor = self.db.cursor()
-            cursor.execute('''INSERT INTO sim_model (name) VALUES ({})'''.format(P_MARKER),params)
+            cursor.execute('''INSERT INTO sim_model (name) VALUES ({})'''.format(P_MARKER), params)
             print("# {} Created!".format(sim_name))
             self._model_id = cursor.lastrowid
             self.db.commit()
@@ -62,37 +65,38 @@ class AISimAgent():
             assert isinstance(sim_config, dict), "Simulation Config {} must be a dict!".format(sim_config)
         self._sim_model = exec_locals['SimModel']
         self._config["env"] = SimpyEnv
-        self._config["env_config"] = {"n_actions" : exec_locals['N_ACTIONS'],
-                                 "observation_space" : exec_locals['OBSERVATION_SPACE'],
-                                 "sim_model" : exec_locals['SimModel'],
-                                 "sim_config": sim_config}
+        self._config["env_config"] = {"n_actions"        : exec_locals['N_ACTIONS'],
+                                      "observation_space": exec_locals['OBSERVATION_SPACE'],
+                                      "sim_model"        : exec_locals['SimModel'],
+                                      "sim_config"       : sim_config}
 
     def _add_session(self, session_data: tuple):
         cursor = self.db.cursor()
-        config = session_data[2].copy()
-        config.pop("env", None)
-        config.pop("env_config", None)
-        _session_data = (session_data[0], session_data[1], json.dumps(config))
+        agent_config, sim_config = session_data
+        agent_config.pop("env", None)
+        agent_config.pop("env_config", None)
+        _session_data = (self._model_id, datetime.now(), json.dumps(agent_config), json.dumps(sim_config))
         cursor.execute('''INSERT INTO training_session (
                                         sim_model_id,
                                         time_start,
-                                        config) VALUES ({})'''.format(SQLParamList(3)), _session_data)
+                                        agent_config,
+                                        sim_config) VALUES ({})'''.format(SQLParamList(4)), _session_data)
         self.db.commit()
         return cursor.lastrowid
 
-    def _update_session(self, best_policy, duration):
+    def _update_session(self, best_policy, duration, session_id):
         cursor = self.db.cursor()
         cursor.execute('''UPDATE training_session SET best_policy = {}, duration = {}
-                          WHERE id = {}'''.format(P_MARKER,P_MARKER,P_MARKER), (best_policy, duration,
-                                                                                self._training_session_id))
+                          WHERE id = {}'''.format(P_MARKER, P_MARKER, P_MARKER), (best_policy, duration, session_id))
         self.db.commit()
 
     def _add_iteration(self, n, session_id, start_time, best_checkpoint, result):
         cursor = self.db.cursor()
-        iteration_other_data_keys = {'info', 'training_iteration','experiment_id', 'date', 'timestamp', 'time_this_iter_s'}
+        iteration_other_data_keys = {'info', 'training_iteration', 'experiment_id', 'date', 'timestamp',
+                                     'time_this_iter_s'}
         iteration_data = (session_id, n, result['episode_reward_mean'], result['episode_reward_min'],
-                          result['episode_reward_max'], best_checkpoint, (datetime.now()-start_time).total_seconds(),
-                          start_time, json.dumps(filter_dict(result,iteration_other_data_keys)))
+                          result['episode_reward_max'], best_checkpoint, (datetime.now() - start_time).total_seconds(),
+                          start_time, json.dumps(filter_dict(result, iteration_other_data_keys)))
         cursor.execute('''INSERT INTO training_iteration (
                                         training_session_id,
                                         id,
@@ -106,8 +110,31 @@ class AISimAgent():
         self.db.commit()
         return cursor.lastrowid
 
+    def _add_policy(self, policy_data: tuple):
+        cursor = self.db.cursor()
+        cursor.execute('''INSERT INTO policy (
+                                        sim_model_id,
+                                        session_id,
+                                        iteration_id,
+                                        checkpoint,
+                                        agent_config,
+                                        sim_config) VALUES ({})'''.format(SQLParamList(6)), policy_data)
+        self.db.commit()
+        return cursor.lastrowid
 
-    def train(self, sessions: int = 10, agent_config:dict=None, sim_config:dict=None):
+    def _add_policy_run(self, policy_run_data: tuple):
+        cursor = self.db.cursor()
+        cursor.execute('''INSERT INTO policy_run (
+                                        policy_id,
+                                        time_start,
+                                        simulations,
+                                        duration,
+                                        results) VALUES ({})'''.format(SQLParamList(5)), policy_run_data)
+        self.db.commit()
+        return cursor.lastrowid
+
+    def train(self, iterations: int = 10, agent_config: dict = None, sim_config: dict = None,
+              add_best_policy: bool = True):
 
         _agent_config = self._config.copy()
 
@@ -121,45 +148,51 @@ class AISimAgent():
             assert isinstance(sim_config, dict), "Sim Config {} must be a dict!".format(sim_config)
             _agent_config["env_config"]["sim_config"].update(sim_config)
 
-        session_start = datetime.now()
-        session_data = (self._model_id, session_start, _agent_config)
-        self._training_session_id = self._add_session(session_data)
+        session_id = self._add_session((_agent_config, sim_config))
 
         ray.init(include_dashboard=False, log_to_driver=False, logging_level=0)
 
-        print("# Training Session {} started at {}!".format(self._training_session_id, datetime.now()))
+        print("# Training Session {} started at {}!".format(session_id, datetime.now()))
 
-        self._trainer = ppo.PPOTrainer(config=_agent_config)
+        trainer = ppo.PPOTrainer(config=_agent_config)
 
+        session_start = datetime.now()
         iteration_start = datetime.now()
 
-        result = self._trainer.train()
-        best_checkpoint = self._trainer.save()
+        result = trainer.train()
+        best_checkpoint = trainer.save()
         best_reward = result['episode_reward_mean']
-        print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format(1/sessions,best_reward), end="\r")
-        best_policy = self._add_iteration(0, self._training_session_id, iteration_start, best_checkpoint, result)
+        print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format(1 / iterations, best_reward), end="\r")
+        self._add_iteration(0, session_id, iteration_start, best_checkpoint, result)
+        best_iteration = 0
 
-        for i in range(1, sessions):
+        for i in range(1, iterations):
             iteration_start = datetime.now()
-            result = self._trainer.train()
+            result = trainer.train()
 
             if result['episode_reward_mean'] > best_reward:
-                best_checkpoint = self._trainer.save()
+                best_checkpoint = trainer.save()
                 best_reward = result['episode_reward_mean']
+                best_iteration = i
             else:
                 best_checkpoint = None
-            print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format((i+1) / sessions, best_reward),
+            print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format((i + 1) / iterations, best_reward),
                   end="\r")
-            best_policy = self._add_iteration(i, self._training_session_id, iteration_start, best_checkpoint, result)
+            self._add_iteration(i, session_id, iteration_start, best_checkpoint, result)
 
         print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format(1, best_reward))
-        self._update_session(best_policy, (datetime.now()-session_start).total_seconds())
+        self._update_session(best_iteration, (datetime.now() - session_start).total_seconds(), session_id)
+
+        if add_best_policy:
+            policy_data = (1, self._model_id, session_id, best_iteration,
+                           best_checkpoint, json.dumps(_agent_config), json.dumps(sim_config))
+            self._add_policy(policy_data)
 
         ray.shutdown()
 
-        print("# Training Session {} ended at {}!".format(self._training_session_id, datetime.now()))
+        print("# Training Session {} ended at {}!".format(session_id, datetime.now()))
 
-        return best_policy
+        return best_iteration
 
     def del_training_sessions(self, sessions: [int, list] = None):
         # policy table updates not implemented yet
@@ -170,10 +203,10 @@ class AISimAgent():
         all_sessions = select_all(self.db, sql=select_sessions_sql, params=params)
         all_sessions = {t[0] for t in all_sessions}
         del_sessions = []
-        if isinstance(sessions,int):
+        if isinstance(sessions, int):
             assert sessions in all_sessions, "Invalid session id {}".format(sessions)
             del_sessions = (sessions,)
-        if isinstance(sessions,list):
+        if isinstance(sessions, list):
             assert set(sessions).issubset(all_sessions), "Invalid sessions list {}".format(sessions)
             del_sessions = tuple(sessions)
         if sessions is None:
@@ -182,12 +215,11 @@ class AISimAgent():
             cursor = self.db.cursor()
             sql = '''DELETE FROM training_iteration
                      WHERE training_session_id IN ({})'''.format(SQLParamList(len(del_sessions)))
-            cursor.execute(sql,del_sessions)
+            cursor.execute(sql, del_sessions)
             sql = '''DELETE FROM training_session
                      WHERE id IN ({})'''.format(SQLParamList(len(del_sessions)))
-            cursor.execute(sql,del_sessions)
+            cursor.execute(sql, del_sessions)
             self.db.commit()
-
 
     '''
     Training Performance
@@ -198,7 +230,7 @@ class AISimAgent():
         sql = '''SELECT training_session_id 
                  FROM training_iteration
                  WHERE sim_model_id = {}'''.format(P_MARKER)
-        params = (self._model_id, )
+        params = (self._model_id,)
         df = pd.read_sql_query(sql, self.db, params=params)
         return df
 
@@ -207,56 +239,69 @@ class AISimAgent():
                  FROM training_iteration
                  INNER JOIN training_session ON training_iteration.training_session_id = training_session.id
                  WHERE training_session.sim_model_id = {}'''.format(P_MARKER)
-        params = (self._model_id, )
-        df = pd.read_sql_query(sql, self.db, params=params)\
-               .pivot(index='iteration', columns='session', values='reward_mean')
+        params = (self._model_id,)
+        df = pd.read_sql_query(sql, self.db, params=params) \
+            .pivot(index='iteration', columns='session', values='reward_mean')
         if baseline:
             base = self._sim_model()
             df['baseline'] = [base.run() for _ in range(df.shape[0])]
 
         return df
 
-    def run(self, simulations: int = 1, training_session=None, baseline=None, baseline_policy=None):
+    def get_policies(self):
+        sql = '''SELECT id as policy, session_id as session
+                 FROM policy
+                 WHERE sim_model_id = {}'''.format(P_MARKER)
+        return pd.read_sql_query(sql, self.db, params=(self._model_id,))
 
-        if training_session is None:
-            training_session = len(self.training_session)-1
+    def run(self, policy: [int, list] = None, simulations: int = 1):
 
-        assert len(self.training_session) >= training_session, \
-            "'training_session' {} is higher than the current number of {} Training Sessions ".\
-                format(training_session,len(self.training_session))
+        select_policy_sql = '''SELECT id FROM policy
+                                 WHERE sim_model_id = {}'''.format(P_MARKER)
+        all_policies = select_all(self.db, sql=select_policy_sql, params=(self._model_id,))
+        all_policies = {t[0] for t in all_policies}
 
+        if isinstance(policy, int):
+            assert policy in all_policies, "Invalid session id {}".format(policy)
+            policies = (policy,)
+        elif isinstance(policy, list):
+            assert set(policy).issubset(all_policies), "Invalid sessions list {}".format(policy)
+            policies = tuple(policy)
+        else:
+            policies = tuple(all_policies)
 
-        config = self.training_session[training_session]['config']
-        best_iteration = self.training_session[training_session]['best_iteration']
-        check_point = self.training_session[training_session]['result'][best_iteration]['check_point']
+        select_policy_sql = '''SELECT id, checkpoint, agent_config, sim_config
+                               FROM policy
+                               WHERE id IN ({}) and '''.format(SQLParamList(len(policies)))
+        policy_data = select_all(self.db, sql=select_policy_sql, params=policies)
 
-        ray.init()
+        ray.init(include_dashboard=False, log_to_driver=False, logging_level=0)
 
-        agent = ppo.PPOTrainer(config=config)
-        agent.restore(check_point)
+        for policy_id, checkpoint, agent_config, sim_config in policy_data:
+            agent_config = json.loads(agent_config)
+            sim_config = json.loads(sim_config)
 
-        # instantiate env class
-        he = SimpyEnv(config["env_config"])
+            agent = ppo.PPOTrainer(config=agent_config)
+            agent.restore(checkpoint)
 
-        result_list = []
-        for _ in range(simulations):
-            # run until episode ends
-            episode_reward = 0
-            done = False
-            obs = he.reset()
-            while not done:
-                action = agent.compute_action(obs)
-                obs, reward, done, info = he.step(action)
-                episode_reward += reward
-            result_list.append(episode_reward)
-        self.running_session.append({"type": "AI", "result": result_list})
+            time_start = datetime.now()
+            # instantiate env class
+            agent_config["env_config"]["sim_config"].update(sim_config)
+            he = SimpyEnv(agent_config["env_config"])
 
-        if baseline is not None:
-            result_list = [baseline.run(baseline_policy) for _ in range(simulations)]
-            self.running_session.append({"type": "Baseline", "result": result_list})
+            result_list = []
+            for _ in range(simulations):
+                # run until episode ends
+                episode_reward = 0
+                done = False
+                obs = he.reset()
+                while not done:
+                    action = agent.compute_action(obs)
+                    obs, reward, done, info = he.step(action)
+                    episode_reward += reward
+                result_list.append(episode_reward)
+            policy_run_data = (policy_id, time_start, simulations,
+                               (datetime.now() - time_start).total_seconds(), json.dumps(result_list))
+            self._add_policy_run(policy_run_data)
 
         ray.shutdown()
-
-        return self.running_session
-
-
