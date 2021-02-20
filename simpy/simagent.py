@@ -167,7 +167,7 @@ class AISimAgent():
                                  WHERE sim_model_id = {}'''.format(P_MARKER)
         params = (self._model_id,)
         all_sessions = select_all(self.db, sql=select_sessions_sql, params=params)
-        all_sessions = {t(0) for t in all_sessions}
+        all_sessions = {t[0] for t in all_sessions}
         del_sessions = []
         if isinstance(sessions,int):
             assert sessions in all_sessions, "Invalid session id {}".format(sessions)
