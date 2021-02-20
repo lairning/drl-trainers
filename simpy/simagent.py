@@ -166,9 +166,26 @@ class AISimAgent():
         select_sessions_sql = '''SELECT id FROM training_session
                                  WHERE sim_model_id = {}'''.format(P_MARKER)
         params = (self._model_id,)
-        sessions = select_all(self.db, sql=select_sessions_sql, params=params)
-        print(sessions)
-
+        all_sessions = select_all(self.db, sql=select_sessions_sql, params=params)
+        all_sessions = {t(0) for t in all_sessions}
+        del_sessions = []
+        if isinstance(sessions,int):
+            assert sessions in all_sessions, "Invalid session id {}".format(sessions)
+            del_sessions = (sessions,)
+        if isinstance(sessions,list):
+            assert set(sessions).issubset(all_sessions), "Invalid sessions list {}".format(sessions)
+            del_sessions = tuple(sessions)
+        if sessions is None:
+            del_sessions = tuple(all_sessions)
+        if len(del_sessions):
+            cursor = self.db.cursor()
+            sql = '''DELETE FROM training_iteration
+                     WHERE training_session_id IN ()'''.format(SQLParamList(len(del_sessions)))
+            cursor.execute(sql,del_sessions)
+            sql = '''DELETE FROM training_session
+                     WHERE id IN ()'''.format(SQLParamList(len(del_sessions)))
+            cursor.execute(sql,del_sessions)
+            self.db.commit()
 
 
     '''
