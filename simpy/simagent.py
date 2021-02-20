@@ -117,7 +117,7 @@ class AISimAgent:
         agent_config.pop("env_config", None)
         agent_config = json.dumps(agent_config)
         sim_config = json.dumps(sim_config)
-        policy_data = (session_id, best_iteration, best_checkpoint, agent_config, sim_config)
+        policy_data = (self._model_id, session_id, best_iteration, best_checkpoint, agent_config, sim_config)
         cursor.execute('''INSERT INTO policy (
                                         sim_model_id,
                                         session_id,
