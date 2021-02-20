@@ -148,7 +148,7 @@ class AISimAgent:
             assert isinstance(sim_config, dict), "Sim Config {} must be a dict!".format(sim_config)
             _agent_config["env_config"]["sim_config"].update(sim_config)
 
-        session_id = self._add_session((_agent_config, sim_config))
+        session_id = self._add_session((_agent_config.copy(), sim_config))
 
         ray.init(include_dashboard=False, log_to_driver=False, logging_level=0)
 
