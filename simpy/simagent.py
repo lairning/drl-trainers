@@ -112,6 +112,12 @@ class AISimAgent:
 
     def _add_policy(self, policy_data: tuple):
         cursor = self.db.cursor()
+        session_id, best_iteration, best_checkpoint, agent_config, sim_config = policy_data
+        agent_config.pop("env", None)
+        agent_config.pop("env_config", None)
+        agent_config = json.dumps(agent_config)
+        sim_config = json.dumps(sim_config)
+        policy_data = (session_id, best_iteration, best_checkpoint, agent_config, sim_config)
         cursor.execute('''INSERT INTO policy (
                                         sim_model_id,
                                         session_id,
@@ -184,8 +190,8 @@ class AISimAgent:
         self._update_session(best_iteration, (datetime.now() - session_start).total_seconds(), session_id)
 
         if add_best_policy:
-            policy_data = (1, self._model_id, session_id, best_iteration,
-                           best_checkpoint, json.dumps(_agent_config), json.dumps(sim_config))
+            policy_data = (session_id, best_iteration, best_checkpoint,
+                           _agent_config.copy(), sim_config.copy())
             self._add_policy(policy_data)
 
         ray.shutdown()
@@ -277,9 +283,12 @@ class AISimAgent:
 
         ray.init(include_dashboard=False, log_to_driver=False, logging_level=0)
 
-        for policy_id, checkpoint, agent_config, sim_config in policy_data:
-            agent_config = json.loads(agent_config)
-            sim_config = json.loads(sim_config)
+        for policy_id, checkpoint, saved_agent_config, saved_sim_config in policy_data:
+
+            agent_config = self._config.copy()
+            agent_config.update(json.loads(saved_agent_config))
+
+            sim_config = json.loads(saved_sim_config)
 
             agent = ppo.PPOTrainer(config=agent_config)
             agent.restore(checkpoint)
