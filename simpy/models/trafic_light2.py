@@ -190,7 +190,7 @@ class SimBaseline:
                     self.i = 0
             return self.i
 
-    def run(self, policy = RoundRobin(6), sim_config:dict=None):
+    def run(self, policy = RoundRobin(1), sim_config:dict=None):
         self.sim = SimModel(sim_config)
         done = False
         total_reward = 0
