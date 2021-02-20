@@ -180,10 +180,10 @@ class AISimAgent():
         if len(del_sessions):
             cursor = self.db.cursor()
             sql = '''DELETE FROM training_iteration
-                     WHERE training_session_id IN ()'''.format(SQLParamList(len(del_sessions)))
+                     WHERE training_session_id IN ({})'''.format(SQLParamList(len(del_sessions)))
             cursor.execute(sql,del_sessions)
             sql = '''DELETE FROM training_session
-                     WHERE id IN ()'''.format(SQLParamList(len(del_sessions)))
+                     WHERE id IN ({})'''.format(SQLParamList(len(del_sessions)))
             cursor.execute(sql,del_sessions)
             self.db.commit()
 
