@@ -63,7 +63,7 @@ class AISimAgent:
             sim_config = {}
         else:
             assert isinstance(sim_config, dict), "Simulation Config {} must be a dict!".format(sim_config)
-        self._sim_model = exec_locals['SimModel']
+        self._sim_baseline = exec_locals['SimBaseline']
         self._config["env"] = SimpyEnv
         self._config["env_config"] = {"n_actions"        : exec_locals['N_ACTIONS'],
                                       "observation_space": exec_locals['OBSERVATION_SPACE'],
@@ -249,7 +249,7 @@ class AISimAgent:
         df = pd.read_sql_query(sql, self.db, params=params) \
             .pivot(index='iteration', columns='session', values='reward_mean')
         if baseline:
-            base = self._sim_model()
+            base = self._sim_baseline()
             df['baseline'] = [base.run() for _ in range(df.shape[0])]
 
         return df
