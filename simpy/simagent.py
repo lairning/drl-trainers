@@ -201,8 +201,6 @@ class AISimAgent:
         return best_iteration
 
     def del_training_sessions(self, sessions: [int, list] = None):
-        # policy table updates not implemented yet
-
         select_sessions_sql = '''SELECT id FROM training_session
                                  WHERE sim_model_id = {}'''.format(P_MARKER)
         params = (self._model_id,)
@@ -279,6 +277,7 @@ class AISimAgent:
         select_policy_sql = '''SELECT id, checkpoint, agent_config, sim_config
                                FROM policy
                                WHERE id IN ({}) and '''.format(SQLParamList(len(policies)))
+        print(select_policy_sql)
         policy_data = select_all(self.db, sql=select_policy_sql, params=policies)
 
         ray.init(include_dashboard=False, log_to_driver=False, logging_level=0)
@@ -314,3 +313,4 @@ class AISimAgent:
             self._add_policy_run(policy_run_data)
 
         ray.shutdown()
+

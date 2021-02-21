@@ -1,5 +1,6 @@
 
 # import platform
+import pandas as pd
 
 DBTYPE = 'sqlite' # if platform.system() == 'Windows' else 'mysql'
 
@@ -22,7 +23,12 @@ def select_record(dbcon, sql: str, params: tuple) -> tuple:
     cursor.execute(sql, params)
     return cursor.fetchone()
 
-def select_all(dbcon, sql: str, params: tuple) -> tuple:
+def select_all(dbcon, sql: str, params: tuple) -> list:
     cursor = dbcon.cursor()
     cursor.execute(sql, params)
     return cursor.fetchall()
+
+def table_fetch_all(table:str):
+    db = db_connect(DB_NAME)
+    sql = '''SELECT * FROM {}'''.format(table)
+    return pd.read_sql_query(sql, db)
