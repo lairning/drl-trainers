@@ -276,8 +276,7 @@ class AISimAgent:
 
         select_policy_sql = '''SELECT id, checkpoint, agent_config, sim_config
                                FROM policy
-                               WHERE id IN ({}) and '''.format(SQLParamList(len(policies)))
-        print(select_policy_sql)
+                               WHERE id IN ({})'''.format(SQLParamList(len(policies)))
         policy_data = select_all(self.db, sql=select_policy_sql, params=policies)
 
         ray.init(include_dashboard=False, log_to_driver=False, logging_level=0)
