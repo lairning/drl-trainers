@@ -192,6 +192,7 @@ class AISimAgent:
         if add_best_policy:
             policy_data = (session_id, best_iteration, best_checkpoint,
                            _agent_config.copy(), sim_config.copy())
+            print(policy_data)
             self._add_policy(policy_data)
 
         ray.shutdown()
