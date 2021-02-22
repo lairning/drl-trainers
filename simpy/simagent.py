@@ -23,6 +23,11 @@ def cast_non_json(x):
 def filter_dict(dic_in: dict, keys: set):
     return {key: cast_non_json(dic_in[key]) for key in keys}
 
+def my_ray_init():
+    stderrout = sys.stderr
+    sys.stderr = open('ray.log','w')
+    ray.init(include_dashboard=False, log_to_driver=False, logging_level=0)
+    sys.stderr = stderrout
 
 class AISimAgent:
     ppo_config = {
@@ -33,9 +38,6 @@ class AISimAgent:
         "framework"    : "torch",
         "log_level"    : "ERROR"
     }
-
-    stderrout = sys.stderr
-    rayerrout = open('ray.log','w')
 
     def __init__(self, sim_name: str, sim_config: dict = None):
         exec_locals = {}
@@ -161,7 +163,7 @@ class AISimAgent:
 
         session_id = self._add_session((_agent_config.copy(), sim_config))
 
-        ray.init(include_dashboard=False, log_to_driver=False, logging_level=0)
+        my_ray_init()
 
         print("# Training Session {} started at {}!".format(session_id, datetime.now()))
 
@@ -285,9 +287,7 @@ class AISimAgent:
                                WHERE id IN ({})'''.format(SQLParamList(len(policies)))
         policy_data = select_all(self.db, sql=select_policy_sql, params=policies)
 
-        sys.stderr = self.rayerrout
-        ray.init(include_dashboard=False, log_to_driver=False, logging_level=0)
-        sys.stderr = self.stderrout
+        my_ray_init()
 
         for policy_id, checkpoint, saved_agent_config, saved_sim_config in policy_data:
 
