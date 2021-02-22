@@ -329,9 +329,10 @@ class AISimAgent:
                  WHERE policy.sim_model_id = {}'''.format(P_MARKER)
         params = (self._model_id,)
         policy_run = select_all(self.db, sql=sql, params=params)
-        df = pd.DataFrame([[str(id),time,x] for id,time,l in policy_run for x in l], columns=['id','time','reward'])
+        df = pd.DataFrame([[str(id),time,x] for id,time,l in policy_run for x in l], columns=['policy','time','reward'])
         if baseline:
             base = self._sim_baseline()
-            df.append([['baseline','',base.run()] for _ in range(df.shape[0])])
+            size = max(len(row[2]) for row in policy_run)
+            df.append([['baseline','',base.run()] for _ in range(size)])
 
         return df
