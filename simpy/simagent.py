@@ -9,6 +9,8 @@ from simpy_env import SimpyEnv
 
 from utils import db_connect, DB_NAME, P_MARKER, select_record, SQLParamList, select_all
 
+# ToDo:
+# - Add a label to the training sessions
 
 def cast_non_json(x):
     if isinstance(x, np.float32):
@@ -192,7 +194,6 @@ class AISimAgent:
         if add_best_policy:
             policy_data = (session_id, best_iteration, best_checkpoint,
                            _agent_config.copy(), sim_config.copy())
-            print(policy_data)
             self._add_policy(policy_data)
 
         ray.shutdown()
@@ -314,3 +315,18 @@ class AISimAgent:
 
         ray.shutdown()
 
+    def get_policy_run_data(self, baseline: bool = False):
+        sql = '''SELECT policy_id as policy, time_start, results 
+                 FROM policy_run
+                 INNER JOIN policy ON policy_run.policy_id = policy.id
+                 WHERE policy.sim_model_id = {}'''.format(P_MARKER)
+        params = (self._model_id,)
+        policy_run = select_all(self.db, sql=sql, params=params)
+        df = pd.DataFrame()
+        for policy, time_start, results in policy_run:
+            df[str(policy)] = json.loads(results)
+        if baseline:
+            base = self._sim_baseline()
+            df['baseline'] = [base.run() for _ in range(df.shape[0])]
+
+        return df
