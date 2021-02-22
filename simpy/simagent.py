@@ -1,7 +1,7 @@
 import ray
 import ray.rllib.agents.ppo as ppo
 from datetime import datetime
-import json
+import json, sys
 import numpy as np
 import pandas as pd
 
@@ -33,6 +33,9 @@ class AISimAgent:
         "framework"    : "torch",
         "log_level"    : "ERROR"
     }
+
+    stderrout = sys.stderr
+    rayerrout = open('ray.log','w')
 
     def __init__(self, sim_name: str, sim_config: dict = None):
         exec_locals = {}
@@ -291,8 +294,10 @@ class AISimAgent:
 
             sim_config = json.loads(saved_sim_config)
 
+            sys.stderr = self.rayerrout
             agent = ppo.PPOTrainer(config=agent_config)
             agent.restore(checkpoint)
+            sys.stderr = self.stderrout
 
             time_start = datetime.now()
             # instantiate env class
