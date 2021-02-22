@@ -334,6 +334,6 @@ class AISimAgent:
         if baseline:
             base = self._sim_baseline()
             size = max(len(json.loads(row[2])) for row in policy_run)
-            df.append([['baseline','',base.run()] for _ in range(size)])
+            df = df.append([['baseline','',base.run()] for _ in range(size)])
 
         return df
