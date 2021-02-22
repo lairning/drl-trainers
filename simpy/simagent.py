@@ -333,7 +333,7 @@ class AISimAgent:
                                                                                                          'time','reward'])
         if baseline:
             base = self._sim_baseline()
-            size = max(len(row[2]) for row in policy_run)
+            size = max(len(json.loads(row[2])) for row in policy_run)
             df.append([['baseline','',base.run()] for _ in range(size)])
 
         return df
