@@ -285,7 +285,9 @@ class AISimAgent:
                                WHERE id IN ({})'''.format(SQLParamList(len(policies)))
         policy_data = select_all(self.db, sql=select_policy_sql, params=policies)
 
+        sys.stderr = self.rayerrout
         ray.init(include_dashboard=False, log_to_driver=False, logging_level=0)
+        sys.stderr = self.stderrout
 
         for policy_id, checkpoint, saved_agent_config, saved_sim_config in policy_data:
 
@@ -294,10 +296,9 @@ class AISimAgent:
 
             sim_config = json.loads(saved_sim_config)
 
-            sys.stderr = self.rayerrout
             agent = ppo.PPOTrainer(config=agent_config)
             agent.restore(checkpoint)
-            sys.stderr = self.stderrout
+
 
             time_start = datetime.now()
             # instantiate env class
