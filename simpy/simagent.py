@@ -35,8 +35,7 @@ class AISimAgent:
         "num_workers"  : 5,
         # "lr"            : tune.grid_search([1e-4, 1e-6]),
         "batch_mode"   : "complete_episodes",
-        "framework"    : "torch",
-        "log_level"    : "ERROR"
+        "framework"    : "torch"
     }
 
     def __init__(self, sim_name: str, sim_config: dict = None):
@@ -206,7 +205,6 @@ class AISimAgent:
 
         print("# Training Session {} ended at {}!".format(session_id, datetime.now()))
 
-        return best_iteration
 
     def del_training_sessions(self, sessions: [int, list] = None):
         select_sessions_sql = '''SELECT id FROM training_session
@@ -254,6 +252,7 @@ class AISimAgent:
         params = (self._model_id,)
         df = pd.read_sql_query(sql, self.db, params=params) \
             .pivot(index='iteration', columns='session', values='reward_mean')
+        # ToDo: the baseline should the the average
         if baseline:
             base = self._sim_baseline()
             df['baseline'] = [base.run() for _ in range(df.shape[0])]
