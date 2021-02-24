@@ -132,7 +132,7 @@ class AISimAgent:
         self.db.commit()
         return sim_config_id
 
-    # ToDo: Implement this and add the avg to the sim config when created in __init and train
+    # ToDo: Explore the use of Ray to speed up this operation
     def _get_baseline_avg(self, sim_config: dict):
         base = self._sim_baseline()
         return np.mean([base.run(sim_config=sim_config) for _ in range(30)])
@@ -165,14 +165,14 @@ class AISimAgent:
 
     def _add_policy(self, policy_data: tuple):
         cursor = self.db.cursor()
-        session_id, best_iteration, best_checkpoint, agent_config, sim_config = policy_data
+        session_id, best_iteration, best_checkpoint, agent_config, sim_config_id = policy_data
         agent_config.pop("env", None)
         agent_config.pop("env_config", None)
         agent_config = json.dumps(agent_config)
-        sim_config = json.dumps(sim_config)
-        policy_data = (self._model_id, session_id, best_iteration, best_checkpoint, agent_config, sim_config)
+        policy_data = (self._model_id, sim_config_id, session_id, best_iteration, best_checkpoint, agent_config)
         cursor.execute('''INSERT INTO policy (
                                         sim_model_id,
+                                        sim_config_id,
                                         session_id,
                                         iteration_id,
                                         checkpoint,
@@ -249,7 +249,7 @@ class AISimAgent:
 
         if add_best_policy:
             policy_data = (session_id, best_iteration, best_checkpoint,
-                           _agent_config.copy(), sim_config.copy())
+                           _agent_config.copy(), sim_config_id)
             self._add_policy(policy_data)
 
         ray.shutdown()
