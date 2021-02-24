@@ -124,7 +124,7 @@ class AISimAgent:
             except Exception:
                 params = (self._model_id, "Config {}".format(len(row_list)),
                           self._get_baseline_avg(sim_config), json.dumps(sim_config))
-                cursor.execute('''INSERT INTO sim_config (sim_model_id
+                cursor.execute('''INSERT INTO sim_config (sim_model_id,
                                                           name,
                                                           baseline_avg,
                                                           config) VALUES ({})'''.format(SQLParamList(4)), params)
