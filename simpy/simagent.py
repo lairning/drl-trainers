@@ -47,6 +47,8 @@ class AISimAgent:
             exec("from models.{} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel, BASE_CONFIG".format(
                 sim_name), {},
                 exec_locals)
+        except ModuleNotFoundError:
+            raise Exception(" Model '{}' not found!!".format(sim_name))
         except Exception as e:
             raise e
 
@@ -57,6 +59,8 @@ class AISimAgent:
 
         assert isinstance(exec_locals['BASE_CONFIG'], dict), "Simulation Config {} must be a dict!".format(
             exec_locals['BASE_CONFIG'])
+
+        self._sim_baseline = exec_locals['SimBaseline']
 
         sql = '''SELECT id FROM sim_model WHERE name = {}'''.format(P_MARKER)
         params = (sim_name,)
@@ -77,7 +81,6 @@ class AISimAgent:
             self._model_id, = row
 
         self._config = self.ppo_config.copy()
-        self._sim_baseline = exec_locals['SimBaseline']
         self._config["env"] = SimpyEnv
         self._config["env_config"] = {"n_actions"        : exec_locals['N_ACTIONS'],
                                       "observation_space": exec_locals['OBSERVATION_SPACE'],
