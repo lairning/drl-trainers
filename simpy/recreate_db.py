@@ -39,7 +39,7 @@ def recreate_db():
     db.execute('''create table training_session
                    (id INTEGER PRIMARY KEY,
                     sim_model_id integer,
-                    sim_config_id as integer,
+                    sim_config_id integer,
                     time_start TIMESTAMP,
                     duration float,
                     best_policy integer,
