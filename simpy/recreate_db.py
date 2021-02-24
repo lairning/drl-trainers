@@ -6,11 +6,12 @@ def recreate_db():
 
     try:
         db.execute("drop table if exists sim_model")
+        db.execute("drop table if exists sim_config")
         db.execute("drop table if exists training_session")
         db.execute("drop table if exists training_iteration")
         db.execute("drop table if exists policy")
         db.execute("drop table if exists policy_run")
-        db.execute("drop table if exists policy_run_sim")
+
 
     except Exception as e:
         raise e
