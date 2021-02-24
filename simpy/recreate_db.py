@@ -15,22 +15,37 @@ def recreate_db():
     except Exception as e:
         raise e
 
+    # A SIM Model corresponds to a Python implementation of a simulation
     db.execute('''create table sim_model
                    (id INTEGER PRIMARY KEY,
                     name unicode,
                     other_data json
                     )''')
 
+    # A Simulation implementation can be executed with different configurations: simulation duration,
+    # interval between between each agent action, and other specific parameters (eX. mean time between arrivals)
+    # This stable stores configurations that may be used in Training and for running a Simulation using a certain policy
+    db.execute('''create table sim_config
+                   (id INTEGER PRIMARY KEY,
+                    sim_model_id integer,
+                    name unicode,
+                    baseline_avg float,
+                    config json,
+                    other_data json,
+                    FOREIGN KEY(sim_model_id) REFERENCES sim_model(id)
+                    )''')
+
     db.execute('''create table training_session
                    (id INTEGER PRIMARY KEY,
                     sim_model_id integer,
+                    sim_config_id as integer,
                     time_start TIMESTAMP,
                     duration float,
                     best_policy integer,
                     agent_config json,
-                    sim_config json,
                     other_data json,
                     FOREIGN KEY(sim_model_id) REFERENCES sim_model(id)
+                    FOREIGN KEY(sim_config_id) REFERENCES sim_config(id)
                     )''')
 
     db.execute('''create table training_iteration
@@ -50,13 +65,14 @@ def recreate_db():
     db.execute('''create table policy
                    (id INTEGER PRIMARY KEY,
                     sim_model_id integer,
-                    session_id integer,   -- Only used for AI policies
-                    iteration_id integer,        -- Only used for AI policies
+                    sim_config_id as integer,
+                    session_id integer,         -- Only used for AI policies
+                    iteration_id integer,       -- Only used for AI policies
                     checkpoint unicode,         -- Only used for AI policies
                     agent_config json,
-                    sim_config json,
                     other_data json,
                     FOREIGN KEY(sim_model_id) REFERENCES sim_model(id)
+                    FOREIGN KEY(sim_config_id) REFERENCES sim_config(id)
                     )''')
 
     db.execute('''create table policy_run

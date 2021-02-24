@@ -3,6 +3,7 @@
 from gym.spaces import Discrete
 from gym import Env as GymEnv
 
+
 class SimpyEnv(GymEnv):
 
     def __init__(self, config: dict):
@@ -28,4 +29,3 @@ class SimpyEnv(GymEnv):
 
         assert self.observation_space.contains(obs), "{} not in {}".format(obs, self.observation_space)
         return obs, reward, done, info
-

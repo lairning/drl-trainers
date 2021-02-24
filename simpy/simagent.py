@@ -1,16 +1,15 @@
-import ray
-import ray.rllib.agents.ppo as ppo
+import json
+import sys
 from datetime import datetime
-import json, sys
+
 import numpy as np
 import pandas as pd
+import ray
+import ray.rllib.agents.ppo as ppo
 
 from simpy_env import SimpyEnv
-
 from utils import db_connect, DB_NAME, P_MARKER, select_record, SQLParamList, select_all
 
-# ToDo:
-# - Add a label to the training sessions
 
 def cast_non_json(x):
     if isinstance(x, np.float32):
@@ -23,11 +22,13 @@ def cast_non_json(x):
 def filter_dict(dic_in: dict, keys: set):
     return {key: cast_non_json(dic_in[key]) for key in keys}
 
+
 def my_ray_init():
     stderrout = sys.stderr
-    sys.stderr = open('ray.log','w')
+    sys.stderr = open('ray.log', 'w')
     ray.init(include_dashboard=False, log_to_driver=False, logging_level=0)
     sys.stderr = stderrout
+
 
 class AISimAgent:
     ppo_config = {
@@ -38,11 +39,14 @@ class AISimAgent:
         "framework"    : "torch"
     }
 
-    def __init__(self, sim_name: str, sim_config: dict = None):
+    default_sim_config_name = "Base Config"
+
+    def __init__(self, sim_name: str):
         exec_locals = {}
         try:
-            exec("from models.{} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel".format(sim_name), {},
-                 exec_locals)
+            exec("from models.{} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel, BASE_CONFIG".format(
+                sim_name), {},
+                exec_locals)
         except Exception as e:
             raise e
 
@@ -51,44 +55,84 @@ class AISimAgent:
         except Exception as e:
             raise e
 
+        assert isinstance(exec_locals['BASE_CONFIG'], dict), "Simulation Config {} must be a dict!".format(
+            exec_locals['BASE_CONFIG'])
+
         sql = '''SELECT id FROM sim_model WHERE name = {}'''.format(P_MARKER)
         params = (sim_name,)
         row = select_record(self.db, sql=sql, params=params)
         if row is None:
             cursor = self.db.cursor()
             cursor.execute('''INSERT INTO sim_model (name) VALUES ({})'''.format(P_MARKER), params)
-            print("# {} Created!".format(sim_name))
             self._model_id = cursor.lastrowid
+            params = (self._model_id, self.default_sim_config_name,
+                      self._get_baseline_avg(exec_locals['BASE_CONFIG']), json.dumps(exec_locals['BASE_CONFIG']))
+            cursor.execute('''INSERT INTO sim_config (sim_model_id
+                                                      name,
+                                                      baseline_avg,
+                                                      config) VALUES ({})'''.format(SQLParamList(4)), params)
             self.db.commit()
+            print("# {} Created!".format(sim_name))
         else:
             self._model_id, = row
 
         self._config = self.ppo_config.copy()
-
-        if sim_config is None:
-            sim_config = {}
-        else:
-            assert isinstance(sim_config, dict), "Simulation Config {} must be a dict!".format(sim_config)
         self._sim_baseline = exec_locals['SimBaseline']
         self._config["env"] = SimpyEnv
         self._config["env_config"] = {"n_actions"        : exec_locals['N_ACTIONS'],
                                       "observation_space": exec_locals['OBSERVATION_SPACE'],
                                       "sim_model"        : exec_locals['SimModel'],
-                                      "sim_config"       : sim_config}
+                                      "sim_config"       : exec_locals['BASE_CONFIG']}
 
     def _add_session(self, session_data: tuple):
-        cursor = self.db.cursor()
-        agent_config, sim_config = session_data
+        agent_config, sim_config_id = session_data
         agent_config.pop("env", None)
         agent_config.pop("env_config", None)
-        _session_data = (self._model_id, datetime.now(), json.dumps(agent_config), json.dumps(sim_config))
+        cursor = self.db.cursor()
+        _session_data = (self._model_id, sim_config_id, datetime.now(), json.dumps(agent_config))
         cursor.execute('''INSERT INTO training_session (
                                         sim_model_id,
+                                        sim_config_id,
                                         time_start,
-                                        agent_config,
-                                        sim_config) VALUES ({})'''.format(SQLParamList(4)), _session_data)
+                                        agent_config) VALUES ({})'''.format(SQLParamList(4)), _session_data)
         self.db.commit()
         return cursor.lastrowid
+
+    def _get_sim_base_config(self):
+        sql = '''SELECT id FROM sim_config 
+                 WHERE sim_model_id = {} and name = {}'''.format(P_MARKER, P_MARKER)
+        params = (self._model_id, self.default_sim_config_name)
+        row = select_record(self.db, sql=sql, params=params)
+        assert row is not None, "Base Sim Config not found!"
+        return row[0]
+
+    def _get_sim_config(self, sim_config: dict):
+        cursor = self.db.cursor()
+        if sim_config is None:
+            sim_config_id = self._get_sim_base_config()
+        else:
+            sql = '''SELECT id, config FROM sim_config 
+                     WHERE sim_model_id = {}'''.format(P_MARKER)
+            params = (self._model_id,)
+            row_list = select_all(self.db, sql=sql, params=params)
+            try:
+                idx = [json.loads(row[1]) for row in row_list].index(sim_config)
+                sim_config_id = [idx][0]
+            except Exception:
+                params = (self._model_id, "Config {}".format(len(row_list)),
+                          self._get_baseline_avg(sim_config), json.dumps(sim_config))
+                cursor.execute('''INSERT INTO sim_config (sim_model_id
+                                                          name,
+                                                          baseline_avg,
+                                                          config) VALUES ({})'''.format(SQLParamList(4)), params)
+                sim_config_id = cursor.lastrowid
+        self.db.commit()
+        return sim_config_id
+
+    # ToDo: Implement this and add the avg to the sim config when created in __init and train
+    def _get_baseline_avg(self, sim_config: dict):
+        base = self._sim_baseline()
+        return np.mean([base.run(sim_config=sim_config) for _ in range(30)])
 
     def _update_session(self, best_policy, duration, session_id):
         cursor = self.db.cursor()
@@ -145,6 +189,8 @@ class AISimAgent:
         self.db.commit()
         return cursor.lastrowid
 
+    # ToDo: Add more than one best policy
+    # ToDo: Add labels to the sessions
     def train(self, iterations: int = 10, agent_config: dict = None, sim_config: dict = None,
               add_best_policy: bool = True):
 
@@ -160,7 +206,9 @@ class AISimAgent:
             assert isinstance(sim_config, dict), "Sim Config {} must be a dict!".format(sim_config)
             _agent_config["env_config"]["sim_config"].update(sim_config)
 
-        session_id = self._add_session((_agent_config.copy(), sim_config))
+        sim_config_id = self._get_sim_config(_agent_config["env_config"]["sim_config"])
+
+        session_id = self._add_session((_agent_config.copy(), sim_config_id))
 
         my_ray_init()
 
@@ -205,7 +253,6 @@ class AISimAgent:
 
         print("# Training Session {} ended at {}!".format(session_id, datetime.now()))
 
-
     def del_training_sessions(self, sessions: [int, list] = None):
         select_sessions_sql = '''SELECT id FROM training_session
                                  WHERE sim_model_id = {}'''.format(P_MARKER)
@@ -244,18 +291,37 @@ class AISimAgent:
         df = pd.read_sql_query(sql, self.db, params=params)
         return df
 
-    def get_training_data(self, baseline: bool = False):
+    def get_sim_config(self):
+        sql = '''SELECT id, name, baseline_avg, config
+                 FROM sim_config
+                 WHERE sim_model_id = {}'''.format(P_MARKER)
+        params = (self._model_id,)
+        df = pd.read_sql_query(sql, self.db, params=params)
+        return df
+
+    def get_training_data(self, sim_config: int=None, baseline: bool = True):
+
+        if sim_config is None:
+            sim_config = self._get_sim_base_config()
+        else:
+            sql = "SELECT id FROM sim_config WHERE id = {}".format(P_MARKER)
+            row = select_record(self.db, sql=sql, params=(sim_config,))
+            assert row is not None, "Invalid Sim Config id {}".format(sim_config)
+            sim_config, = row
+
         sql = '''SELECT training_session_id as session, training_iteration.id as iteration, reward_mean 
                  FROM training_iteration
                  INNER JOIN training_session ON training_iteration.training_session_id = training_session.id
-                 WHERE training_session.sim_model_id = {}'''.format(P_MARKER)
-        params = (self._model_id,)
+                 INNER JOIN sim_config ON training_session.sim_config_id = sim_config.id
+                 WHERE training_session.sim_config_id = {}'''.format(P_MARKER)
+        params = (sim_config,)
         df = pd.read_sql_query(sql, self.db, params=params) \
             .pivot(index='iteration', columns='session', values='reward_mean')
-        # ToDo: the baseline should the the average
+
         if baseline:
-            base = self._sim_baseline()
-            df['baseline'] = [base.run() for _ in range(df.shape[0])]
+            sql = "SELECT baseline_avg FROM sim_config WHERE id = {}".format(P_MARKER)
+            baseline_avg, = select_record(self.db, sql=sql, params=(sim_config,))
+            df['baseline'] = [baseline_avg for _ in range(df.shape[0])]
 
         return df
 
@@ -265,7 +331,7 @@ class AISimAgent:
                  WHERE sim_model_id = {}'''.format(P_MARKER)
         return pd.read_sql_query(sql, self.db, params=(self._model_id,))
 
-    def run(self, policy: [int, list] = None, simulations: int = 1):
+    def run_ai_policies(self, policy: [int, list] = None, simulations: int = 1):
 
         select_policy_sql = '''SELECT id FROM policy
                                  WHERE sim_model_id = {}'''.format(P_MARKER)
@@ -281,8 +347,8 @@ class AISimAgent:
         else:
             policies = tuple(all_policies)
 
-        select_policy_sql = '''SELECT id, checkpoint, agent_config, sim_config
-                               FROM policy
+        select_policy_sql = '''SELECT id, checkpoint, agent_config, sim_config.config as s_config
+                               FROM policy INNER JOIN sim_config ON policy.sim_config_id = sim_config.id
                                WHERE id IN ({})'''.format(SQLParamList(len(policies)))
         policy_data = select_all(self.db, sql=select_policy_sql, params=policies)
 
@@ -297,7 +363,6 @@ class AISimAgent:
 
             agent = ppo.PPOTrainer(config=agent_config)
             agent.restore(checkpoint)
-
 
             time_start = datetime.now()
             # instantiate env class
@@ -321,19 +386,35 @@ class AISimAgent:
 
         ray.shutdown()
 
-    def get_policy_run_data(self, baseline: bool = False):
+    # ToDo: Implement
+    def run_baseline_policies(self, sim_config: [int, list] = None, simulations: int = 1):
+        pass
+
+    def get_policy_run_data(self, sim_config: int = None, baseline: bool = False):
+
+        if sim_config is None:
+            sim_config = self._get_sim_base_config()
+        else:
+            sql = "SELECT id FROM sim_config WHERE id = {}".format(P_MARKER)
+            row = select_record(self.db, sql=sql, params=(sim_config,))
+            assert row is not None, "Invalid Sim Config id {}".format(sim_config)
+            sim_config, = row
+
         sql = '''SELECT policy_id as policy, time_start, results 
                  FROM policy_run
                  INNER JOIN policy ON policy_run.policy_id = policy.id
-                 WHERE policy.sim_model_id = {}'''.format(P_MARKER)
-        params = (self._model_id,)
+                 WHERE policy.sim_config_id = {}'''.format(P_MARKER)
+        params = (sim_config,)
         policy_run = select_all(self.db, sql=sql, params=params)
-        df = pd.DataFrame([[str(id),time,x] for id,time,l in policy_run for x in json.loads(l)], columns=['policy',
-                                                                                                         'time','reward'])
+        df = pd.DataFrame([[str(id), time, x] for id, time, l in policy_run for x in json.loads(l)], columns=['policy',
+                                                                                                              'time',
+                                                                                                              'reward'])
+        # ToDo: Change this after run_baseline_policies
         if baseline:
             base = self._sim_baseline()
             size = max(len(json.loads(row[2])) for row in policy_run)
-            df = df.append(pd.DataFrame([['baseline','',base.run()] for _ in range(size)], columns=['policy',
-                                                                                                         'time','reward']))
+            df = df.append(pd.DataFrame([['baseline', '', base.run()] for _ in range(size)], columns=['policy',
+                                                                                                      'time',
+                                                                                                      'reward']))
 
         return df

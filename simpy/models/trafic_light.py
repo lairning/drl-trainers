@@ -5,17 +5,22 @@ import simpy
 from gym.spaces import Box
 import random
 
-# SIM_TIME = 1 * 24 * 60 * 60  # Simulation time in Time units (seconds)
-SIM_TIME = 1 * 1 * 60 * 60  # Simulation time in Time units (seconds)
-STEP_TIME = 10  # Time units (seconds) between each step
-
+# Mandatory
+BASE_CONFIG = {
+    "SIM_HOURS": 2, # Simulation time in hours
+    "ACTION_INTERVAL_SECONDS": 20, # Time between each action can be performed
+    "MTBC": [40, 30, 50, 60, 40, 20, 70, 60] # Mean Time Between Cars Factor (lower increases frequency)
+}
 
 class BaseSim(simpy.Environment):
-    def __init__(self):
+    def __init__(self, config:dict=None):
         super().__init__()
+        self.sim_config = BASE_CONFIG.copy()
+        if config is not None:
+            self.sim_config.update(config)
         self.time = self.now
-        self.sim_time = SIM_TIME
-        self.step_time = STEP_TIME  # Time Units to run between gym env steps
+        self.sim_time = config["SIM_HOURS"] * 60 * 60 # Simulation time in Time units (seconds)
+        self.step_time = config["ACTION_INTERVAL_SECONDS"]  # Time Units to run between gym env steps
 
     def run_until_action(self):
         self.run(until=self.time + self.step_time)
@@ -36,7 +41,6 @@ class BaseSim(simpy.Environment):
 
 DEBUG = False
 
-
 def dprint(*args):
     if DEBUG:
         print(*args)
@@ -47,16 +51,12 @@ def hot_encode(n, N):
     encode[n] = 1
     return encode
 
+### Implement from Here
 
-# LIGHTS = ['sn','ns','sw','ne','we','ew','wn','es']
 LIGHTS = ['South/North', 'North/South', 'South/West', 'North/East', 'West/East', 'East/West', 'West/North',
           'East/South']
-MTBC_BASE = [40, 30, 50, 60, 40, 20, 70, 60]
-# Mean Time Between Cars
-MTBC = [x * 0.5 for x in MTBC_BASE]
 
 # List of possible status, 1 Green On; 0 Green Off
-
 STATUS_N = [
     [1, 1, 0, 0, 0, 0, 0, 0],
     [1, 0, 1, 0, 0, 0, 0, 0],
@@ -67,7 +67,7 @@ STATUS_N = [
 ]
 STATUS = [[bool(n) for n in status] for status in STATUS_N]
 
-MAX_QUEUE = np.inf # 400.0
+MAX_WAITING_TIME = np.inf # 400.0
 
 class Light(simpy.PriorityResource):
     def __init__(self, name: str, env: simpy.Environment, green_on: bool, mtbc: float):
@@ -76,7 +76,8 @@ class Light(simpy.PriorityResource):
         self.env = env
         self.green_on = True
         self.turn_green = None
-        self.stats = {'total_cars': 0, 'waiting_time': 0.0}
+        self.stats = {'waiting_time': []}
+        self.queue = {}
         env.process(self.set_status(green_on))
         env.process(self.car_generator(mtbc))
 
@@ -105,31 +106,37 @@ class Light(simpy.PriorityResource):
     def car_crossing(self, n: int):
         with self.request(priority=1) as req:
             arrive_time = self.env.now
+
+            queued = False if self.green_on else True
+            if queued: self.queue[n] = arrive_time
+
             # Request access
             yield req
 
+            if queued: del self.queue[n]
+
             # waiting time
-            self.stats['waiting_time'] += (self.env.now - arrive_time)
+            self.stats['waiting_time'].append(self.env.now - arrive_time)
 
             yield self.env.timeout(3)
             dprint('Car {} waited {:.2f} minutes on {}.'.format(n, (self.env.now - arrive_time) / 60, self.name))
-            self.stats['total_cars'] += 1
 
     def get_observation(self):
-        return [1 if self.green_on else 0]+[min(len(self.queue),MAX_QUEUE)]
+        waiting_time_sum = sum((self.env.now-value) for value in self.queue.values())
+        return [1 if self.green_on else 0]+[min(waiting_time_sum, MAX_WAITING_TIME)]
 
 # An action corresponds to the selection of a status
 N_ACTIONS = len(STATUS)
 
 OBSERVATION_SPACE = Box(low=np.array([0,0]*len(LIGHTS)),
-                        high=np.array([1, MAX_QUEUE]*len(LIGHTS)),
+                        high=np.array([1, MAX_WAITING_TIME] * len(LIGHTS)),
                         dtype=np.float64)
 
 class SimModel(BaseSim):
-    def __init__(self):
-        super().__init__()
-        #self.current_status_id = 0
-        self.lights = [Light(LIGHTS[i], self, STATUS[0][i], MTBC[i]) for i in range(len(LIGHTS))]
+    def __init__(self, config:dict=None):
+        super().__init__(config)
+        mtbc = self.sim_config['MTBC']
+        self.lights = [Light(LIGHTS[i], self, STATUS[0][i], mtbc[i]) for i in range(len(LIGHTS))]
         self.total_reward = 0
 
     def get_observation(self):
@@ -139,24 +146,9 @@ class SimModel(BaseSim):
             obs += light.get_observation()
         return obs
 
-    ''' Version 1: Did not work
     def get_reward(self):
-        def qwt(light:Light):
-            return (self.now if light.stats['total_cars']==0
-                    else light.stats['waiting_time'] / light.stats['total_cars'])* len(light.queue)
-        total_cars = sum(light.stats['total_cars'] for light in self.lights)
-        waiting_time = sum(light.stats['waiting_time'] for light in self.lights)
-        total_cars += sum(len(light.queue) for light in self.lights)
-        waiting_time += sum(qwt(light) for light in self.lights)
-        total_reward = 0 if total_cars == 0 else -waiting_time/total_cars
-        reward = total_reward - self.total_reward
-        self.total_reward = total_reward
-        return reward, self.done(), {}  # Reward, Done, Info
-
-    '''
-
-    def get_reward(self):
-        total_reward = - sum(len(light.queue) for light in self.lights)
+        q_value = [[self.now-value for value in light.queue.values()] for light in self.lights ]
+        total_reward = - max([max(lq) if len(lq) else 0 for lq in q_value])
         reward = total_reward - self.total_reward
         self.total_reward = total_reward
         return reward, self.done(), {}  # Reward, Done, Info
@@ -168,7 +160,7 @@ class SimModel(BaseSim):
             self.process(light.set_status(STATUS[action][i]))
         self.current_status_id = action
 
-
+# Mandatory
 class SimBaseline:
     def __init__(self):
         self.sim = None
@@ -192,8 +184,8 @@ class SimBaseline:
                     self.i = 0
             return self.i
 
-    def run(self, policy = RoundRobin(6)):
-        self.sim = SimModel()
+    def run(self, policy = RoundRobin(1), sim_config:dict=None):
+        self.sim = SimModel(sim_config)
         done = False
         total_reward = 0
         while not done:
@@ -202,37 +194,32 @@ class SimBaseline:
             self.sim.exec_action(action)
             reward, done, _ = self.sim.get_reward()
             total_reward += reward
+
         return total_reward
 
 def print_stats(sim: SimModel):
-    l_waiting_time = []
+    total_cars = 0
+    total_waiting_time = 0
     for light in sim.lights:
-        waiting_time = 0 if light.stats['total_cars'] == 0 else light.stats['waiting_time'] / light.stats['total_cars']
-        l_waiting_time += [waiting_time]
-        print("{} - Total Cars: {}; Average Waiting Time: {:.2f}; {} Cars Stopped".
-              format(light.name, light.stats['total_cars'], waiting_time, len(light.queue)))
-    total_cars = sum(light.stats['total_cars'] for light in sim.lights)
-    waiting_time = sum(light.stats['waiting_time'] for light in sim.lights)
-    print("### Total Cars: {}; Average waiting: {:.2f}".format(total_cars, waiting_time / total_cars))
-    q_cars = [len(light.queue) for light in sim.lights]
-    print("### Queued Cars: {}; Std: {:.2f}".format(sum(q_cars), np.std(q_cars)))
-    '''
-    q_total_cars = sum(len(light.queue) for light in sim.lights)
-    q_estimated_time = sum(light.stats['waiting_time'] * len(light.queue) / light.stats['total_cars'] for i, light in
-                           enumerate(sim.lights))
-
-    total_cars += q_total_cars
-    w_waiting_time = sum(light.stats['waiting_time'] for light in sim.lights) + q_estimated_time
-    print("### Reward: {:.2f}".format(-w_waiting_time / total_cars))
-    print("### STD: {:.2f}".format(np.std(l_waiting_time)))
-    '''
+        cars = len(light.stats['waiting_time'])
+        waiting_time = sum(light.stats['waiting_time'])
+        cars_q = len([(sim.now-value) for value in light.queue.values()])
+        waiting_time_q = sum([(sim.now-value) for value in light.queue.values()])
+        total_cars += cars + cars_q
+        total_waiting_time += waiting_time + waiting_time_q
+        avg_time = 0 if cars==0 else waiting_time/cars
+        avg_time_queue = 0 if cars_q==0 else waiting_time_q/cars_q
+        print("{} - Total Cars: {}; Average Waiting Time: {:.2f}; {} Cars Stopped with Average Waiting Time: {:.2f}".
+              format(light.name, cars, avg_time, cars_q, avg_time_queue))
+    print("### Total Cars: {}; Average waiting: {:.2f}".format(total_cars, total_waiting_time / total_cars))
+    #print(len([1 for x in light.stats['waiting_time'] if x==0]))
 
 if __name__ == "__main__":
-    n = 20
+    n = 10
     total = 0
     for _ in range(n):
         baseline = SimBaseline()
-        policy = baseline.RoundRobin(6)
+        policy = baseline.RoundRobin(1)
         reward = baseline.run(policy)
         total += reward
         print_stats(baseline.sim)
