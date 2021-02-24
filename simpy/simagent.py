@@ -71,7 +71,7 @@ class AISimAgent:
             self._model_id = cursor.lastrowid
             params = (self._model_id, self.default_sim_config_name,
                       self._get_baseline_avg(exec_locals['BASE_CONFIG']), json.dumps(exec_locals['BASE_CONFIG']))
-            cursor.execute('''INSERT INTO sim_config (sim_model_id
+            cursor.execute('''INSERT INTO sim_config (sim_model_id,
                                                       name,
                                                       baseline_avg,
                                                       config) VALUES ({})'''.format(SQLParamList(4)), params)
