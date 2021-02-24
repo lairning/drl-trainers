@@ -66,7 +66,7 @@ def recreate_db():
     db.execute('''create table policy
                    (id INTEGER PRIMARY KEY,
                     sim_model_id integer,
-                    sim_config_id as integer,
+                    sim_config_id integer,
                     session_id integer,         -- Only used for AI policies
                     iteration_id integer,       -- Only used for AI policies
                     checkpoint unicode,         -- Only used for AI policies
