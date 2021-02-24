@@ -118,6 +118,8 @@ class AISimAgent:
                      WHERE sim_model_id = {}'''.format(P_MARKER)
             params = (self._model_id,)
             row_list = select_all(self.db, sql=sql, params=params)
+            print(sim_config)
+            print([(i,json.loads(config)) for i, config in row_list])
             try:
                 idx = [json.loads(row[1]) for row in row_list].index(sim_config)
                 sim_config_id = [idx][0]
