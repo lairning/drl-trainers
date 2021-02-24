@@ -176,8 +176,7 @@ class AISimAgent:
                                         session_id,
                                         iteration_id,
                                         checkpoint,
-                                        agent_config,
-                                        sim_config) VALUES ({})'''.format(SQLParamList(6)), policy_data)
+                                        agent_config) VALUES ({})'''.format(SQLParamList(6)), policy_data)
         self.db.commit()
         return cursor.lastrowid
 
