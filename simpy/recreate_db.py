@@ -11,6 +11,7 @@ def recreate_db():
         db.execute("drop table if exists training_iteration")
         db.execute("drop table if exists policy")
         db.execute("drop table if exists policy_run")
+        db.execute("drop table if exists baseline_run")
 
 
     except Exception as e:
@@ -62,15 +63,15 @@ def recreate_db():
                     PRIMARY KEY(training_session_id, id),
                     FOREIGN KEY(training_session_id) REFERENCES training_session(id)
                     )''')
-
+    # AI Policies
     db.execute('''create table policy
                    (id INTEGER PRIMARY KEY,
                     sim_model_id integer,
                     sim_config_id integer,
-                    session_id integer,         -- Only used for AI policies
-                    iteration_id integer,       -- Only used for AI policies
-                    checkpoint unicode,         -- Only used for AI policies
-                    agent_config json,
+                    session_id integer,        
+                    iteration_id integer,       
+                    checkpoint unicode,        
+                    agent_config json,          
                     other_data json,
                     FOREIGN KEY(sim_model_id) REFERENCES sim_model(id),
                     FOREIGN KEY(sim_config_id) REFERENCES sim_config(id)
@@ -85,6 +86,18 @@ def recreate_db():
                     results json,
                     other_data json,
                     FOREIGN KEY(policy_id) REFERENCES policy(id)
+                    )''')
+
+    # Baseline Runs for Sim Configs
+    db.execute('''create table baseline_run
+                   (id INTEGER PRIMARY KEY,
+                    sim_config_id integer,
+                    time_start TIMESTAMP,
+                    simulations integer,
+                    duration float,
+                    results json,
+                    other_data json,
+                    FOREIGN KEY(sim_config_id) REFERENCES sim_config(id)
                     )''')
 
 

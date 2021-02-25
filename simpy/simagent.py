@@ -198,6 +198,16 @@ class AISimAgent:
         self.db.commit()
         return cursor.lastrowid
 
+    def _add_baseline_run(self, policy_run_data: tuple):
+        cursor = self.db.cursor()
+        cursor.execute('''INSERT INTO baseline_run (
+                                        policy_id,
+                                        time_start,
+                                        simulations,
+                                        duration,
+                                        results) VALUES ({})'''.format(SQLParamList(5)), policy_run_data)
+        self.db.commit()
+        return cursor.lastrowid
     # ToDo: Add more than one best policy
     # ToDo: Add labels to the sessions
     def train(self, iterations: int = 10, agent_config: dict = None, sim_config: dict = None,
@@ -342,7 +352,7 @@ class AISimAgent:
                  WHERE sim_model_id = {}'''.format(P_MARKER)
         return pd.read_sql_query(sql, self.db, params=(self._model_id,))
 
-    def run_ai_policies(self, policy: [int, list] = None, simulations: int = 1):
+    def run_policies(self, policy: [int, list] = None, simulations: int = 1):
 
         select_policy_sql = '''SELECT id FROM policy
                                  WHERE sim_model_id = {}'''.format(P_MARKER)
@@ -367,7 +377,7 @@ class AISimAgent:
 
         for policy_id, checkpoint, saved_agent_config, saved_sim_config in policy_data:
 
-            print("# Running Policy {} started at {}!".format(policy_id, datetime.now()))
+            print("# Running AI Policy {} started at {}!".format(policy_id, datetime.now()))
 
             agent_config = self._config.copy()
             agent_config.update(json.loads(saved_agent_config))
@@ -398,15 +408,47 @@ class AISimAgent:
                                (datetime.now() - time_start).total_seconds(), json.dumps(result_list))
             self._add_policy_run(policy_run_data)
             print("# Progress: {:2.1%} ".format(1))
-            print("# Running Policy {} ended at {}!".format(policy_id, datetime.now()))
+            print("# Running AI Policy {} ended at {}!".format(policy_id, datetime.now()))
 
         ray.shutdown()
 
-    # ToDo: Implement
-    def run_baseline_policies(self, sim_config: [int, list] = None, simulations: int = 1):
-        pass
+    def run_baselines(self, sim_config: [int, list] = None, simulations: int = 1):
 
-    def get_policy_run_data(self, sim_config: int = None, baseline: bool = False):
+        if sim_config is None:
+            # Get all sim configs for the current model
+            select_sim_sql = '''SELECT id, config FROM sim_config
+                                WHERE sim_config.sim_model_id = {}'''.format(P_MARKER)
+            rows = select_all(self.db, sql=select_sim_sql, params=(self._model_id,))
+            sim_configs = ((i, json.loads(config)) for i, config in rows)
+        else:
+            if isinstance(sim_config,int):
+                sim_config = [sim_config]
+            if isinstance(sim_config,list):
+                # Get all policies for the list of sim_configs
+                select_sim_sql = '''SELECT id, config FROM sim_config
+                                    WHERE id IN ({})'''.format(SQLParamList(len(sim_config)))
+                rows = select_all(self.db, sql=select_sim_sql, params=tuple(sim_config))
+                sim_configs = ((id, json.loads(config)) for id, config in rows)
+            else:
+                raise Exception("Invalid Sim Config {}".format(sim_config))
+
+        base = self._sim_baseline()
+        for sim_config_id, sim_config in sim_configs:
+            print("# Baseline Simulation for Config {} started at {}!".format(sim_config_id, datetime.now()))
+            time_start = datetime.now()
+            result_list = []
+            for i in range(simulations):
+                result_list.append(base.run(sim_config=sim_config))
+                print("# Progress: {:2.1%} ".format((i + 1) / simulations), end="\r")
+
+            policy_run_data = (sim_config_id, time_start, simulations,
+                               (datetime.now() - time_start).total_seconds(), json.dumps(result_list))
+            self._add_baseline_run(policy_run_data)
+            print("# Progress: {:2.1%} ".format(1))
+            print("# Baseline Simulation for Config {} ended at {}!".format(policy_id, datetime.now()))
+
+
+    def get_policy_run_data(self, sim_config: int = None, baseline: bool = True):
 
         if sim_config is None:
             sim_config = self._get_sim_base_config()
@@ -416,21 +458,24 @@ class AISimAgent:
             assert row is not None, "Invalid Sim Config id {}".format(sim_config)
             sim_config, = row
 
-        sql = '''SELECT policy_id as policy, time_start, results 
+        sql = '''SELECT policy_id, policy_run.id, time_start, results 
                  FROM policy_run
                  INNER JOIN policy ON policy_run.policy_id = policy.id
                  WHERE policy.sim_config_id = {}'''.format(P_MARKER)
         params = (sim_config,)
         policy_run = select_all(self.db, sql=sql, params=params)
-        df = pd.DataFrame([[str(id), time, x] for id, time, l in policy_run for x in json.loads(l)], columns=['policy',
-                                                                                                              'time',
-                                                                                                              'reward'])
-        # ToDo: Change this after run_baseline_policies
+        df = pd.DataFrame([["ai_policy{}_run{}".format(policy_id,run_id), time, x]
+                           for policy_id, run_id, time, l in policy_run for x in json.loads(l)],
+                                                                                columns=['policy','time','reward'])
         if baseline:
-            base = self._sim_baseline()
-            size = max(len(json.loads(row[2])) for row in policy_run)
-            df = df.append(pd.DataFrame([['baseline', '', base.run()] for _ in range(size)], columns=['policy',
-                                                                                                      'time',
-                                                                                                      'reward']))
+            sql = '''SELECT id, time_start, results 
+                     FROM baseline_run
+                     WHERE sim_config_id = {}'''.format(P_MARKER)
+            params = (sim_config,)
+            baseline_run = select_all(self.db, sql=sql, params=params)
+            df2 = pd.DataFrame([["baseline_run{}".format(run_id), time, x]
+                               for run_id, time, l in baseline_run for x in json.loads(l)],
+                              columns=['policy', 'time', 'reward'])
+            df = df.append(df2)
 
         return df
