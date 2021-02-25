@@ -31,10 +31,13 @@ def my_ray_init():
 
 
 def my_ray_train(trainer):
-    stderrout = sys.stderr
+    _stderr = sys.stderr
+    _stdout = sys.stdout
     sys.stderr = open('train.log', 'w')
+    sys.stdout = sys.stderr
     result = trainer.train()
-    sys.stderr = stderrout
+    sys.stderr = _stderr
+    sys.stdout = _stdout
     return result
 
 
@@ -322,6 +325,7 @@ class AISimAgent:
         df = pd.read_sql_query(sql, self.db, params=params)
         return df
 
+    # ToDo: Change to allow more than one config
     def get_training_data(self, sim_config: int = None, baseline: bool = True):
 
         if sim_config is None:
