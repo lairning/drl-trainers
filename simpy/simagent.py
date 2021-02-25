@@ -29,6 +29,13 @@ def my_ray_init():
     ray.init(include_dashboard=False, log_to_driver=False, logging_level=0)
     sys.stderr = stderrout
 
+def my_ray_train(trainer):
+    stderrout = sys.stderr
+    sys.stderr = open('train.log', 'w')
+    result = trainer.train()
+    sys.stderr = stderrout
+    return result
+
 
 class AISimAgent:
     ppo_config = {
@@ -221,7 +228,8 @@ class AISimAgent:
         session_start = datetime.now()
         iteration_start = datetime.now()
 
-        result = trainer.train()
+        result = my_ray_train(trainer)
+        #result = trainer.train()
         best_checkpoint = trainer.save()
         best_reward = result['episode_reward_mean']
         print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format(1 / iterations, best_reward), end="\r")
@@ -230,7 +238,8 @@ class AISimAgent:
 
         for i in range(1, iterations):
             iteration_start = datetime.now()
-            result = trainer.train()
+            result = my_ray_train(trainer)
+            # result = trainer.train()
 
             if result['episode_reward_mean'] > best_reward:
                 best_checkpoint = trainer.save()
@@ -328,7 +337,7 @@ class AISimAgent:
         return df
 
     def get_policies(self):
-        sql = '''SELECT id as policy, session_id as session
+        sql = '''SELECT sim_config_id as sim_config, id as policy, session_id as session
                  FROM policy
                  WHERE sim_model_id = {}'''.format(P_MARKER)
         return pd.read_sql_query(sql, self.db, params=(self._model_id,))
