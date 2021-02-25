@@ -367,6 +367,8 @@ class AISimAgent:
 
         for policy_id, checkpoint, saved_agent_config, saved_sim_config in policy_data:
 
+            print("# Running Policy {} started at {}!".format(policy_id, datetime.now()))
+
             agent_config = self._config.copy()
             agent_config.update(json.loads(saved_agent_config))
 
@@ -381,7 +383,7 @@ class AISimAgent:
             he = SimpyEnv(agent_config["env_config"])
 
             result_list = []
-            for _ in range(simulations):
+            for i in range(simulations):
                 # run until episode ends
                 episode_reward = 0
                 done = False
@@ -391,9 +393,12 @@ class AISimAgent:
                     obs, reward, done, info = he.step(action)
                     episode_reward += reward
                 result_list.append(episode_reward)
+                print("# Progress: {:2.1%} ".format((i+1) / simulations), end="\r")
             policy_run_data = (policy_id, time_start, simulations,
                                (datetime.now() - time_start).total_seconds(), json.dumps(result_list))
             self._add_policy_run(policy_run_data)
+            print("# Progress: {:2.1%} ".format(1))
+            print("# Running Policy {} ended at {}!".format(policy_id, datetime.now()))
 
         ray.shutdown()
 
