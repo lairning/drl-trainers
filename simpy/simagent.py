@@ -358,9 +358,9 @@ class AISimAgent:
         else:
             policies = tuple(all_policies)
 
-        select_policy_sql = '''SELECT id, checkpoint, agent_config, sim_config.config as s_config
+        select_policy_sql = '''SELECT policy.id, checkpoint, agent_config, sim_config.config as s_config
                                FROM policy INNER JOIN sim_config ON policy.sim_config_id = sim_config.id
-                               WHERE id IN ({})'''.format(SQLParamList(len(policies)))
+                               WHERE policy.id IN ({})'''.format(SQLParamList(len(policies)))
         policy_data = select_all(self.db, sql=select_policy_sql, params=policies)
 
         my_ray_init()
