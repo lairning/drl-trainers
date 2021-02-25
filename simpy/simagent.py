@@ -201,7 +201,7 @@ class AISimAgent:
     def _add_baseline_run(self, policy_run_data: tuple):
         cursor = self.db.cursor()
         cursor.execute('''INSERT INTO baseline_run (
-                                        policy_id,
+                                        sim_config_id,
                                         time_start,
                                         simulations,
                                         duration,
