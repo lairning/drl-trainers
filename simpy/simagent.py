@@ -29,6 +29,7 @@ def my_ray_init():
     ray.init(include_dashboard=False, log_to_driver=False, logging_level=0)
     sys.stderr = stderrout
 
+
 def my_ray_train(trainer):
     stderrout = sys.stderr
     sys.stderr = open('train.log', 'w')
@@ -208,6 +209,7 @@ class AISimAgent:
                                         results) VALUES ({})'''.format(SQLParamList(5)), policy_run_data)
         self.db.commit()
         return cursor.lastrowid
+
     # ToDo: Add more than one best policy
     # ToDo: Add labels to the sessions
     def train(self, iterations: int = 10, agent_config: dict = None, sim_config: dict = None,
@@ -239,7 +241,7 @@ class AISimAgent:
         iteration_start = datetime.now()
 
         result = my_ray_train(trainer)
-        #result = trainer.train()
+        # result = trainer.train()
         best_checkpoint = trainer.save()
         best_reward = result['episode_reward_mean']
         print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format(1 / iterations, best_reward), end="\r")
@@ -320,7 +322,7 @@ class AISimAgent:
         df = pd.read_sql_query(sql, self.db, params=params)
         return df
 
-    def get_training_data(self, sim_config: int=None, baseline: bool = True):
+    def get_training_data(self, sim_config: int = None, baseline: bool = True):
 
         if sim_config is None:
             sim_config = self._get_sim_base_config()
@@ -403,7 +405,7 @@ class AISimAgent:
                     obs, reward, done, info = he.step(action)
                     episode_reward += reward
                 result_list.append(episode_reward)
-                print("# Progress: {:2.1%} ".format((i+1) / simulations), end="\r")
+                print("# Progress: {:2.1%} ".format((i + 1) / simulations), end="\r")
             policy_run_data = (policy_id, time_start, simulations,
                                (datetime.now() - time_start).total_seconds(), json.dumps(result_list))
             self._add_policy_run(policy_run_data)
@@ -421,14 +423,14 @@ class AISimAgent:
             rows = select_all(self.db, sql=select_sim_sql, params=(self._model_id,))
             sim_configs = ((i, json.loads(config)) for i, config in rows)
         else:
-            if isinstance(sim_config,int):
+            if isinstance(sim_config, int):
                 sim_config = [sim_config]
-            if isinstance(sim_config,list):
+            if isinstance(sim_config, list):
                 # Get all policies for the list of sim_configs
                 select_sim_sql = '''SELECT id, config FROM sim_config
                                     WHERE id IN ({})'''.format(SQLParamList(len(sim_config)))
                 rows = select_all(self.db, sql=select_sim_sql, params=tuple(sim_config))
-                sim_configs = ((id, json.loads(config)) for id, config in rows)
+                sim_configs = ((i, json.loads(config)) for i, config in rows)
             else:
                 raise Exception("Invalid Sim Config {}".format(sim_config))
 
@@ -445,8 +447,7 @@ class AISimAgent:
                                (datetime.now() - time_start).total_seconds(), json.dumps(result_list))
             self._add_baseline_run(policy_run_data)
             print("# Progress: {:2.1%} ".format(1))
-            print("# Baseline Simulation for Config {} ended at {}!".format(policy_id, datetime.now()))
-
+            print("# Baseline Simulation for Config {} ended at {}!".format(sim_config_id, datetime.now()))
 
     def get_policy_run_data(self, sim_config: int = None, baseline: bool = True):
 
@@ -464,9 +465,9 @@ class AISimAgent:
                  WHERE policy.sim_config_id = {}'''.format(P_MARKER)
         params = (sim_config,)
         policy_run = select_all(self.db, sql=sql, params=params)
-        df = pd.DataFrame([["ai_policy{}_run{}".format(policy_id,run_id), time, x]
+        df = pd.DataFrame([["ai_policy{}_run{}".format(policy_id, run_id), time, x]
                            for policy_id, run_id, time, l in policy_run for x in json.loads(l)],
-                                                                                columns=['policy','time','reward'])
+                          columns=['policy', 'time', 'reward'])
         if baseline:
             sql = '''SELECT id, time_start, results 
                      FROM baseline_run
@@ -474,8 +475,8 @@ class AISimAgent:
             params = (sim_config,)
             baseline_run = select_all(self.db, sql=sql, params=params)
             df2 = pd.DataFrame([["baseline_run{}".format(run_id), time, x]
-                               for run_id, time, l in baseline_run for x in json.loads(l)],
-                              columns=['policy', 'time', 'reward'])
+                                for run_id, time, l in baseline_run for x in json.loads(l)],
+                               columns=['policy', 'time', 'reward'])
             df = df.append(df2)
 
         return df
