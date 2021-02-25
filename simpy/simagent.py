@@ -31,14 +31,6 @@ def my_ray_init():
 
 
 def my_ray_train(trainer):
-    '''
-    _stderr = sys.stderr
-    _stdout = sys.stdout
-    sys.stderr = open('train.log', 'w')
-    sys.stdout = sys.stderr
-    sys.stderr = _stderr
-    sys.stdout = _stdout
-    '''
     result = trainer.train()
     return result
 
@@ -55,7 +47,7 @@ class AISimAgent:
 
     default_sim_config_name = "Base Config"
 
-    def __init__(self, sim_name: str):
+    def __init__(self, sim_name: str, log_level: str = "ERROR"):
         exec_locals = {}
         try:
             exec("from models.{} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel, BASE_CONFIG".format(
@@ -73,6 +65,8 @@ class AISimAgent:
 
         assert isinstance(exec_locals['BASE_CONFIG'], dict), "Simulation Config {} must be a dict!".format(
             exec_locals['BASE_CONFIG'])
+
+        assert log_level in ["DEBUG", "INFO", "WARN", "ERROR"], "Invalid log_level {}".format(log_level)
 
         self._sim_baseline = exec_locals['SimBaseline']
 
@@ -95,6 +89,7 @@ class AISimAgent:
             self._model_id, = row
 
         self._config = self.ppo_config.copy()
+        self._config["log_level"] = log_level
         self._config["env"] = SimpyEnv
         self._config["env_config"] = {"n_actions"        : exec_locals['N_ACTIONS'],
                                       "observation_space": exec_locals['OBSERVATION_SPACE'],
@@ -218,16 +213,16 @@ class AISimAgent:
 
     # ToDo: Add more than one best policy
     # ToDo: Add labels to the sessions
-    def train(self, iterations: int = 10, agent_config: dict = None, sim_config: dict = None,
+    def train(self, iterations: int = 10, ai_config: dict = None, sim_config: dict = None,
               add_best_policy: bool = True):
 
         _agent_config = self._config.copy()
 
-        if agent_config is not None:
-            assert isinstance(agent_config, dict), "Agent Config {} must be a dict!".format(agent_config)
-            agent_config.pop("env", None)
-            agent_config.pop("env_config", None)
-            _agent_config.update(agent_config)
+        if ai_config is not None:
+            assert isinstance(ai_config, dict), "Agent Config {} must be a dict!".format(ai_config)
+            ai_config.pop("env", None)
+            ai_config.pop("env_config", None)
+            _agent_config.update(ai_config)
 
         if sim_config is not None:
             assert isinstance(sim_config, dict), "Sim Config {} must be a dict!".format(sim_config)
