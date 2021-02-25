@@ -31,13 +31,15 @@ def my_ray_init():
 
 
 def my_ray_train(trainer):
+    '''
     _stderr = sys.stderr
     _stdout = sys.stdout
     sys.stderr = open('train.log', 'w')
     sys.stdout = sys.stderr
-    result = trainer.train()
     sys.stderr = _stderr
     sys.stdout = _stdout
+    '''
+    result = trainer.train()
     return result
 
 
