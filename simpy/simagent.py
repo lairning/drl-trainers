@@ -47,7 +47,8 @@ class AISimAgent:
         "num_workers"  : 5,
         # "lr"            : tune.grid_search([1e-4, 1e-6]),
         "batch_mode"   : "complete_episodes",
-        "framework"    : "torch"
+        "framework"    : "torch",
+        "log_level": "ERROR",
     }
 
     default_sim_config_name = "Base Config"
@@ -244,7 +245,6 @@ class AISimAgent:
         iteration_start = datetime.now()
 
         result = my_ray_train(trainer)
-        # result = trainer.train()
         best_checkpoint = trainer.save()
         best_reward = result['episode_reward_mean']
         print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format(1 / iterations, best_reward), end="\r")
