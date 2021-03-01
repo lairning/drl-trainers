@@ -162,8 +162,14 @@ class SimModel(BaseSim):
 
 # Mandatory
 class SimBaseline:
-    def __init__(self):
+    def __init__(self, baseline_config:dict=None, sim_config:dict=None):
+        self.baseline_config = {"round_robin": 2}
         self.sim = None
+        if baseline_config is not None:
+            self.baseline_config.update(baseline_config)
+        self.sim_config = BASE_CONFIG.copy()
+        if sim_config is not None:
+            self.sim_config.update(sim_config)
 
     class RandomAction:
         def get(self):
@@ -184,8 +190,9 @@ class SimBaseline:
                     self.i = 0
             return self.i
 
-    def run(self, policy = RoundRobin(1), sim_config:dict=None):
-        self.sim = SimModel(sim_config)
+    def run(self):
+        self.sim = SimModel(self.sim_config)
+        policy = self.RoundRobin(self.baseline_config["round_robin"])
         done = False
         total_reward = 0
         while not done:
@@ -215,12 +222,11 @@ def print_stats(sim: SimModel):
     #print(len([1 for x in light.stats['waiting_time'] if x==0]))
 
 if __name__ == "__main__":
-    n = 10
+    n = 1
     total = 0
     for _ in range(n):
         baseline = SimBaseline()
-        policy = baseline.RoundRobin(1)
-        reward = baseline.run(policy)
+        reward = baseline.run()
         total += reward
         print_stats(baseline.sim)
     print("### Average Rewards", total/n)

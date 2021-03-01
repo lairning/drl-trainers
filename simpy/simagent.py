@@ -68,6 +68,9 @@ class AISimAgent:
 
         assert log_level in ["DEBUG", "INFO", "WARN", "ERROR"], "Invalid log_level {}".format(log_level)
 
+        if not ray.is_initialized():
+            my_ray_init()
+
         self._sim_baseline = exec_locals['SimBaseline']
 
         sql = '''SELECT id FROM sim_model WHERE name = {}'''.format(P_MARKER)
@@ -91,10 +94,15 @@ class AISimAgent:
         self._config = self.ppo_config.copy()
         self._config["log_level"] = log_level
         self._config["env"] = SimpyEnv
+        #ToDo: Change the Observation Space to a fucntion that receive a Sim Config as a parameter.
+        #  In this part of the code it received exec_locals['BASE_CONFIG']
         self._config["env_config"] = {"n_actions"        : exec_locals['N_ACTIONS'],
                                       "observation_space": exec_locals['OBSERVATION_SPACE'],
                                       "sim_model"        : exec_locals['SimModel'],
                                       "sim_config"       : exec_locals['BASE_CONFIG']}
+
+    def __del__(self):
+        ray.shutdown()
 
     def _add_session(self, session_data: tuple):
         agent_config, sim_config_id = session_data
@@ -141,10 +149,12 @@ class AISimAgent:
         self.db.commit()
         return sim_config_id
 
-    # ToDo: Explore the use of Ray to speed up this operation
     def _get_baseline_avg(self, sim_config: dict):
-        base = self._sim_baseline()
-        return np.mean([base.run(sim_config=sim_config) for _ in range(30)])
+        @ray.remote
+        def base_run(base):
+            return base.run()
+        base = self._sim_baseline(sim_config=sim_config)
+        return np.mean(ray.get([base_run.remote(base) for _ in range(30)]))
 
     def _update_session(self, best_policy, duration, session_id):
         cursor = self.db.cursor()
@@ -226,13 +236,15 @@ class AISimAgent:
 
         if sim_config is not None:
             assert isinstance(sim_config, dict), "Sim Config {} must be a dict!".format(sim_config)
+            # ToDo: Change the Observation Space to a function that receive a Sim Config as a parameter.
+            #  In this part of the code the _agent_config["env_config"]["observation_space"] have to be updated
             _agent_config["env_config"]["sim_config"].update(sim_config)
 
         sim_config_id = self._get_sim_config(_agent_config["env_config"]["sim_config"])
 
         session_id = self._add_session((_agent_config.copy(), sim_config_id))
 
-        my_ray_init()
+        #my_ray_init()
 
         print("# Training Session {} started at {}!".format(session_id, datetime.now()))
 
@@ -272,7 +284,7 @@ class AISimAgent:
                            _agent_config.copy(), sim_config_id)
             self._add_policy(policy_data)
 
-        ray.shutdown()
+        # ray.shutdown()
 
         print("# Training Session {} ended at {}!".format(session_id, datetime.now()))
 
@@ -376,7 +388,7 @@ class AISimAgent:
                                WHERE policy.id IN ({})'''.format(SQLParamList(len(policies)))
         policy_data = select_all(self.db, sql=select_policy_sql, params=policies)
 
-        my_ray_init()
+        # my_ray_init()
 
         for policy_id, checkpoint, saved_agent_config, saved_sim_config in policy_data:
 
@@ -413,9 +425,14 @@ class AISimAgent:
             print("# Progress: {:2.1%} ".format(1))
             print("# Running AI Policy {} ended at {}!".format(policy_id, datetime.now()))
 
-        ray.shutdown()
+        # ray.shutdown()
 
+    # Todo: Add Baselines config
     def run_baselines(self, sim_config: [int, list] = None, simulations: int = 1):
+
+        @ray.remote
+        def base_run(base):
+            return base.run()
 
         if sim_config is None:
             # Get all sim configs for the current model
@@ -435,19 +452,19 @@ class AISimAgent:
             else:
                 raise Exception("Invalid Sim Config {}".format(sim_config))
 
-        base = self._sim_baseline()
+        base = self._sim_baseline(sim_config=sim_config)
         for sim_config_id, sim_config in sim_configs:
             print("# Baseline Simulation for Config {} started at {}!".format(sim_config_id, datetime.now()))
             time_start = datetime.now()
-            result_list = []
-            for i in range(simulations):
-                result_list.append(base.run(sim_config=sim_config))
-                print("# Progress: {:2.1%} ".format((i + 1) / simulations), end="\r")
+            result_list = ray.get([base_run.remote(base) for _ in range(simulations)])
+            # for i in range(simulations):
+            #    future_result_list.append(base_run.remote())
+            #    print("# Progress: {:2.1%} ".format((i + 1) / simulations), end="\r")
 
             policy_run_data = (sim_config_id, time_start, simulations,
                                (datetime.now() - time_start).total_seconds(), json.dumps(result_list))
             self._add_baseline_run(policy_run_data)
-            print("# Progress: {:2.1%} ".format(1))
+            # print("# Progress: {:2.1%} ".format(1))
             print("# Baseline Simulation for Config {} ended at {}!".format(sim_config_id, datetime.now()))
 
     def get_policy_run_data(self, sim_config: int = None, baseline: bool = True):

@@ -1,25 +1,48 @@
 import itertools
 
 import numpy as np
+from scipy.stats import truncnorm
 import simpy
 from gym.spaces import Box
+import random
 
-SIM_TIME = 5 * 24 * 60  # Simulation time in Time units (minutes)
-STEP_TIME = 10  # Time units (minutes) between each step
+
+CAR_INTERVAL =  [80 for _ in range(7)] # Avg arrival on the first x hours
+CAR_INTERVAL += [10 for _ in range(3)] # Avg arrival on the next ... hours
+CAR_INTERVAL += [50 for _ in range(3)] # Avg arrival on the next ... hours
+CAR_INTERVAL += [20 for _ in range(2)] # Avg arrival on the next ... hours
+CAR_INTERVAL += [40 for _ in range(3)] # Avg arrival on the next ... hours
+CAR_INTERVAL += [10 for _ in range(3)] # Avg arrival on the next ... hours
+CAR_INTERVAL += [60 for _ in range(3)] # Avg arrival on the next ... hours
+
+
+GAS_STATION_SIZE = 200  # liters
+PUMP_NUMBER = 2  # Number of Pumps
+
 
 # Mandatory
 BASE_CONFIG = {
     "SIM_MINUTES": 5 * 24 * 60, # Simulation time in mINUTES
-    "ACTION_INTERVAL_SECONDS": 10, # Time in minutes between each action
-    "MTBC": [40, 30, 50, 60, 40, 20, 70, 60] # Mean Time Between Cars Factor (lower increases frequency)
+    "ACTION_INTERVAL_MINUTES": 10, # Time in minutes between each action
+    "CAR_TANK_SIZE" : 50 , # liters
+    "CAR_TANK_LEVEL" : 8 , # Average tank level, with a exponential distribution
+    "REFUELING_SPEED" : 1 , # liters / minute
+    "TANK_TRUCK_TIME" : 60 , # Minutes it takes the tank truck to arrive
+    "MARGIN_PER_LITRE" : 1 , # Gas margin per litre, excluding truck transportation fixed cost
+    "TRUCK_COST" : 150 , # Fixed Transportation Cost
+    "DRIVER_PATIENCE" : 4 , # Avg driver patience in minutes, with a exponential distribution
+    "CAR_INTERVAL" : CAR_INTERVAL ,
 }
 
 class BaseSim(simpy.Environment):
-    def __init__(self):
+    def __init__(self, config:dict=None):
         super().__init__()
-        self.sim_time = SIM_TIME
+        self.sim_config = BASE_CONFIG.copy()
+        if config is not None:
+            self.sim_config.update(config)
         self.time = self.now
-        self.step_time = STEP_TIME  # Time Units to run between gym env steps
+        self.sim_time = config["SIM_MINUTES"]
+        self.step_time = config["ACTION_INTERVAL_MINUTES"]  # Time Units to run between gym env steps
 
     def run_until_action(self):
         self.run(until=self.time + self.step_time)
@@ -37,19 +60,6 @@ class BaseSim(simpy.Environment):
     def get_reward(self):
         raise Exception("Not Implemented!!!")
 
-
-GAS_STATION_SIZE = 200  # liters
-CAR_TANK_SIZE = 50  # liters
-CAR_TANK_LEVEL = [2, 20]  # Min/max levels of fuel tanks (in liters)
-REFUELING_SPEED = 1  # liters / minute
-TANK_TRUCK_TIME = 60  # Minutes it takes the tank truck to arrive
-PUMP_NUMBER = 2  # Number of Pumps
-MARGIN_PER_LITRE = 1  # Gas margin per litre, excluding truck transportation fixed cost
-TRUCK_COST = 150  # Fixed Transportation Cost
-DRIVER_PATIENCE = [1, 8]  # Min/max level of driver patience
-CAR_INTERVAL = [[40, 120] for _ in range(7)] + [[5, 10] for _ in range(3)] + [[20, 80] for _ in range(3)]
-CAR_INTERVAL += [[5, 40] for _ in range(2)] + [[20, 80] for _ in range(3)]
-CAR_INTERVAL += [[5, 20] for _ in range(3)] + [[20, 80] for _ in range(3)]
 
 DEBUG = False
 
@@ -72,8 +82,8 @@ OBSERVATION_SPACE = Box(low=np.array([0, 0, 0] + [0] * 24),
 
 
 class SimModel(BaseSim):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, config:dict=None):
+        super().__init__(config)
         self.fuel_pump = simpy.Container(self, GAS_STATION_SIZE, init=GAS_STATION_SIZE / 2)
         self.gas_station = simpy.Resource(self, PUMP_NUMBER)
         self.process(self.car_generator(self.gas_station, self.fuel_pump))
@@ -101,11 +111,11 @@ class SimModel(BaseSim):
     def tank_truck(self, fuel_pump):
         """Arrives at the gas station after a certain delay and refuels it."""
         self.free_truck = 0
-        yield self.timeout(TANK_TRUCK_TIME)
+        yield self.timeout(BASE_CONFIG["TANK_TRUCK_TIME"])
         dprint('Tank truck arriving at time %d' % self.now)
         ammount = fuel_pump.capacity - fuel_pump.level
         dprint('Tank truck refuelling %.1f liters.' % ammount)
-        self.actual_revenue -= TRUCK_COST
+        self.actual_revenue -= BASE_CONFIG["TRUCK_COST"]
         self.free_truck = 1
         if ammount > 0:
             yield fuel_pump.put(ammount)
@@ -117,24 +127,26 @@ class SimModel(BaseSim):
         desired amount of gas from it. If the stations reservoir is
         depleted, the car has to wait for the tank truck to arrive.
         """
-        fuel_tank_level = np.random.randint(*CAR_TANK_LEVEL)
+        avg, minim, maxim, scale = BASE_CONFIG["CAR_TANK_SIZE"], 0, BASE_CONFIG["CAR_TANK_SIZE"], 10
+        fuel_tank_level = truncnorm.rvs((minim-avg)/scale, (maxim-avg)/scale,avg,scale)
+        #fuel_tank_level = random.triangular(0,BASE_CONFIG["CAR_TANK_LEVEL"],BASE_CONFIG["CAR_TANK_SIZE"])
         dprint('%s arriving at gas station at %.1f' % (name, self.now))
         with gas_station.request() as req:
             start = self.now
             # Request one of the gas pumps or leave if it take to long
-            result = yield req | self.timeout(np.random.randint(*DRIVER_PATIENCE))
+            result = yield req | self.timeout(random.expovariate(1/BASE_CONFIG["DRIVER_PATIENCE"]))
 
             if req in result:
 
                 # Get the required amount of fuel
-                liters_required = CAR_TANK_SIZE - fuel_tank_level
+                liters_required = BASE_CONFIG["CAR_TANK_SIZE"] - fuel_tank_level
                 yield fuel_pump.get(liters_required)
 
                 # Pay the fuel
-                self.actual_revenue += liters_required * MARGIN_PER_LITRE
+                self.actual_revenue += liters_required * BASE_CONFIG["MARGIN_PER_LITRE"]
 
                 # The "actual" refueling process takes some time
-                yield self.timeout(liters_required / REFUELING_SPEED)
+                yield self.timeout(liters_required / BASE_CONFIG["REFUELING_SPEED"])
 
                 dprint('%s finished refueling in %.1f minutes.' % (name, self.now - start))
             else:
@@ -145,25 +157,45 @@ class SimModel(BaseSim):
         """Generate new cars that arrive at the gas station."""
         for i in itertools.count():
             hour = (self.now // 60) % 24
-            yield self.timeout(np.random.randint(*CAR_INTERVAL[hour]))
+            yield self.timeout(int(random.expovariate(1/BASE_CONFIG["CAR_INTERVAL"][hour])))
             self.process(self.car('Car %d' % i, gas_station, fuel_pump))
 
+# Mandatory
+class SimBaseline:
+    def __init__(self, baseline_config:dict=None, sim_config:dict=None):
+        self.sim = None
+        self.baseline_config = {"level":25}
+        if baseline_config is not None:
+            self.baseline_config.update(baseline_config)
+        self.sim_config = BASE_CONFIG.copy()
+        if sim_config is not None:
+            self.sim_config.update(sim_config)
+
+    def get_action(self, obs):
+        return obs[0] < self.baseline_config["level"] and obs[2]
+
+    def run(self):
+        self.sim = SimModel(self.sim_config)
+        done = False
+        total_reward = 0
+        while not done:
+            obs = self.sim.get_observation()
+            action = self.get_action(obs)
+            self.sim.exec_action(action)
+            reward, done, _ = self.sim.get_reward()
+            total_reward += reward
+
+        return total_reward
+
+def print_stats(sim: SimModel):
+    pass
 
 if __name__ == "__main__":
-    for level in [65]:
-        N = 100
-        total = 0
-        for i in range(N):
-            # env_ = SimpyEnv()
-            env = SimpyEnv()
-            obs = env.reset()
-            done = False
-            while not done:
-                dprint(obs)
-                action = obs[0] < level and obs[2]
-                #action = np.random.randint(N_ACTIONS)
-                obs, reward, done, info = env.step(action)
-                dprint("Decision {} with {} revenue".format(action, reward))
-            total += env.sim.actual_revenue
-        print("Average Revenue for level {}:".format(level), total/ N)
-
+    n = 5
+    total = 0
+    for _ in range(n):
+        baseline = SimBaseline(baseline_config={"level":25})
+        reward = baseline.run()
+        total += reward
+        print_stats(baseline.sim)
+    print("### Average Rewards", total/n)
