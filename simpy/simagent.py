@@ -452,8 +452,8 @@ class AISimAgent:
             else:
                 raise Exception("Invalid Sim Config {}".format(sim_config))
 
-        base = self._sim_baseline(sim_config=sim_config)
         for sim_config_id, sim_config in sim_configs:
+            base = self._sim_baseline(sim_config=sim_config)
             print("# Baseline Simulation for Config {} started at {}!".format(sim_config_id, datetime.now()))
             time_start = datetime.now()
             result_list = ray.get([base_run.remote(base) for _ in range(simulations)])
