@@ -41,3 +41,7 @@ worker_nodes:
         imageOffer: ubuntu-1804
         imageSku: 1804-gen2
         imageVersion: 20.07.06
+
+# List of shell commands to run to set up nodes.
+setup_commands:
+    - conda activate py37_pytorch
