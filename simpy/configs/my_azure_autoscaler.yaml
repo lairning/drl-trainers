@@ -42,6 +42,10 @@ worker_nodes:
         imageSku: 1804-gen2
         imageVersion: 20.07.06
 
+file_mounts: {
+    "/home/ubuntu/simpy": "~/drl-trainers/simpy",
+}
+
 # List of shell commands to run to set up nodes.
 setup_commands:
     - echo 'eval "$(conda shell.bash hook)"' >> ~/.bashrc
