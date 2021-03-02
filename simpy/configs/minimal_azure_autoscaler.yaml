@@ -9,7 +9,7 @@ max_workers: 1
 provider:
     type: azure
     location: westeurope
-    resource_group: ray-cluster-min2
+    resource_group: ray-cluster-min
 
 # How Ray will authenticate with newly launched nodes.
 auth:
@@ -44,4 +44,6 @@ worker_nodes:
 
 # List of shell commands to run to set up nodes.
 setup_commands:
-    - conda activate py37_pytorch
+    - echo 'eval "$(conda shell.bash hook)"' >> ~/.bashrc
+    - echo 'conda activate py37_tensorflow' >> ~/.bashrc
+    - pip install -U https://s3-us-west-2.amazonaws.com/ray-wheels/latest/ray-2.0.0.dev0-cp37-cp37m-manylinux2014_x86_64.whl
