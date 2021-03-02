@@ -9,7 +9,7 @@ max_workers: 1
 provider:
     type: azure
     location: westeurope
-    resource_group: ray-cluster-min
+    resource_group: ray-cluster-min2
 
 # How Ray will authenticate with newly launched nodes.
 auth:
@@ -19,3 +19,25 @@ auth:
     ssh_private_key: ~/.ssh/id_rsa
     # changes to this should match what is specified in file_mounts
     ssh_public_key: ~/.ssh/id_rsa.pub
+
+# Provider-specific config for the head node, e.g. instance type.
+head_node:
+    azure_arm_parameters:
+        # Changed to B1S that are free with the Azure Free Subscritpion
+        vmSize: Standard_B1s
+        # List images https://docs.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage
+        imagePublisher: microsoft-dsvm
+        imageOffer: ubuntu-1804
+        imageSku: 1804-gen2
+        imageVersion: 20.07.06
+
+# Provider-specific config for worker nodes, e.g. instance type.
+worker_nodes:
+    azure_arm_parameters:
+        # Changed to B1S that are free with the Azure Free Subscritpion
+        vmSize: Standard_B1s
+        # List images https://docs.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage
+        imagePublisher: microsoft-dsvm
+        imageOffer: ubuntu-1804
+        imageSku: 1804-gen2
+        imageVersion: 20.07.06
