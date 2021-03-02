@@ -44,7 +44,7 @@ provider:
     type: azure
     # https://azure.microsoft.com/en-us/global-infrastructure/locations
     location: westeurope
-    resource_group: ray-cluster
+    resource_group: lairning
     # set subscription id otherwise the default from az cli will be used
     # MD: Subscription ID da conta de avaliação gratuita
     subscription_id: 8d132435-166a-4017-8887-4cbb22b6b8ee
