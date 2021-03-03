@@ -35,7 +35,7 @@ auth:
 head_node:
     azure_arm_parameters:
         # Changed to B1S that are free with the Azure Free Subscritpion
-        vmSize: Standard_D2s_v3
+        vmSize: Standard_D4s_v3
         # List images https://docs.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage
         imagePublisher: microsoft-dsvm
         imageOffer: ubuntu-1804
