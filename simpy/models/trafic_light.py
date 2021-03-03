@@ -223,7 +223,7 @@ def print_stats(sim: SimModel):
 
 if __name__ == "__main__":
 
-    # import ray
+    import ray
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--n", default=1, type=int)
@@ -243,4 +243,4 @@ if __name__ == "__main__":
     results = [base_run(baseline) for _ in range(args.n)]
     print("### Average Rewards", np.mean(results))
 
-    # ray.shutdown()
+    ray.shutdown()
