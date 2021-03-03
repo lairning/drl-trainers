@@ -26,7 +26,7 @@ def filter_dict(dic_in: dict, keys: set):
 def my_ray_init():
     stderrout = sys.stderr
     sys.stderr = open('ray.log', 'w')
-    ray.init(include_dashboard=False, log_to_driver=False, logging_level=0, address='auto')
+    ray.init(include_dashboard=False, log_to_driver=False, logging_level=0, address='auto', num_cpus=4)
     sys.stderr = stderrout
 
 
