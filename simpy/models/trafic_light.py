@@ -235,7 +235,7 @@ if __name__ == "__main__":
     def base_run(baseline):
         return baseline.run()
 
-    # ray.init(address="auto")
+    ray.init(address="auto")
 
     total = 0
     baseline = SimBaseline()
