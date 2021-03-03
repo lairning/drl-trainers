@@ -227,6 +227,8 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--n", default=1, type=int)
+    parser.add_argument("--inst", default="auto", type=str)
+
     args = parser.parse_args()
 
     @ray.remote
