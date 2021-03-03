@@ -3,7 +3,9 @@ cluster_name: lairningTrainer
 
 # The maximum number of workers nodes to launch in addition to the head
 # node. This takes precedence over min_workers. min_workers default to 0.
-max_workers: 1
+min_workers: 3
+
+max_workers: 7
 
 # Cloud-provider specific configuration.
 provider:
