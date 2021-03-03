@@ -250,10 +250,13 @@ class AISimAgent:
 
         trainer = ppo.PPOTrainer(config=_agent_config)
 
+        print("# DEBUG: Trainer Created at {}!".format(datetime.now()))
+
         session_start = datetime.now()
         iteration_start = datetime.now()
 
         result = my_ray_train(trainer)
+        print("# DEBUG: Trainer Result {} at {}!".format(result['episode_reward_mean'], datetime.now()))
         best_checkpoint = trainer.save()
         best_reward = result['episode_reward_mean']
         print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format(1 / iterations, best_reward), end="\r")
