@@ -249,6 +249,8 @@ class AISimAgent:
 
         print("# Training Session {} started at {}!".format(session_id, datetime.now()))
 
+        print(_agent_config)
+
         trainer = ppo.PPOTrainer(config=_agent_config)
 
         # print("# DEBUG: Trainer Created at {}!".format(datetime.now()))
