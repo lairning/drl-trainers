@@ -222,24 +222,11 @@ def print_stats(sim: SimModel):
     #print(len([1 for x in light.stats['waiting_time'] if x==0]))
 
 if __name__ == "__main__":
-
-    import ray
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--n", default=1, type=int)
-    parser.add_argument("--inst", default="auto", type=str)
-
-    args = parser.parse_args()
-
-    @ray.remote
-    def base_run():
-        baseline = SimBaseline()
-        return baseline.run()
-
-    ray.init(address="auto")
-
+    n = 1
     total = 0
-    results = ray.get([base_run.remote() for _ in range(args.n)])
-    print("### Average Rewards", total/args.n)
-
-    ray.shutdown()
+    for _ in range(n):
+        baseline = SimBaseline()
+        reward = baseline.run()
+        total += reward
+        print_stats(baseline.sim)
+    print("### Average Rewards", total/n)
