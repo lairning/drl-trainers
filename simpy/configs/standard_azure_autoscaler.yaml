@@ -5,7 +5,7 @@ cluster_name: lairningStdTrainer
 # node. This takes precedence over min_workers. min_workers default to 0.
 min_workers: 0
 
-max_workers: 4
+max_workers: 2
 
 # The autoscaler will scale up the cluster faster with higher upscaling speed.
 # E.g., if the task requires adding more nodes then autoscaler will gradually
