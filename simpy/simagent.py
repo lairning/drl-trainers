@@ -38,7 +38,7 @@ def my_ray_train(trainer):
 class AISimAgent:
     ppo_config = {
         "vf_clip_param": 10,  # tune.grid_search([20.0, 100.0]),
-        "num_workers"  : 3,
+        "num_workers"  : 7,
         "num_cpus_per_worker": 1,
         # "lr"            : tune.grid_search([1e-4, 1e-6]),
         "batch_mode"   : "complete_episodes",
