@@ -231,7 +231,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # @ray.remote
+    @ray.remote
     def base_run(baseline):
         return baseline.run()
 
@@ -239,8 +239,8 @@ if __name__ == "__main__":
 
     total = 0
     baseline = SimBaseline()
-    # results = ray.get([base_run.remote(baseline) for _ in range(args.n)])
-    results = [base_run(baseline) for _ in range(args.n)]
+    results = ray.get([base_run.remote(baseline) for _ in range(args.n)])
+    # results = [base_run(baseline) for _ in range(args.n)]
     print("### Average Rewards", np.mean(results))
 
     ray.shutdown()
