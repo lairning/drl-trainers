@@ -38,7 +38,7 @@ def my_ray_train(trainer):
 class AISimAgent:
     ppo_config = {
         "vf_clip_param": 10,  # tune.grid_search([20.0, 100.0]),
-        "num_workers"  : 0,
+        "num_workers"  : 3,
         # "lr"            : tune.grid_search([1e-4, 1e-6]),
         "batch_mode"   : "complete_episodes",
         "framework"    : "torch",
@@ -250,13 +250,13 @@ class AISimAgent:
 
         trainer = ppo.PPOTrainer(config=_agent_config)
 
-        print("# DEBUG: Trainer Created at {}!".format(datetime.now()))
+        # print("# DEBUG: Trainer Created at {}!".format(datetime.now()))
 
         session_start = datetime.now()
         iteration_start = datetime.now()
 
         result = my_ray_train(trainer)
-        print("# DEBUG: Trainer Result {} at {}!".format(result['episode_reward_mean'], datetime.now()))
+        # print("# DEBUG: Trainer Result {} at {}!".format(result['episode_reward_mean'], datetime.now()))
         best_checkpoint = trainer.save()
         best_reward = result['episode_reward_mean']
         print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format(1 / iterations, best_reward), end="\r")
