@@ -53,7 +53,7 @@ worker_nodes:
         imageSku: 1804-gen2
         imageVersion: 21.01.21
         # optionally set priority to use Spot instances
-        priority: Spot
+        # priority: Spot
 
 file_mounts: {
     "/home/ubuntu/simpy": "~/drl-trainers/simpy",

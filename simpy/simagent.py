@@ -26,7 +26,7 @@ def filter_dict(dic_in: dict, keys: set):
 def my_ray_init():
     stderrout = sys.stderr
     sys.stderr = open('ray.log', 'w')
-    ray.init(include_dashboard=False, log_to_driver=False, logging_level=0, address='auto', num_cpus=4)
+    ray.init(include_dashboard=False, log_to_driver=False, logging_level=0, address='auto')
     sys.stderr = stderrout
 
 
@@ -38,7 +38,7 @@ def my_ray_train(trainer):
 class AISimAgent:
     ppo_config = {
         "vf_clip_param": 10,  # tune.grid_search([20.0, 100.0]),
-        "num_workers"  : 3,
+        "num_workers"  : 7,
         # "lr"            : tune.grid_search([1e-4, 1e-6]),
         "batch_mode"   : "complete_episodes",
         "framework"    : "torch",
