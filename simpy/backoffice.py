@@ -1,3 +1,4 @@
+import sys
 from starlette.requests import Request
 import ray
 from ray import serve
@@ -16,14 +17,16 @@ def local_address():
 
 class ModelServer:
     def __init__(self, address:str=None):
+        stderrout = sys.stderr
+        sys.stderr = open('modelserver.log', 'w')
         if address is not None:
             ray.init(address=address)
         else:
             address = ray.init()
-            print("INFO: Model Server started on {}".format(address))
         self.model_server = serve.start()
-        print("# Model Server Started!")
-        print("# Trainers Should Deploy Policies on this Server using address='{}'".format(address))
+        sys.stderr = stderrout
+        print("# INFO: Model Server started on {}".format(address))
+        print("# INFO: Trainers Should Deploy Policies on this Server using address='{}'".format(address))
 
         try:
             self.db = db_connect(DB_NAME)
