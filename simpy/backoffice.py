@@ -20,12 +20,16 @@ class ModelServer:
     def __init__(self, address:str=None, keep_alive: bool = False):
         stderrout = sys.stderr
         sys.stderr = open('modelserver.log', 'w')
-        if address is not None:
-            ray.init(address=address)
+        if not ray.is_initialized():
+            if address is not None:
+                ray.init(address=address)
+            else:
+                address = ray.init()
+            self.model_server = serve.start(detached=keep_alive)
+            sleep(1)
         else:
-            address = ray.init()
-        self.model_server = serve.start(detached=keep_alive)
-        sleep(1)
+            self.model_server = serve.connect()
+
         sys.stderr = stderrout
         print("# INFO: Model Server started on {}".format(address))
         print("# INFO: Trainers Should Deploy Policies on this Server using address='{}'".format(address))
