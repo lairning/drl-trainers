@@ -22,6 +22,8 @@ class ModelServer:
             address = ray.init()
             print("INFO: Model Server started on {}".format(address))
         self.model_server = serve.start()
+        print("# Model Server Started!")
+        print("# Trainers Should Deploy Policies on this Server using address='{}'".format(address))
 
         try:
             self.db = db_connect(DB_NAME)
@@ -33,6 +35,10 @@ class ModelServer:
 
     def list_endpoints(self):
         return self.model_server.list_endpoints()
+
+    def shut_down(self):
+        self.model_server.shut_down()
+        ray.shut_down()
 
     def deploy_policy(self, policy_id: int, replicas: int = 1):
 
