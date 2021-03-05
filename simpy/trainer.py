@@ -10,6 +10,10 @@ import ray.rllib.agents.ppo as ppo
 from simpy_env import SimpyEnv
 from utils import db_connect, DB_NAME, P_MARKER, select_record, SQLParamList, select_all
 
+from starlette.requests import Request
+import requests
+from ray import serve
+
 
 def cast_non_json(x):
     if isinstance(x, np.float32):
@@ -37,18 +41,19 @@ def my_ray_train(trainer):
 
 class AISimAgent:
     ppo_config = {
-        "vf_clip_param": 10,  # tune.grid_search([20.0, 100.0]),
-        "num_workers"  : 3,
+        "vf_clip_param"      : 10,  # tune.grid_search([20.0, 100.0]),
+        "num_workers"        : 3,
         "num_cpus_per_worker": 0,
         # "lr"            : tune.grid_search([1e-4, 1e-6]),
-        "batch_mode"   : "complete_episodes",
-        "framework"    : "torch",
-        "log_level": "ERROR",
+        "batch_mode"         : "complete_episodes",
+        "framework"          : "torch",
+        "log_level"          : "ERROR",
     }
 
     default_sim_config_name = "Base Config"
+    default_sim_checkpoint_path = "./checkpoints"
 
-    def __init__(self, sim_name: str, log_level: str = "ERROR"):
+    def __init__(self, sim_name: str, log_level: str = "ERROR", checkpoint_path=None):
         exec_locals = {}
         try:
             exec("from models.{} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel, BASE_CONFIG".format(
@@ -71,6 +76,8 @@ class AISimAgent:
 
         if not ray.is_initialized():
             my_ray_init()
+
+        self.model_server = serve.connect()
 
         self._sim_baseline = exec_locals['SimBaseline']
 
@@ -95,12 +102,14 @@ class AISimAgent:
         self._config = self.ppo_config.copy()
         self._config["log_level"] = log_level
         self._config["env"] = SimpyEnv
-        #ToDo: Change the Observation Space to a fucntion that receive a Sim Config as a parameter.
+        # ToDo: Change the Observation Space to a fucntion that receive a Sim Config as a parameter.
         #  In this part of the code it received exec_locals['BASE_CONFIG']
         self._config["env_config"] = {"n_actions"        : exec_locals['N_ACTIONS'],
                                       "observation_space": exec_locals['OBSERVATION_SPACE'],
                                       "sim_model"        : exec_locals['SimModel'],
                                       "sim_config"       : exec_locals['BASE_CONFIG']}
+        if checkpoint_path is None:
+            self.checkpoint_path = self.default_sim_checkpoint_path
 
     def __del__(self):
         ray.shutdown()
@@ -152,8 +161,9 @@ class AISimAgent:
 
     def _get_baseline_avg(self, sim_config: dict):
         @ray.remote
-        def base_run(base):
-            return base.run()
+        def base_run(baseline):
+            return baseline.run()
+
         base = self._sim_baseline(sim_config=sim_config)
         return np.mean(ray.get([base_run.remote(base) for _ in range(30)]))
 
@@ -225,7 +235,7 @@ class AISimAgent:
     # ToDo: Add more than one best policy
     # ToDo: Add labels to the sessions
     def train(self, iterations: int = 10, ai_config: dict = None, sim_config: dict = None,
-              add_best_policy: bool = True):
+              add_best_policy: bool = True, checkpoint_path=None):
 
         _agent_config = self._config.copy()
 
@@ -241,15 +251,14 @@ class AISimAgent:
             #  In this part of the code the _agent_config["env_config"]["observation_space"] have to be updated
             _agent_config["env_config"]["sim_config"].update(sim_config)
 
+        if checkpoint_path is None:
+            checkpoint_path = self.checkpoint_path
+
         sim_config_id = self._get_sim_config(_agent_config["env_config"]["sim_config"])
 
         session_id = self._add_session((_agent_config.copy(), sim_config_id))
 
-        #my_ray_init()
-
         print("# Training Session {} started at {}!".format(session_id, datetime.now()))
-
-        print(_agent_config)
 
         trainer = ppo.PPOTrainer(config=_agent_config)
 
@@ -260,7 +269,7 @@ class AISimAgent:
 
         result = my_ray_train(trainer)
         # print("# DEBUG: Trainer Result {} at {}!".format(result['episode_reward_mean'], datetime.now()))
-        best_checkpoint = trainer.save()
+        best_checkpoint = trainer.save(checkpoint_dir=checkpoint_path)
         best_reward = result['episode_reward_mean']
         print("# Progress: {:2.1%} # Best Mean Reward: {:.2f}      ".format(1 / iterations, best_reward), end="\r")
         self._add_iteration(0, session_id, iteration_start, best_checkpoint, result)
@@ -272,7 +281,7 @@ class AISimAgent:
             # result = trainer.train()
 
             if result['episode_reward_mean'] > best_reward:
-                best_checkpoint = trainer.save()
+                best_checkpoint = trainer.save(checkpoint_dir=checkpoint_path)
                 best_reward = result['episode_reward_mean']
                 best_iteration = i
                 checkpoint = best_checkpoint
@@ -394,8 +403,6 @@ class AISimAgent:
                                WHERE policy.id IN ({})'''.format(SQLParamList(len(policies)))
         policy_data = select_all(self.db, sql=select_policy_sql, params=policies)
 
-        # my_ray_init()
-
         for policy_id, checkpoint, saved_agent_config, saved_sim_config in policy_data:
 
             print("# Running AI Policy {} started at {}!".format(policy_id, datetime.now()))
@@ -504,3 +511,42 @@ class AISimAgent:
             df = df.append(df2)
 
         return df
+
+    def deploy_policy(self, policy_id: int, replicas: int = 1):
+
+        class ServeModel:
+            def __init__(self, agent_config: dict, checkpoint_path: str):
+                assert agent_config is not None and isinstance(agent_config, dict), \
+                    "Invalid Agent Config {} when deploying a policy!".format(agent_config)
+
+                assert checkpoint_path is not None and isinstance(agent_config, str), \
+                    "Invalid Checkpoint Path {} when deploying a policy!".format(checkpoint_path)
+
+                self.trainer = ppo.PPOTrainer(config=agent_config)
+                self.trainer.restore(checkpoint_path)
+
+            async def __call__(self, request: Request):
+                json_input = await request.json()
+                obs = json_input["observation"]
+
+                action = self.trainer.compute_action(obs)
+                return {"action": int(action)}
+
+        select_policy_sql = '''SELECT sim_model.name, policy.checkpoint, policy.agent_config FROM policy
+                               INNER JOIN sim_model ON policy.sim_model_id = sim_model.id
+                               WHERE policy.id = {}'''.format(P_MARKER)
+        row = select_record(self.db, sql=select_policy_sql, params=(policy_id,))
+
+        assert row is not None, "Invalid Policy id {}".format(policy_id)
+        model_name, checkpoint, saved_agent_config = row
+
+        agent_config = self._config.copy()
+        agent_config.update(json.loads(saved_agent_config))
+
+        backend = "policy_{}".format(policy_id)
+        self.model_server.create_backend(backend, ServeModel, agent_config, checkpoint,
+                                         config={'num_replicas': replicas})
+        route = "{}/{}".format(model_name, policy_id)
+        self.model_server.create_endpoint("{}_endpoint".format(backend), backend=model_name, route=route)
+
+
