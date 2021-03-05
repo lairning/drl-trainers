@@ -7,14 +7,21 @@ from utils import db_connect, DB_NAME, P_MARKER, select_record, SQLParamList, se
 import json
 import pandas as pd
 
+# WARNING: This is not officially supported
+def local_address():
+    from ray._private.services import find_redis_address
+    addresses = find_redis_address()
+    assert len(addresses) == 1, "More than one Address Found {}".format(addresses)
+    return addresses.pop()
+
 class ModelServer:
-    def __init__(self):
-        try:
-            self.model_server = serve.connect()
-        except RayServeException:
-            self.model_server = serve.start(detached=True)
-        except Exception as e:
-            raise e
+    def __init__(self, address:str=None):
+        if address is not None:
+            ray.init(address=address)
+        else:
+            address = ray.init()
+            print("INFO: Model Server started on {}".format(address))
+        self.model_server = serve.start()
 
         try:
             self.db = db_connect(DB_NAME)
