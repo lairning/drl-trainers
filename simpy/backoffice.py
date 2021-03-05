@@ -48,9 +48,9 @@ class ModelServer:
     def list_endpoints(self):
         return self.model_server.list_endpoints()
 
-    def shut_down(self):
-        self.model_server.shut_down()
-        ray.shut_down()
+    def shutdown(self):
+        self.model_server.shutdown()
+        ray.shutdown()
 
     def deploy_policy(self, policy_id: int, replicas: int = 1):
 
