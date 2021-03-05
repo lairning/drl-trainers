@@ -25,8 +25,11 @@ class ModelServer:
                 ray.init(address=address)
             else:
                 address = ray.init()
-            self.model_server = serve.start(detached=keep_alive)
-            sleep(1)
+            try:
+                self.model_server = serve.start(detached=keep_alive)
+                sleep(1)
+            except RayServeException:
+                self.model_server = serve.connect()
         else:
             self.model_server = serve.connect()
 
