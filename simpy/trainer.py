@@ -33,7 +33,6 @@ def my_ray_init():
     try:
         ray.init(include_dashboard=False, log_to_driver=False, logging_level=0, address='auto')
     except ValueError:
-        print("{} - ray.init() failed with address='auto', trying without it!")
         ray.init(include_dashboard=False, log_to_driver=False, logging_level=0)
     except Exception as e:
         raise e
@@ -83,13 +82,7 @@ class AISimAgent:
         if not ray.is_initialized():
             my_ray_init()
 
-        try:
-            self.model_server = serve.connect()
-        except RayServeException:
-            self.model_server = serve.start(detached=True)
-        except Exception as e:
-            raise e
-
+        self.model_server = None
 
         self._sim_baseline = exec_locals['SimBaseline']
 
@@ -554,6 +547,9 @@ class AISimAgent:
 
         agent_config = self._config.copy()
         agent_config.update(json.loads(saved_agent_config))
+
+        if self.model_server is None:
+            self.model_server = serve.connect()
 
         backend = "policy_{}".format(policy_id)
         self.model_server.create_backend(backend, ServeModel, agent_config, checkpoint,
