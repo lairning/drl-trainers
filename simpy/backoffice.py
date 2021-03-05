@@ -10,21 +10,21 @@ import pandas as pd
 from time import sleep
 
 # WARNING: This is not officially supported
-def local_address():
+def local_server_address():
     from ray._private.services import find_redis_address
     addresses = find_redis_address()
     assert len(addresses) == 1, "More than one Address Found {}".format(addresses)
     return addresses.pop()
 
 class ModelServer:
-    def __init__(self, address:str=None):
+    def __init__(self, address:str=None, keep_alive: bool = False):
         stderrout = sys.stderr
         sys.stderr = open('modelserver.log', 'w')
         if address is not None:
             ray.init(address=address)
         else:
             address = ray.init()
-        self.model_server = serve.start()
+        self.model_server = serve.start(detached=keep_alive)
         sleep(1)
         sys.stderr = stderrout
         print("# INFO: Model Server started on {}".format(address))
