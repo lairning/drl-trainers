@@ -1,5 +1,5 @@
 from starlette.requests import Request
-import requests
+import ray
 from ray import serve
 from ray.serve.exceptions import RayServeException
 import ray.rllib.agents.ppo as ppo
