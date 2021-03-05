@@ -82,8 +82,6 @@ class AISimAgent:
         if not ray.is_initialized():
             my_ray_init()
 
-        self.model_server = None
-
         self._sim_baseline = exec_locals['SimBaseline']
 
         sql = '''SELECT id FROM sim_model WHERE name = {}'''.format(P_MARKER)
@@ -517,44 +515,5 @@ class AISimAgent:
 
         return df
 
-    def deploy_policy(self, policy_id: int, replicas: int = 1):
-
-        class ServeModel:
-            def __init__(self, agent_config: dict, checkpoint_path: str):
-                assert agent_config is not None and isinstance(agent_config, dict), \
-                    "Invalid Agent Config {} when deploying a policy!".format(agent_config)
-
-                assert checkpoint_path is not None and isinstance(agent_config, str), \
-                    "Invalid Checkpoint Path {} when deploying a policy!".format(checkpoint_path)
-
-                self.trainer = ppo.PPOTrainer(config=agent_config)
-                self.trainer.restore(checkpoint_path)
-
-            async def __call__(self, request: Request):
-                json_input = await request.json()
-                obs = json_input["observation"]
-
-                action = self.trainer.compute_action(obs)
-                return {"action": int(action)}
-
-        select_policy_sql = '''SELECT sim_model.name, policy.checkpoint, policy.agent_config FROM policy
-                               INNER JOIN sim_model ON policy.sim_model_id = sim_model.id
-                               WHERE policy.id = {}'''.format(P_MARKER)
-        row = select_record(self.db, sql=select_policy_sql, params=(policy_id,))
-
-        assert row is not None, "Invalid Policy id {}".format(policy_id)
-        model_name, checkpoint, saved_agent_config = row
-
-        agent_config = self._config.copy()
-        agent_config.update(json.loads(saved_agent_config))
-
-        if self.model_server is None:
-            self.model_server = serve.connect()
-
-        backend = "policy_{}".format(policy_id)
-        self.model_server.create_backend(backend, ServeModel, agent_config, checkpoint,
-                                         config={'num_replicas': replicas})
-        route = "{}/{}".format(model_name, policy_id)
-        self.model_server.create_endpoint("{}_endpoint".format(backend), backend=model_name, route=route)
 
 
