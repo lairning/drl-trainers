@@ -30,7 +30,13 @@ def filter_dict(dic_in: dict, keys: set):
 def my_ray_init():
     stderrout = sys.stderr
     sys.stderr = open('ray.log', 'w')
-    ray.init(include_dashboard=False, log_to_driver=False, logging_level=0, address='auto')
+    try:
+        ray.init(include_dashboard=False, log_to_driver=False, logging_level=0, address='auto')
+    except ValueError:
+        print("{} - ray.init() failed with address='auto', trying without it!")
+        ray.init(include_dashboard=False, log_to_driver=False, logging_level=0)
+    except Exception as e:
+        raise e
     sys.stderr = stderrout
 
 
