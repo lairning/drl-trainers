@@ -83,7 +83,13 @@ class AISimAgent:
         if not ray.is_initialized():
             my_ray_init()
 
-        self.model_server = serve.connect()
+        try:
+            self.model_server = serve.connect()
+        except RayServeException:
+            self.model_server = serve.start(detached=True)
+        except Exception as e:
+            raise e
+
 
         self._sim_baseline = exec_locals['SimBaseline']
 
