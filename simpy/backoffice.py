@@ -7,6 +7,7 @@ import ray.rllib.agents.ppo as ppo
 from utils import db_connect, DB_NAME, P_MARKER, select_record, SQLParamList, select_all
 import json
 import pandas as pd
+from time import sleep
 
 # WARNING: This is not officially supported
 def local_address():
@@ -24,6 +25,7 @@ class ModelServer:
         else:
             address = ray.init()
         self.model_server = serve.start()
+        sleep(1)
         sys.stderr = stderrout
         print("# INFO: Model Server started on {}".format(address))
         print("# INFO: Trainers Should Deploy Policies on this Server using address='{}'".format(address))
