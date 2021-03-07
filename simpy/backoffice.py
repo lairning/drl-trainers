@@ -53,6 +53,7 @@ class ModelServer:
         self.model_server.shutdown()
         ray.shutdown()
 
+    # ToDo: Deploy a policiy from a specific Trainer
     def deploy_policy(self, policy_id: int, replicas: int = 1):
 
         class ServeModel:
@@ -93,10 +94,10 @@ class ModelServer:
         route = "{}/{}".format(model_name, policy_id)
         self.model_server.create_endpoint("{}_endpoint".format(backend), backend=model_name, route=route)
 
+    # ToDo: Select policies from a Trainer
     def get_policies(self):
         sql = '''SELECT sim_config_id as sim_config, id as policy, session_id as session
-                 FROM policy
-                 WHERE sim_model_id = {}'''.format(P_MARKER)
+                 FROM policy '''.format(P_MARKER)
         return pd.read_sql_query(sql, self.db, params=(self._model_id,))
 
 
