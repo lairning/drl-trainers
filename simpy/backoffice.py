@@ -70,8 +70,9 @@ class ModelServer:
 
                 assert checkpoint_path is not None and isinstance(agent_config, str), \
                     "Invalid Checkpoint Path {} when deploying a policy!".format(checkpoint_path)
-
+                print("### 1")
                 self.trainer = ppo.PPOTrainer(config=agent_config)
+                print("### 2")
                 self.trainer.restore(checkpoint_path)
 
             async def __call__(self, request: Request):
@@ -93,8 +94,10 @@ class ModelServer:
             self.model_server = serve.connect()
 
         backend = policy_id2str(policy_id)
+        print(saved_agent_config)
+        print(checkpoint)
         self.model_server.create_backend(backend, ServeModel, saved_agent_config, checkpoint,
-                                         config={'num_replicas': replicas}, env=CondaEnv('simpy'))
+                                         config={'num_replicas': replicas})
         print("# Backend Configured")
         route = "{}".format(policy_id)
         self.model_server.create_endpoint("{}_endpoint".format(backend), backend=model_name, route=route)
