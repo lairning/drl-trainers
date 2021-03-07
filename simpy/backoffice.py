@@ -17,6 +17,9 @@ def local_server_address():
     assert len(addresses) == 1, "More than one Address Found {}".format(addresses)
     return addresses.pop()
 
+def policy_id2str(policy_id:int):
+    return "policy_{}".format(policy_id)
+
 class ModelServer:
     def __init__(self, address:str=None, keep_alive: bool = False):
         stderrout = sys.stderr
@@ -45,6 +48,9 @@ class ModelServer:
 
     def list_backends(self):
         return self.model_server.list_backends()
+
+    def delete_backend(self, policy_id: int):
+        return self.model_server.delete_backend()
 
     def list_endpoints(self):
         return self.model_server.list_endpoints()
@@ -82,13 +88,10 @@ class ModelServer:
         assert row is not None, "Invalid Policy id {}".format(policy_id)
         model_name, checkpoint, saved_agent_config = row
 
-        # agent_config = self._config.copy()
-        # agent_config.update(json.loads(saved_agent_config))
-
         if self.model_server is None:
             self.model_server = serve.connect()
 
-        backend = "policy_{}".format(policy_id)
+        backend = policy_id2str(policy_id)
         self.model_server.create_backend(backend, ServeModel, saved_agent_config, checkpoint,
                                          config={'num_replicas': replicas})
         route = "{}".format(policy_id)
