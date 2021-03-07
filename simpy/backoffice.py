@@ -8,6 +8,7 @@ from utils import db_connect, DB_NAME, P_MARKER, select_record, SQLParamList, se
 import json
 import pandas as pd
 from time import sleep
+from datetime import datetime
 
 # WARNING: This is not officially supported
 def local_server_address():
@@ -34,8 +35,8 @@ class ModelServer:
             self.model_server = serve.connect()
 
         sys.stderr = stderrout
-        print("# INFO: Model Server started on {}".format(address))
-        print("# INFO: Trainers Should Deploy Policies on this Server using address='{}'".format(address))
+        print("{} INFO Model Server started on {}".format(datetime.now(),address))
+        print("{} INFO Trainers Should Deploy Policies on this Server using address='{}'".format(datetime.now(),address))
 
         try:
             self.db = db_connect(DB_NAME)
@@ -97,3 +98,9 @@ class ModelServer:
                  FROM policy
                  WHERE sim_model_id = {}'''.format(P_MARKER)
         return pd.read_sql_query(sql, self.db, params=(self._model_id,))
+
+
+
+class CloudCluster():
+    def __init__(self):
+        pass
