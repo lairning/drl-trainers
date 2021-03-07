@@ -50,7 +50,7 @@ class ModelServer:
         return self.model_server.list_backends()
 
     def delete_backend(self, policy_id: int):
-        return self.model_server.delete_backend(policy_id2str(policy_id))
+        return self.model_server.delete_backend(backend_tag=policy_id2str(policy_id))
 
     def list_endpoints(self):
         return self.model_server.list_endpoints()
