@@ -3,6 +3,7 @@ from starlette.requests import Request
 import ray
 from ray import serve
 from ray.serve.exceptions import RayServeException
+from ray.serve import CondaEnv
 import ray.rllib.agents.ppo as ppo
 from utils import db_connect, DB_NAME, P_MARKER, select_record, SQLParamList, select_all
 import json
@@ -93,7 +94,7 @@ class ModelServer:
 
         backend = policy_id2str(policy_id)
         self.model_server.create_backend(backend, ServeModel, saved_agent_config, checkpoint,
-                                         config={'num_replicas': replicas}, env='simpy')
+                                         config={'num_replicas': replicas}, env=CondaEnv('simpy'))
         print("# Backend Configured")
         route = "{}".format(policy_id)
         self.model_server.create_endpoint("{}_endpoint".format(backend), backend=model_name, route=route)
