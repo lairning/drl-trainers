@@ -82,14 +82,14 @@ class ModelServer:
         assert row is not None, "Invalid Policy id {}".format(policy_id)
         model_name, checkpoint, saved_agent_config = row
 
-        agent_config = self._config.copy()
-        agent_config.update(json.loads(saved_agent_config))
+        # agent_config = self._config.copy()
+        # agent_config.update(json.loads(saved_agent_config))
 
         if self.model_server is None:
             self.model_server = serve.connect()
 
         backend = "policy_{}".format(policy_id)
-        self.model_server.create_backend(backend, ServeModel, agent_config, checkpoint,
+        self.model_server.create_backend(backend, ServeModel, saved_agent_config, checkpoint,
                                          config={'num_replicas': replicas})
         route = "{}/{}".format(model_name, policy_id)
         self.model_server.create_endpoint("{}_endpoint".format(backend), backend=model_name, route=route)
