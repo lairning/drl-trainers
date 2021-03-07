@@ -53,7 +53,7 @@ class ModelServer:
         self.model_server.shutdown()
         ray.shutdown()
 
-    # ToDo: Deploy a policiy from a specific Trainer
+    # ToDo: Deploy a policy from a specific Trainer
     def deploy_policy(self, policy_id: int, replicas: int = 1):
 
         class ServeModel:
