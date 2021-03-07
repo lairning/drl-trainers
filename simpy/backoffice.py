@@ -97,8 +97,8 @@ class ModelServer:
     # ToDo: Select policies from a Trainer
     def get_policies(self):
         sql = '''SELECT sim_config_id as sim_config, id as policy, session_id as session
-                 FROM policy '''.format(P_MARKER)
-        return pd.read_sql_query(sql, self.db, params=(self._model_id,))
+                 FROM policy '''.
+        return pd.read_sql_query(sql, self.db)
 
 
 
