@@ -5,7 +5,7 @@ from ray import serve
 from ray.serve.exceptions import RayServeException
 from ray.serve import CondaEnv
 import ray.rllib.agents.ppo as ppo
-from utils import db_connect, DB_NAME, P_MARKER, select_record, SQLParamList, select_all
+from utils import db_connect, BACKOFFICE_DB_NAME, P_MARKER, select_record, SQLParamList, select_all
 import json
 import pandas as pd
 from time import sleep
@@ -23,8 +23,8 @@ def local_server_address():
 def policy_id2str(model_name:str, policy_id:int):
     return "{}_policy_{}".format(model_name, policy_id)
 
-class ModelServer:
-    def __init__(self, address:str=None, keep_alive: bool = False):
+class BackOffice:
+    def __init__(self, address:str=None, model_server_keep_alive: bool = False):
         stderrout = sys.stderr
         sys.stderr = open('modelserver.log', 'w')
         if not ray.is_initialized():
@@ -33,7 +33,7 @@ class ModelServer:
             else:
                 address = ray.init()
             try:
-                self.model_server = serve.start(detached=keep_alive)
+                self.model_server = serve.start(detached=model_server_keep_alive)
                 sleep(1)
             except RayServeException:
                 self.model_server = serve.connect()
@@ -45,9 +45,20 @@ class ModelServer:
         print("{} INFO Trainers Should Deploy Policies on this Server using address='{}'".format(datetime.now(),address))
 
         try:
-            self.db = db_connect(DB_NAME)
+            self.db = db_connect(BACKOFFICE_DB_NAME)
         except Exception as e:
             raise e
+
+    def launch_trainer(self, trainer_name: str = None):
+        assert trainer_name is not None and isinstance(trainer_name,str), "Invalid Trainer Name {}".format(trainer_name)
+        # Does the Trainer exists?
+        sql = '''SELECT data FROM trainer WHERE name = {}'''.format(P_MARKER)
+        params = (trainer_name,)
+        row = select_record(self.db, sql=sql, params=params)
+        if row is None:
+            cursor = self.db.cursor()
+            cursor.execute('''INSERT INTO trainer (name) VALUES ({})'''.format(P_MARKER), (trainer_name,))
+
 
     def list_backends(self):
         return self.model_server.list_backends()
