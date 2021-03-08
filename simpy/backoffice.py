@@ -11,6 +11,8 @@ import pandas as pd
 from time import sleep
 from datetime import datetime
 
+from simpy_env import SimpyEnv
+
 # WARNING: This is not officially supported
 def local_server_address():
     from ray._private.services import find_redis_address
@@ -65,6 +67,7 @@ class ModelServer:
 
         class ServeModel:
             def __init__(self, agent_config: dict, checkpoint_path: str):
+                agent_config["env"] = SimpyEnv
                 print(agent_config)
                 #assert agent_config is not None and isinstance(agent_config, dict), \
                 #    "Invalid Agent Config {} when deploying a policy!".format(agent_config)
