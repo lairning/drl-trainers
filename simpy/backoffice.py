@@ -98,7 +98,7 @@ class ModelServer:
         print(saved_agent_config)
         print(checkpoint)
         self.model_server.create_backend(backend, ServeModel, saved_agent_config, checkpoint,
-                                         config={'num_replicas': replicas})
+                                         config={'num_replicas': replicas}, env=CondaEnv("simpy"))
         print("# Backend Configured")
         route = "/{}".format(policy_id)
         self.model_server.create_endpoint("{}_endpoint".format(backend), backend=model_name, route=route)
