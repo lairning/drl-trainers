@@ -99,7 +99,7 @@ class ModelServer:
         self.model_server.create_backend(backend, ServeModel, saved_agent_config, checkpoint,
                                          config={'num_replicas': replicas})
         print("# Backend Configured")
-        route = "{}".format(policy_id)
+        route = "/{}".format(policy_id)
         self.model_server.create_endpoint("{}_endpoint".format(backend), backend=model_name, route=route)
 
     # ToDo: Select policies from a Trainer
