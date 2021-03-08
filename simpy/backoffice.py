@@ -67,7 +67,25 @@ class ModelServer:
 
         class ServeModel:
             def __init__(self, agent_config: dict, checkpoint_path: str):
+
+                # ToDo: Replace this after testing
+                sim_name = 'trafic_light'
+                exec_locals = {}
+                try:
+                    exec(
+                        "from models.{} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel, BASE_CONFIG".format(
+                            sim_name), {},
+                        exec_locals)
+                except ModuleNotFoundError:
+                    raise Exception(" Model '{}' not found!!".format(sim_name))
+                except Exception as e:
+                    raise e
+
                 agent_config["env"] = SimpyEnv
+                agent_config["env_config"] = {"n_actions"        : exec_locals['N_ACTIONS'],
+                                              "observation_space": exec_locals['OBSERVATION_SPACE'],
+                                              "sim_model"        : exec_locals['SimModel'],
+                                              "sim_config"       : exec_locals['BASE_CONFIG']}
                 print(agent_config)
                 #assert agent_config is not None and isinstance(agent_config, dict), \
                 #    "Invalid Agent Config {} when deploying a policy!".format(agent_config)
