@@ -20,8 +20,8 @@ def local_server_address():
     assert len(addresses) == 1, "More than one Address Found {}".format(addresses)
     return addresses.pop()
 
-def policy_id2str(policy_id:int):
-    return "policy_{}".format(policy_id)
+def policy_id2str(model_name:str, policy_id:int):
+    return "{}_policy_{}".format(model_name, policy_id)
 
 class ModelServer:
     def __init__(self, address:str=None, keep_alive: bool = False):
@@ -52,8 +52,8 @@ class ModelServer:
     def list_backends(self):
         return self.model_server.list_backends()
 
-    def delete_backend(self, policy_id: int):
-        return self.model_server.delete_backend(backend_tag=policy_id2str(policy_id))
+    def delete_backend(self, backend_name: str):
+        return self.model_server.delete_backend(backend_tag=backend_name)
 
     def list_endpoints(self):
         return self.model_server.list_endpoints()
@@ -116,20 +116,21 @@ class ModelServer:
         if self.model_server is None:
             self.model_server = serve.connect()
 
-        backend = policy_id2str(policy_id)
+        backend = policy_id2str(model_name,policy_id)
         print(saved_agent_config)
         print(checkpoint)
         self.model_server.create_backend(backend, ServeModel, saved_agent_config, checkpoint,
                                          config={'num_replicas': replicas}, env=CondaEnv("simpy"))
         print("# Backend Configured")
-        route = "/{}".format(policy_id)
-        self.model_server.create_endpoint("{}_endpoint".format(backend), backend=model_name, route=route)
+        route = "/{}".format(backend)
+        self.model_server.create_endpoint("{}_endpoint".format(backend), backend=backend, route=route)
 
     # ToDo: Select policies from a Trainer
     def get_policies(self):
         sql = '''SELECT sim_model_id as model_id, sim_config_id as sim_config_id, id as policy_id
                  FROM policy '''
         return pd.read_sql_query(sql, self.db)
+
 
 
 
