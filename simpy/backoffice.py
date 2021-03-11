@@ -26,7 +26,7 @@ _CMD_PREFIX = ". {}/etc/profile.d/conda.sh && conda activate simpy && ".format(_
 
 
 # ToDo: Add more exception handling
-def launch_trainer(self, trainer_name: str = None):
+def launch_trainer(trainer_name: str = None):
     sql = '''SELECT data FROM trainer_cluster WHERE name = {}'''.format(P_MARKER)
     params = (trainer_name,)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=params)
