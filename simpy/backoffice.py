@@ -5,13 +5,113 @@ from ray import serve
 from ray.serve.exceptions import RayServeException
 from ray.serve import CondaEnv
 import ray.rllib.agents.ppo as ppo
-from utils import db_connect, BACKOFFICE_DB_NAME, P_MARKER, select_record, SQLParamList, select_all
+from utils import db_connect, BACKOFFICE_DB_NAME, TRAINER_DB_NAME, P_MARKER, select_record, SQLParamList, select_all, table_fetch_all
 import json
 import pandas as pd
 from time import sleep
 from datetime import datetime
 
 from simpy_env import SimpyEnv
+import subprocess
+from configs.standard_azure_autoscaler import config
+import os
+
+_SHELL = os.getenv('SHELL')
+_CONDA_PREFIX = os.getenv('CONDA_PREFIX_1') if 'CONDA_PREFIX_1' in os.environ.keys() else os.getenv('CONDA_PREFIX')
+
+_BACKOFFICE_DB = db_connect(BACKOFFICE_DB_NAME)
+_TRAINER_YAML = lambda trainer_name: "trainer_configs/{}_azure_scaler.yaml".format(trainer_name)
+_TRAINER_PATH = lambda trainer_name: "trainer_"+trainer_name
+_CMD_PREFIX = ". {}/etc/profile.d/conda.sh && conda activate simpy && ".format(_CONDA_PREFIX)
+
+
+# ToDo: Add more exception handling
+def launch_trainer(self, trainer_name: str = None):
+    sql = '''SELECT data FROM trainer_cluster WHERE name = {}'''.format(P_MARKER)
+    params = (trainer_name,)
+    row = select_record(_BACKOFFICE_DB, sql=sql, params=params)
+    if row is None:
+        cursor = self.db.cursor()
+        cursor.execute('''INSERT INTO trainer_cluster (name) VALUES ({})'''.format(P_MARKER), (trainer_name,))
+    #Check if training folder exists
+    result = subprocess.run(['ls',_TRAINER_PATH(trainer_name)], capture_output=True, text=True)
+    if result.returncode != 0:
+        # Create trainer folder
+        result = subprocess.run(['cp', '-r', 'trainer_template', _TRAINER_PATH(trainer_name)], capture_output=True,
+                                text=True)
+        if result.returncode:
+            print("Error Creating Trainer Directory {}".format(_TRAINER_PATH(trainer_name)))
+            print(result.stderr)
+        # Create trainer yaml config file
+    config_file = open(_TRAINER_YAML(trainer_name), "wt")
+    config_file.write(config(trainer_name))
+    config_file.close()
+    # launch the cluster
+    result = subprocess.run(_CMD_PREFIX + "ray up {} --no-config-cache -y".format(_TRAINER_YAML(
+        trainer_name)), shell=True, capture_output=True, text=True, executable=_SHELL)
+    self.db.commit()
+    return result
+
+def tear_down_cluster(trainer_name: str = None):
+    result = subprocess.run(_CMD_PREFIX + "ray down {} -y".format(_TRAINER_YAML(trainer_name)),
+                            shell=True, capture_output=True, text=True, executable=_SHELL)
+    return result
+
+def sync_cluster_data(trainer_name: str = None):
+    result = subprocess.run(_CMD_PREFIX + "ray rsync_down {} '/home/ubuntu/trainer/' '{}'".format(
+        _TRAINER_YAML(trainer_name), _TRAINER_PATH(trainer_name)),
+                            shell=True, capture_output=True, text=True, executable=_SHELL)
+    assert not result.returncode, \
+        "Error on SyncDown {} {}\n{}".format(_TRAINER_YAML(trainer_name), _TRAINER_PATH(trainer_name), result.stderr)
+
+    # Insert Update Policy Data from the Trainer DB
+    # get the cluster id
+    sql = '''SELECT id FROM trainer_cluster WHERE name = {}'''.format(P_MARKER)
+    params = (trainer_name,)
+    row = select_record(_BACKOFFICE_DB, sql=sql, params=params)
+    assert row is not None, "Cluster {} does not Exist in {}.db".format(trainer_name,BACKOFFICE_DB_NAME)
+    cluster_id, = row
+    # get the policy data from the trainer db
+    trainer_db = db_connect(_TRAINER_PATH(trainer_name)+"/"+TRAINER_DB_NAME)
+    sql = '''SELECT policy.id, sim_model.name, policy.checkpoint, policy.agent_config
+             FROM policy INNER JOIN sim_model ON policy.sim_model_id = sim_model.id'''
+    cluster_policies = select_all(trainer_db, sql=sql)
+    insert_sql = '''INSERT OR IGNORE INTO policy (
+                        cluster_id,
+                        policy_id,
+                        model_name,
+                        checkpoint,        
+                        agent_config
+                    ) VALUES ({})'''.format(SQLParamList(5))
+    for policy_data in cluster_policies:
+        cursor = _BACKOFFICE_DB.execute(insert_sql, (cluster_id,)+policy_data)
+
+    _BACKOFFICE_DB.commit()
+
+def get_policies():
+    sql = '''SELECT policy.cluster_id as cluster_id, 
+                    trainer_cluster.name as cluster_name, 
+                    policy.model_name as model_name,
+                    policy.checkpoint as checkpoint
+             FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id'''
+    return pd.read_sql_query(sql, _BACKOFFICE_DB)
+
+# Removes backend services, and deletes local data
+def remove_trainer(trainer_name: str = None):
+    result = subprocess.run(['rm', '-r', _TRAINER_PATH(trainer_name)], capture_output=True, text=True)
+    if result.returncode:
+        print(result.stderr)
+    result = subprocess.run(['rm', _TRAINER_YAML(trainer_name)], capture_output=True, text=True)
+    if result.returncode:
+        print(result.stderr)
+    cursor = _BACKOFFICE_DB.cursor()
+    sql = '''DELETE FROM trainer WHERE name = {}'''.format(P_MARKER)
+    cursor.execute(sql, (trainer_name,))
+    _BACKOFFICE_DB.commit()
+
+
+
+#-------------------------------------------------- Old Code
 
 # WARNING: This is not officially supported
 def local_server_address():
@@ -20,11 +120,13 @@ def local_server_address():
     assert len(addresses) == 1, "More than one Address Found {}".format(addresses)
     return addresses.pop()
 
-def policy_id2str(model_name:str, policy_id:int):
+
+def policy_id2str(model_name: str, policy_id: int):
     return "{}_policy_{}".format(model_name, policy_id)
 
+
 class BackOffice:
-    def __init__(self, address:str=None, model_server_keep_alive: bool = False):
+    def __init__(self, address: str = None, model_server_keep_alive: bool = False):
         stderrout = sys.stderr
         sys.stderr = open('modelserver.log', 'w')
         if not ray.is_initialized():
@@ -41,37 +143,19 @@ class BackOffice:
             self.model_server = serve.connect()
 
         sys.stderr = stderrout
-        print("{} INFO Model Server started on {}".format(datetime.now(),address))
-        print("{} INFO Trainers Should Deploy Policies on this Server using address='{}'".format(datetime.now(),address))
+        print("{} INFO Model Server started on {}".format(datetime.now(), address))
+        print(
+            "{} INFO Trainers Should Deploy Policies on this Server using address='{}'".format(datetime.now(), address))
 
         try:
             self.db = db_connect(BACKOFFICE_DB_NAME)
         except Exception as e:
             raise e
 
-    def launch_trainer(self, trainer_name: str = None):
-        assert trainer_name is not None and isinstance(trainer_name,str), "Invalid Trainer Name {}".format(trainer_name)
-        # Does the Trainer exists?
-        sql = '''SELECT data FROM trainer WHERE name = {}'''.format(P_MARKER)
-        params = (trainer_name,)
-        row = select_record(self.db, sql=sql, params=params)
-        if row is None:
-            cursor = self.db.cursor()
-            cursor.execute('''INSERT INTO trainer (name) VALUES ({})'''.format(P_MARKER), (trainer_name,))
+        self.trainer_path = lambda trainer_name: "trainer_" + trainer_name
+        self.trainer_yaml = lambda trainer_name: "trainer_configs/{}_azure_scaler.yaml".format(trainer_name)
+        self.activate_env = ". {}/etc/profile.d/conda.sh && conda activate simpy && ".format(os.getenv('CONDA_PREFIX'))
 
-
-    def list_backends(self):
-        return self.model_server.list_backends()
-
-    def delete_backend(self, backend_name: str):
-        return self.model_server.delete_backend(backend_tag=backend_name)
-
-    def list_endpoints(self):
-        return self.model_server.list_endpoints()
-
-    def shutdown(self):
-        self.model_server.shutdown()
-        ray.shutdown()
 
     # ToDo: Deploy a policy from a specific Trainer
     def deploy_policy(self, policy_id: int, replicas: int = 1):
@@ -98,10 +182,10 @@ class BackOffice:
                                               "sim_model"        : exec_locals['SimModel'],
                                               "sim_config"       : exec_locals['BASE_CONFIG']}
                 print(agent_config)
-                #assert agent_config is not None and isinstance(agent_config, dict), \
+                # assert agent_config is not None and isinstance(agent_config, dict), \
                 #    "Invalid Agent Config {} when deploying a policy!".format(agent_config)
                 print(checkpoint_path)
-                #assert checkpoint_path is not None and isinstance(agent_config, str), \
+                # assert checkpoint_path is not None and isinstance(agent_config, str), \
                 #    "Invalid Checkpoint Path {} when deploying a policy!".format(checkpoint_path)
                 print("### 1")
                 self.trainer = ppo.PPOTrainer(config=agent_config)
@@ -127,7 +211,7 @@ class BackOffice:
         if self.model_server is None:
             self.model_server = serve.connect()
 
-        backend = policy_id2str(model_name,policy_id)
+        backend = policy_id2str(model_name, policy_id)
         print(saved_agent_config)
         print(checkpoint)
         self.model_server.create_backend(backend, ServeModel, saved_agent_config, checkpoint,
@@ -143,8 +227,6 @@ class BackOffice:
         return pd.read_sql_query(sql, self.db)
 
 
-
-
-class CloudCluster():
+class CloudCluster:
     def __init__(self):
         pass

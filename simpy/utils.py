@@ -25,13 +25,16 @@ def select_record(dbcon, sql: str, params: tuple) -> tuple:
     return cursor.fetchone()
 
 
-def select_all(dbcon, sql: str, params: tuple) -> list:
+def select_all(dbcon, sql: str, params: tuple = None ) -> list:
     cursor = dbcon.cursor()
-    cursor.execute(sql, params)
+    if params is None:
+        cursor.execute(sql)
+    else:
+        cursor.execute(sql, params)
     return cursor.fetchall()
 
 
-def table_fetch_all(table: str):
-    db = db_connect(DB_NAME)
+def table_fetch_all(dbname: str, table: str):
+    db = db_connect(dbname)
     sql = '''SELECT * FROM {}'''.format(table)
     return pd.read_sql_query(sql, db)
