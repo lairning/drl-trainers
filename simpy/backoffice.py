@@ -31,7 +31,7 @@ def launch_trainer(trainer_name: str = None):
     params = (trainer_name,)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=params)
     if row is None:
-        cursor = self.db.cursor()
+        cursor = _BACKOFFICE_DB.cursor()
         cursor.execute('''INSERT INTO trainer_cluster (name) VALUES ({})'''.format(P_MARKER), (trainer_name,))
     #Check if training folder exists
     result = subprocess.run(['ls',_TRAINER_PATH(trainer_name)], capture_output=True, text=True)
@@ -49,15 +49,15 @@ def launch_trainer(trainer_name: str = None):
     # launch the cluster
     result = subprocess.run(_CMD_PREFIX + "ray up {} --no-config-cache -y".format(_TRAINER_YAML(
         trainer_name)), shell=True, capture_output=True, text=True, executable=_SHELL)
-    self.db.commit()
+    _BACKOFFICE_DB.commit()
     return result
 
-def tear_down_cluster(trainer_name: str = None):
+def tear_down_trainer(trainer_name: str = None):
     result = subprocess.run(_CMD_PREFIX + "ray down {} -y".format(_TRAINER_YAML(trainer_name)),
                             shell=True, capture_output=True, text=True, executable=_SHELL)
     return result
 
-def sync_cluster_data(trainer_name: str = None):
+def get_trainer_data(trainer_name: str = None):
     result = subprocess.run(_CMD_PREFIX + "ray rsync_down {} '/home/ubuntu/trainer/' '{}'".format(
         _TRAINER_YAML(trainer_name), _TRAINER_PATH(trainer_name)),
                             shell=True, capture_output=True, text=True, executable=_SHELL)
