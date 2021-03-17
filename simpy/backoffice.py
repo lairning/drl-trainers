@@ -3,6 +3,7 @@ from starlette.requests import Request
 import ray
 from ray import serve
 from ray.serve.exceptions import RayServeException
+from ray.serve.api import Client as ServeClient
 from ray.serve import CondaEnv
 import ray.rllib.agents.ppo as ppo
 from utils import db_connect, BACKOFFICE_DB_NAME, TRAINER_DB_NAME, P_MARKER, select_record, SQLParamList, select_all, table_fetch_all
@@ -109,6 +110,83 @@ def remove_trainer(trainer_name: str = None):
     cursor.execute(sql, (trainer_name,))
     _BACKOFFICE_DB.commit()
 
+def start_backend_server(address: str = None):
+    stderrout = sys.stderr
+    sys.stderr = open('modelserver.log', 'w')
+    backend_id = None
+    if not ray.is_initialized():
+        if address is not None:
+            ray.init(address=address)
+        else:
+            address = ray.init()
+        try:
+            backend_id = serve.start(detached=True)
+            sleep(1)
+        except RayServeException:
+            backend_id = serve.connect()
+    else:
+        backend_id = serve.connect()
+
+    sys.stderr = stderrout
+    print("{} INFO Model Server started on {}".format(datetime.now(), address))
+    print(
+        "{} INFO Trainers Should Deploy Policies on this Server using address='{}'".format(datetime.now(), address))
+    return backend_id
+
+
+def deploy_policy(self, backend_server: ServeClient , trainer_id: int, policy_id: int, replicas: int = 1):
+    class ServeModel:
+        def __init__(self, agent_config: dict, checkpoint_path: str):
+
+            # ToDo: Replace this after testing
+            sim_name = 'trafic_light'
+            exec_locals = {}
+            try:
+                exec(
+                    "from models.{} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel, BASE_CONFIG".format(
+                        sim_name), {},
+                    exec_locals)
+            except ModuleNotFoundError:
+                raise Exception(" Model '{}' not found!!".format(sim_name))
+            except Exception as e:
+                raise e
+
+            agent_config["env"] = SimpyEnv
+            agent_config["env_config"] = {"n_actions"        : exec_locals['N_ACTIONS'],
+                                          "observation_space": exec_locals['OBSERVATION_SPACE'],
+                                          "sim_model"        : exec_locals['SimModel'],
+                                          "sim_config"       : exec_locals['BASE_CONFIG']}
+            print(agent_config)
+            # assert agent_config is not None and isinstance(agent_config, dict), \
+            #    "Invalid Agent Config {} when deploying a policy!".format(agent_config)
+            print(checkpoint_path)
+            # assert checkpoint_path is not None and isinstance(agent_config, str), \
+            #    "Invalid Checkpoint Path {} when deploying a policy!".format(checkpoint_path)
+            self.trainer = ppo.PPOTrainer(config=agent_config)
+            self.trainer.restore(checkpoint_path)
+
+        async def __call__(self, request: Request):
+            json_input = await request.json()
+            obs = json_input["observation"]
+
+            action = self.trainer.compute_action(obs)
+            return {"action": int(action)}
+
+    sql = '''SELECT trainer_cluster.name, policy.checkpoint, policy.agent_config
+             FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id
+             WHERE cluster_id = {}, policy_id = {}'''.format(P_MARKER, P_MARKER)
+    row = select_record(self.db, sql=sql, params=(trainer_id,policy_id))
+
+    assert row is not None, "Invalid cluster_id {} and policy_id {}".format(trainer_id, policy_id)
+    trainer_name, checkpoint, saved_agent_config = row
+    saved_agent_config = json.loads(saved_agent_config)
+
+    backend_name = "{}_policy_{}".format(trainer_name, policy_id)
+    backend_server.create_backend(backend_name, ServeModel, saved_agent_config, checkpoint,
+                                     config={'num_replicas': replicas}, env=CondaEnv("simpy"))
+    print("# Backend Configured")
+    route = "/{}".format(backend_name)
+    backend_server.create_endpoint("{}_endpoint".format(backend_name), backend=backend_name, route=route)
 
 
 #-------------------------------------------------- Old Code
@@ -120,13 +198,12 @@ def local_server_address():
     assert len(addresses) == 1, "More than one Address Found {}".format(addresses)
     return addresses.pop()
 
-
 def policy_id2str(model_name: str, policy_id: int):
     return "{}_policy_{}".format(model_name, policy_id)
 
 
-class BackOffice:
-    def __init__(self, address: str = None, model_server_keep_alive: bool = False):
+class BackEndServer(ServeClient):
+    def __init__(self, address: str = None, ):
         stderrout = sys.stderr
         sys.stderr = open('modelserver.log', 'w')
         if not ray.is_initialized():
@@ -135,7 +212,7 @@ class BackOffice:
             else:
                 address = ray.init()
             try:
-                self.model_server = serve.start(detached=model_server_keep_alive)
+                self.model_server = serve.start(detached=False)
                 sleep(1)
             except RayServeException:
                 self.model_server = serve.connect()
