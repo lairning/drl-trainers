@@ -135,7 +135,7 @@ def start_backend_server(address: str = None):
     return backend_id
 
 
-def deploy_policy(self, backend_server: ServeClient , trainer_id: int, policy_id: int, replicas: int = 1):
+def deploy_policy(backend_server: ServeClient , trainer_id: int, policy_id: int, replicas: int = 1):
     class ServeModel:
         def __init__(self, agent_config: dict, checkpoint_path: str):
 
