@@ -140,15 +140,14 @@ def deploy_policy(backend_server: ServeClient , trainer_id: int, policy_id: int,
         def __init__(self, agent_config: dict, checkpoint_path: str):
 
             # ToDo: Replace this after testing
-            sim_name = 'trafic_light'
+            sim_path = 'trainer_traffic_light.models.traffic_light'
             exec_locals = {}
             try:
                 exec(
-                    "from models.{} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel, BASE_CONFIG".format(
-                        sim_name), {},
-                    exec_locals)
+                    "from {} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel, BASE_CONFIG".format(
+                        sim_path), {}, exec_locals)
             except ModuleNotFoundError:
-                raise Exception(" Model '{}' not found!!".format(sim_name))
+                raise Exception(" Model '{}' not found!!".format(sim_path))
             except Exception as e:
                 raise e
 
