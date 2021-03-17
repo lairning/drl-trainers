@@ -90,8 +90,9 @@ def get_trainer_data(trainer_name: str = None):
     _BACKOFFICE_DB.commit()
 
 def get_policies():
-    sql = '''SELECT policy.cluster_id as cluster_id, 
-                    trainer_cluster.name as cluster_name, 
+    sql = '''SELECT policy.cluster_id as trainer_id,
+                    trainer_cluster.name as trainer_name,
+                    policy.policy_id as policy_id, 
                     policy.model_name as model_name,
                     policy.checkpoint as checkpoint
              FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id'''
