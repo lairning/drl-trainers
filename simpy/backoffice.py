@@ -176,7 +176,7 @@ def deploy_policy(backend_server: ServeClient , trainer_id: int, policy_id: int,
     sql = '''SELECT trainer_cluster.name, policy.checkpoint, policy.agent_config
              FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id
              WHERE cluster_id = {}, policy_id = {}'''.format(P_MARKER, P_MARKER)
-    row = select_record(self.db, sql=sql, params=(trainer_id,policy_id))
+    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,policy_id))
 
     assert row is not None, "Invalid cluster_id {} and policy_id {}".format(trainer_id, policy_id)
     trainer_name, checkpoint, saved_agent_config = row
