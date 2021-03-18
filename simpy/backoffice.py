@@ -119,13 +119,20 @@ def start_backend_server(addr: str = None):
             ray.init(address=addr)
         else:
             addr = ray.init()
-    try:
-        # backend_id = serve.start(detached=True)
-        # sleep(1)
-    # except RayServeException:
-        backend_id = serve.connect()
-    except:
         backend_id = serve.start(detached=True)
+    else:
+        try:
+            # backend_id = serve.start(detached=True)
+            # sleep(1)
+        # except RayServeException:
+            backend_id = serve.connect()
+        except RayServeException:
+            ray.shutdown()
+            if addr is not None:
+                ray.init(address=addr)
+            else:
+                addr = ray.init()
+            backend_id = serve.start(detached=True)
 
     sys.stderr = stderrout
     print("{} INFO Model Server started on {}".format(datetime.now(), addr))
