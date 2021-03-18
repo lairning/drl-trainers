@@ -118,7 +118,8 @@ def start_backend_server(addr: str = None):
         if addr is not None:
             ray.init(address=addr)
         else:
-            addr = ray.init()
+            result = ray.init()
+            addr = result['node_ip_address']
         backend_id = serve.start(detached=True)
     else:
         try:
@@ -131,7 +132,8 @@ def start_backend_server(addr: str = None):
             if addr is not None:
                 ray.init(address=addr)
             else:
-                addr = ray.init()
+                result = ray.init()
+                addr = result['node_ip_address']
             backend_id = serve.start(detached=True)
 
     sys.stderr = stderrout
@@ -143,10 +145,10 @@ def start_backend_server(addr: str = None):
 
 def deploy_policy(backend_server: ServeClient , trainer_id: int, policy_id: int, replicas: int = 1):
     class ServeModel:
-        def __init__(self, agent_config: dict, checkpoint_path: str):
+        def __init__(self, agent_config: dict, checkpoint_path: str, trainer_name: str, model_name: str):
 
             # ToDo: Replace this after testing
-            sim_path = 'trainer_traffic_light.models.traffic_light'
+            sim_path = '{}.models.{}'.format(_TRAINER_PATH(trainer_name), model_name)
             exec_locals = {}
             try:
                 exec(
@@ -162,10 +164,10 @@ def deploy_policy(backend_server: ServeClient , trainer_id: int, policy_id: int,
                                           "observation_space": exec_locals['OBSERVATION_SPACE'],
                                           "sim_model"        : exec_locals['SimModel'],
                                           "sim_config"       : exec_locals['BASE_CONFIG']}
-            print(agent_config)
+            # print(agent_config)
             # assert agent_config is not None and isinstance(agent_config, dict), \
             #    "Invalid Agent Config {} when deploying a policy!".format(agent_config)
-            checkpoint_path = "trainer_traffic_light"+checkpoint_path[1:]
+            checkpoint_path = _TRAINER_PATH(trainer_name)+checkpoint_path[1:]
             print(checkpoint_path)
             # assert checkpoint_path is not None and isinstance(agent_config, str), \
             #    "Invalid Checkpoint Path {} when deploying a policy!".format(checkpoint_path)
@@ -179,17 +181,17 @@ def deploy_policy(backend_server: ServeClient , trainer_id: int, policy_id: int,
             action = self.trainer.compute_action(obs)
             return {"action": int(action)}
 
-    sql = '''SELECT trainer_cluster.name, policy.checkpoint, policy.agent_config
+    sql = '''SELECT trainer_cluster.name, policy.model_name, policy.checkpoint, policy.agent_config
              FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id
              WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,policy_id))
 
     assert row is not None, "Invalid cluster_id {} and policy_id {}".format(trainer_id, policy_id)
-    trainer_name, checkpoint, saved_agent_config = row
+    trainer_name, model_name, checkpoint, saved_agent_config = row
     saved_agent_config = json.loads(saved_agent_config)
 
     backend_name = "{}_policy_{}".format(trainer_name, policy_id)
-    backend_server.create_backend(backend_name, ServeModel, saved_agent_config, checkpoint,
+    backend_server.create_backend(backend_name, ServeModel, saved_agent_config, checkpoint, trainer_name, model_name,
                                      config={'num_replicas': replicas}, env=CondaEnv("simpy"))
     print("# Backend Configured")
     route = "/{}".format(backend_name)
