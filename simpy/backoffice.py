@@ -159,6 +159,7 @@ def deploy_policy(backend_server: ServeClient , trainer_id: int, policy_id: int,
             print(agent_config)
             # assert agent_config is not None and isinstance(agent_config, dict), \
             #    "Invalid Agent Config {} when deploying a policy!".format(agent_config)
+            checkpoint_path = "trainer_traffic_light"+checkpoint_path[1:]
             print(checkpoint_path)
             # assert checkpoint_path is not None and isinstance(agent_config, str), \
             #    "Invalid Checkpoint Path {} when deploying a policy!".format(checkpoint_path)
