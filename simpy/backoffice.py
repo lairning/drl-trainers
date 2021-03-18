@@ -85,7 +85,7 @@ def get_trainer_data(trainer_name: str = None):
                         checkpoint,        
                         agent_config,
                         sim_config
-                    ) VALUES ({})'''.format(SQLParamList(5))
+                    ) VALUES ({})'''.format(SQLParamList(6))
     for policy_data in cluster_policies:
         cursor = _BACKOFFICE_DB.execute(insert_sql, (cluster_id,)+policy_data)
 
