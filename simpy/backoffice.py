@@ -6,10 +6,9 @@ from ray.serve.exceptions import RayServeException
 from ray.serve.api import Client as ServeClient
 from ray.serve import CondaEnv
 import ray.rllib.agents.ppo as ppo
-from utils import db_connect, BACKOFFICE_DB_NAME, TRAINER_DB_NAME, P_MARKER, select_record, SQLParamList, select_all, table_fetch_all
+from utils import db_connect, BACKOFFICE_DB_NAME, TRAINER_DB_NAME, P_MARKER, select_record, SQLParamList, select_all
 import json
 import pandas as pd
-from time import sleep
 from datetime import datetime
 import subprocess
 import os
@@ -22,7 +21,7 @@ _CONDA_PREFIX = os.getenv('CONDA_PREFIX_1') if 'CONDA_PREFIX_1' in os.environ.ke
 
 _BACKOFFICE_DB = db_connect(BACKOFFICE_DB_NAME)
 _TRAINER_YAML = lambda trainer_name: "trainer_configs/{}_azure_scaler.yaml".format(trainer_name)
-_TRAINER_PATH = lambda trainer_name: "trainer_"+trainer_name
+_TRAINER_PATH = lambda trainer_name: "trainer_" + trainer_name
 _CMD_PREFIX = ". {}/etc/profile.d/conda.sh && conda activate simpy && ".format(_CONDA_PREFIX)
 
 
@@ -34,8 +33,8 @@ def launch_trainer(trainer_name: str = None):
     if row is None:
         cursor = _BACKOFFICE_DB.cursor()
         cursor.execute('''INSERT INTO trainer_cluster (name) VALUES ({})'''.format(P_MARKER), (trainer_name,))
-    #Check if training folder exists
-    result = subprocess.run(['ls',_TRAINER_PATH(trainer_name)], capture_output=True, text=True)
+    # Check if training folder exists
+    result = subprocess.run(['ls', _TRAINER_PATH(trainer_name)], capture_output=True, text=True)
     if result.returncode != 0:
         # Create trainer folder
         result = subprocess.run(['cp', '-r', 'trainer_template', _TRAINER_PATH(trainer_name)], capture_output=True,
@@ -53,10 +52,12 @@ def launch_trainer(trainer_name: str = None):
     _BACKOFFICE_DB.commit()
     return result
 
+
 def tear_down_trainer(trainer_name: str = None):
     result = subprocess.run(_CMD_PREFIX + "ray down {} -y".format(_TRAINER_YAML(trainer_name)),
                             shell=True, capture_output=True, text=True, executable=_SHELL)
     return result
+
 
 def get_trainer_data(trainer_name: str = None):
     result = subprocess.run(_CMD_PREFIX + "ray rsync_down {} '/home/ubuntu/trainer/' '{}'".format(
@@ -70,10 +71,10 @@ def get_trainer_data(trainer_name: str = None):
     sql = '''SELECT id FROM trainer_cluster WHERE name = {}'''.format(P_MARKER)
     params = (trainer_name,)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=params)
-    assert row is not None, "Cluster {} does not Exist in {}.db".format(trainer_name,BACKOFFICE_DB_NAME)
+    assert row is not None, "Cluster {} does not Exist in {}.db".format(trainer_name, BACKOFFICE_DB_NAME)
     cluster_id, = row
     # get the policy data from the trainer db
-    trainer_db = db_connect(_TRAINER_PATH(trainer_name)+"/"+TRAINER_DB_NAME)
+    trainer_db = db_connect(_TRAINER_PATH(trainer_name) + "/" + TRAINER_DB_NAME)
     sql = '''SELECT policy.id, sim_model.name, policy.checkpoint, policy.agent_config, sim_config.config
              FROM policy INNER JOIN sim_model ON policy.sim_model_id = sim_model.id
              INNER JOIN sim_config ON policy.sim_config_id = sim_config.id'''
@@ -87,9 +88,10 @@ def get_trainer_data(trainer_name: str = None):
                         sim_config
                     ) VALUES ({})'''.format(SQLParamList(6))
     for policy_data in cluster_policies:
-        cursor = _BACKOFFICE_DB.execute(insert_sql, (cluster_id,)+policy_data)
+        cursor = _BACKOFFICE_DB.execute(insert_sql, (cluster_id,) + policy_data)
 
     _BACKOFFICE_DB.commit()
+
 
 def get_policies():
     sql = '''SELECT policy.cluster_id as trainer_id,
@@ -100,6 +102,7 @@ def get_policies():
              FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id'''
     return pd.read_sql_query(sql, _BACKOFFICE_DB)
 
+
 # Removes backend services, and deletes local data
 def remove_trainer(trainer_name: str = None):
     result = subprocess.run(['rm', '-r', _TRAINER_PATH(trainer_name)], capture_output=True, text=True)
@@ -109,9 +112,10 @@ def remove_trainer(trainer_name: str = None):
     if result.returncode:
         print(result.stderr)
     cursor = _BACKOFFICE_DB.cursor()
-    sql = '''DELETE FROM trainer WHERE name = {}'''.format(P_MARKER)
+    sql = '''DELETE FROM trainer_cluster WHERE name = {}'''.format(P_MARKER)
     cursor.execute(sql, (trainer_name,))
     _BACKOFFICE_DB.commit()
+
 
 def start_backend_server(addr: str = None):
     stderrout = sys.stderr
@@ -127,7 +131,7 @@ def start_backend_server(addr: str = None):
         try:
             # backend_id = serve.start(detached=True)
             # sleep(1)
-        # except RayServeException:
+            # except RayServeException:
             backend_id = serve.connect()
         except RayServeException:
             ray.shutdown()
@@ -145,7 +149,7 @@ def start_backend_server(addr: str = None):
     return backend_id
 
 
-def deploy_policy(backend_server: ServeClient , trainer_id: int, policy_id: int, replicas: int = 1):
+def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, replicas: int = 1):
     class ServeModel:
         def __init__(self, agent_config: dict, checkpoint_path: str, trainer_name: str, model_name: str):
 
@@ -153,12 +157,11 @@ def deploy_policy(backend_server: ServeClient , trainer_id: int, policy_id: int,
             exec_locals = {}
             try:
                 exec("from {} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel, BASE_CONFIG".format(
-                        sim_path), {}, exec_locals)
+                    sim_path), {}, exec_locals)
             except ModuleNotFoundError:
                 raise Exception(" Model '{}' not found!!".format(sim_path))
             except Exception as e:
                 raise e
-
 
             agent_config["env"] = SimpyEnv
             agent_config["env_config"] = {"n_actions"        : exec_locals['N_ACTIONS'],
@@ -168,7 +171,7 @@ def deploy_policy(backend_server: ServeClient , trainer_id: int, policy_id: int,
             # print(agent_config)
             # assert agent_config is not None and isinstance(agent_config, dict), \
             #    "Invalid Agent Config {} when deploying a policy!".format(agent_config)
-            checkpoint_path = _TRAINER_PATH(trainer_name)+checkpoint_path[1:]
+            checkpoint_path = _TRAINER_PATH(trainer_name) + checkpoint_path[1:]
             print(checkpoint_path)
             # assert checkpoint_path is not None and isinstance(agent_config, str), \
             #    "Invalid Checkpoint Path {} when deploying a policy!".format(checkpoint_path)
@@ -185,7 +188,7 @@ def deploy_policy(backend_server: ServeClient , trainer_id: int, policy_id: int,
     sql = '''SELECT trainer_cluster.name, policy.model_name, policy.checkpoint, policy.agent_config
              FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id
              WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
-    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,policy_id))
+    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id, policy_id))
 
     assert row is not None, "Invalid cluster_id {} and policy_id {}".format(trainer_id, policy_id)
     trainer_name, model_name, checkpoint, saved_agent_config = row
@@ -193,16 +196,17 @@ def deploy_policy(backend_server: ServeClient , trainer_id: int, policy_id: int,
 
     backend_name = "{}_policy_{}".format(trainer_name, policy_id)
     backend_server.create_backend(backend_name, ServeModel, saved_agent_config, checkpoint, trainer_name, model_name,
-                                     config={'num_replicas': replicas}, env=CondaEnv("simpy"))
+                                  config={'num_replicas': replicas}, env=CondaEnv("simpy"))
     print("# Backend Configured")
     route = "/{}".format(backend_name)
     backend_server.create_endpoint("{}_endpoint".format(backend_name), backend=backend_name, route=route)
+
 
 def get_simulator(trainer_id: int, policy_id: int):
     sql = '''SELECT trainer_cluster.name, policy.model_name, policy.sim_config
              FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id
              WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
-    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,policy_id))
+    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id, policy_id))
 
     assert row is not None, "Invalid cluster_id {} and policy_id {}".format(trainer_id, policy_id)
     trainer_name, model_name, sim_config = row
@@ -226,7 +230,7 @@ def get_simulator(trainer_id: int, policy_id: int):
     return SimpyEnv(env_config)
 
 
-#-------------------------------------------------- Old Code
+# -------------------------------------------------- Old Code
 
 # WARNING: This is not officially supported
 def local_server_address():
@@ -234,6 +238,7 @@ def local_server_address():
     addresses = find_redis_address()
     assert len(addresses) == 1, "More than one Address Found {}".format(addresses)
     return addresses.pop()
+
 
 def policy_id2str(model_name: str, policy_id: int):
     return "{}_policy_{}".format(model_name, policy_id)

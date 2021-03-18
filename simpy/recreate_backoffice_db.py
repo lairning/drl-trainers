@@ -31,7 +31,7 @@ def recreate_db():
                     backend integer default 0, -- Does the policy has a backend                 
                     data json,
                     PRIMARY KEY(cluster_id, policy_id),
-                    FOREIGN KEY(cluster_id) REFERENCES trainer_cluster(id)
+                    FOREIGN KEY(cluster_id) REFERENCES trainer_cluster(id) ON DELETE CASCADE
                     )''')
 
 
