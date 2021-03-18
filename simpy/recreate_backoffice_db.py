@@ -27,6 +27,7 @@ def recreate_db():
                     model_name unicode,
                     checkpoint unicode,        
                     agent_config json,
+                    sim_config json,
                     backend integer default 0, -- Does the policy has a backend                 
                     data json,
                     PRIMARY KEY(cluster_id, policy_id),
