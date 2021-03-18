@@ -120,12 +120,10 @@ def start_backend_server(address: str = None):
             ray.init(address=address)
         else:
             address = ray.init()
-        try:
-            backend_id = serve.start(detached=True)
-            sleep(1)
-        except RayServeException:
-            backend_id = serve.connect()
-    else:
+    try:
+        backend_id = serve.start(detached=True)
+        sleep(1)
+    except RayServeException:
         backend_id = serve.connect()
 
     sys.stderr = stderrout
