@@ -111,25 +111,26 @@ def remove_trainer(trainer_name: str = None):
     cursor.execute(sql, (trainer_name,))
     _BACKOFFICE_DB.commit()
 
-def start_backend_server(address: str = None):
+def start_backend_server(addr: str = None):
     stderrout = sys.stderr
     sys.stderr = open('modelserver.log', 'w')
-    backend_id = None
     if not ray.is_initialized():
-        if address is not None:
-            ray.init(address=address)
+        if addr is not None:
+            ray.init(address=addr)
         else:
-            address = ray.init()
+            addr = ray.init()
     try:
-        backend_id = serve.start(detached=True)
-        sleep(1)
-    except RayServeException:
+        # backend_id = serve.start(detached=True)
+        # sleep(1)
+    # except RayServeException:
         backend_id = serve.connect()
+    except:
+        backend_id = serve.start(detached=True)
 
     sys.stderr = stderrout
-    print("{} INFO Model Server started on {}".format(datetime.now(), address))
+    print("{} INFO Model Server started on {}".format(datetime.now(), addr))
     print(
-        "{} INFO Trainers Should Deploy Policies on this Server using address='{}'".format(datetime.now(), address))
+        "{} INFO Trainers Should Deploy Policies on this Server using address='{}'".format(datetime.now(), addr))
     return backend_id
 
 
