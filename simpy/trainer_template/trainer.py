@@ -235,6 +235,7 @@ class AISimAgent:
         self.db.commit()
         return cursor.lastrowid
 
+    # ToDo: Retrain
     # ToDo: Add more than one best policy
     # ToDo: Add labels to the sessions
     def train(self, iterations: int = 10, ai_config: dict = None, sim_config: dict = None,

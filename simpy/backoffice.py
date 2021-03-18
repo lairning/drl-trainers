@@ -148,8 +148,7 @@ def start_backend_server(addr: str = None):
         "{} INFO Trainers Should Deploy Policies on this Server using address='{}'".format(datetime.now(), addr))
     return backend_id
 
-
-def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, replicas: int = 1):
+def add_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, policy_config: dict = None):
     class ServeModel:
         def __init__(self, agent_config: dict, checkpoint_path: str, trainer_name: str, model_name: str):
 
@@ -194,13 +193,34 @@ def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, 
     trainer_name, model_name, checkpoint, saved_agent_config = row
     saved_agent_config = json.loads(saved_agent_config)
 
-    backend_name = "{}_policy_{}".format(trainer_name, policy_id)
-    backend_server.create_backend(backend_name, ServeModel, saved_agent_config, checkpoint, trainer_name, model_name,
-                                  config={'num_replicas': replicas}, env=CondaEnv("simpy"))
-    print("# Backend Configured")
-    route = "/{}".format(backend_name)
-    backend_server.create_endpoint("{}_endpoint".format(backend_name), backend=backend_name, route=route)
+    policy_name = "{}_{}".format(trainer_name, policy_id)
+    if policy_config is None:
+        policy_config = {'num_replicas': 1}
+    backend_server.create_backend(policy_name, ServeModel, saved_agent_config, checkpoint, trainer_name, model_name,
+                                  config=policy_config, env=CondaEnv("simpy"))
+    print("# Policy '{}' Configured".format(policy_name))
+    return policy_name
 
+def add_endpoint(backend_server: ServeClient, policy_name: str, endpoint_name: str):
+    assert endpoint_name is not None and isinstance(endpoint_name,str), "Invalid endpoint {}".format(endpoint_name)
+    endpoint_route = "/{}".format(endpoint_name)
+    backend_server.create_endpoint(endpoint_name, backend=policy_name, route=endpoint_route)
+
+def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, policy_config: dict = None,
+                  endpoint_name: str = None):
+    policy_name = add_policy(backend_server, trainer_id, policy_id, policy_config)
+    if endpoint_name is None:
+        sql = '''SELECT model_name
+                 FROM policy
+                 WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
+        endpoint_name, = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id, policy_id))
+    add_endpoint(backend_server,policy_name,endpoint_name)
+    return endpoint_name, policy_name
+
+def set_endpoint_traffic(backend_server: ServeClient, endpoint_name: str, traffic_config: dict):
+    assert endpoint_name is not None and isinstance(endpoint_name,str), "Invalid endpoint {}".format(endpoint_name)
+    assert traffic_config is not None and isinstance(traffic_config,dict), "Invalid endpoint {}".format(endpoint_name)
+    backend_server.set_traffic(endpoint_name,traffic_config)
 
 def get_simulator(trainer_id: int, policy_id: int):
     sql = '''SELECT trainer_cluster.name, policy.model_name, policy.sim_config
