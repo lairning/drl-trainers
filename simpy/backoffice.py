@@ -13,8 +13,8 @@ from datetime import datetime
 import subprocess
 import os
 
-from trainer_template.simpy_env import SimpyEnv
-from configs.standard_azure_autoscaler import config
+from simpy_template.simpy_env import SimpyEnv
+from configs.standard_azure_autoscaler import simpy_config
 
 _SHELL = os.getenv('SHELL')
 _CONDA_PREFIX = os.getenv('CONDA_PREFIX_1') if 'CONDA_PREFIX_1' in os.environ.keys() else os.getenv('CONDA_PREFIX')
@@ -23,6 +23,35 @@ _BACKOFFICE_DB = db_connect(BACKOFFICE_DB_NAME)
 _TRAINER_YAML = lambda trainer_name: "trainer_configs/{}_azure_scaler.yaml".format(trainer_name)
 _TRAINER_PATH = lambda trainer_name: "trainer_" + trainer_name
 _CMD_PREFIX = ". {}/etc/profile.d/conda.sh && conda activate simpy && ".format(_CONDA_PREFIX)
+
+
+def start_backend_server(addr: str = None):
+    stderrout = sys.stderr
+    sys.stderr = open('modelserver.log', 'w')
+    if not ray.is_initialized():
+        if addr is not None:
+            ray.init(address=addr)
+        else:
+            result = ray.init()
+            addr = result['node_ip_address']
+        backend_id = serve.start(detached=True)
+    else:
+        try:
+            backend_id = serve.connect()
+        except RayServeException:
+            ray.shutdown()
+            if addr is not None:
+                ray.init(address=addr)
+            else:
+                result = ray.init()
+                addr = result['node_ip_address']
+            backend_id = serve.start(detached=True)
+
+    sys.stderr = stderrout
+    print("{} INFO Model Server started on {}".format(datetime.now(), addr))
+    print(
+        "{} INFO Trainers Should Deploy Policies on this Server using address='{}'".format(datetime.now(), addr))
+    return backend_id
 
 
 # ToDo: Add more exception handling
@@ -37,14 +66,14 @@ def launch_trainer(trainer_name: str = None):
     result = subprocess.run(['ls', _TRAINER_PATH(trainer_name)], capture_output=True, text=True)
     if result.returncode != 0:
         # Create trainer folder
-        result = subprocess.run(['cp', '-r', 'trainer_template', _TRAINER_PATH(trainer_name)], capture_output=True,
+        result = subprocess.run(['cp', '-r', 'simpy_template', _TRAINER_PATH(trainer_name)], capture_output=True,
                                 text=True)
         if result.returncode:
             print("Error Creating Trainer Directory {}".format(_TRAINER_PATH(trainer_name)))
             print(result.stderr)
         # Create trainer yaml config file
     config_file = open(_TRAINER_YAML(trainer_name), "wt")
-    config_file.write(config(trainer_name))
+    config_file.write(simpy_config(trainer_name))
     config_file.close()
     # launch the cluster
     result = subprocess.run(_CMD_PREFIX + "ray up {} --no-config-cache -y".format(_TRAINER_YAML(
@@ -115,38 +144,6 @@ def remove_trainer(trainer_name: str = None):
     sql = '''DELETE FROM trainer_cluster WHERE name = {}'''.format(P_MARKER)
     cursor.execute(sql, (trainer_name,))
     _BACKOFFICE_DB.commit()
-
-
-def start_backend_server(addr: str = None):
-    stderrout = sys.stderr
-    sys.stderr = open('modelserver.log', 'w')
-    if not ray.is_initialized():
-        if addr is not None:
-            ray.init(address=addr)
-        else:
-            result = ray.init()
-            addr = result['node_ip_address']
-        backend_id = serve.start(detached=True)
-    else:
-        try:
-            # backend_id = serve.start(detached=True)
-            # sleep(1)
-            # except RayServeException:
-            backend_id = serve.connect()
-        except RayServeException:
-            ray.shutdown()
-            if addr is not None:
-                ray.init(address=addr)
-            else:
-                result = ray.init()
-                addr = result['node_ip_address']
-            backend_id = serve.start(detached=True)
-
-    sys.stderr = stderrout
-    print("{} INFO Model Server started on {}".format(datetime.now(), addr))
-    print(
-        "{} INFO Trainers Should Deploy Policies on this Server using address='{}'".format(datetime.now(), addr))
-    return backend_id
 
 def add_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, policy_config: dict = None):
     class ServeModel:
@@ -250,15 +247,24 @@ def get_simulator(trainer_id: int, policy_id: int):
     return SimpyEnv(env_config)
 
 
-# -------------------------------------------------- Old Code
+# API Interface
 
-# WARNING: This is not officially supported
-def local_server_address():
-    from ray._private.services import find_redis_address
-    addresses = find_redis_address()
-    assert len(addresses) == 1, "More than one Address Found {}".format(addresses)
-    return addresses.pop()
+def _get_policies_api(request):
+    return get_policies().to_json()
+
+# Start Backend
+
+if __name__ == "__main__":
+    backend_cli = start_backend_server()
+    backend_cli.create_backend("get_policies", _get_policies_api)
+    backend_cli.create_endpoint("get_policies", backend="get_policies", route="/policies")
 
 
-def policy_id2str(model_name: str, policy_id: int):
-    return "{}_policy_{}".format(model_name, policy_id)
+
+
+
+
+
+
+
+
