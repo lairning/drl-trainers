@@ -263,7 +263,7 @@ if __name__ == "__main__":
         backend_cli = serve.connect()
     except RayServeException:
         print("# Start SERVE")
-        backend_cli = serve.start(detached=True)
+        backend_cli = serve.start(detached=True,http_options={'http_port':8030})
     backend_cli.create_backend("get_policies", _get_policies_api)
     backend_cli.create_endpoint("get_policies", backend="get_policies", route="/policies")
 
