@@ -250,8 +250,15 @@ def get_simulator(trainer_id: int, policy_id: int):
 # API Interface
 
 def _get_policies_api(request):
-    df = get_policies()
-    return "hello" #df.to_json()
+    sql = '''SELECT policy.cluster_id as trainer_id,
+                    trainer_cluster.name as trainer_name,
+                    policy.policy_id as policy_id, 
+                    policy.model_name as model_name,
+                    policy.checkpoint as checkpoint
+             FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id'''
+    db = db_connect(BACKOFFICE_DB_NAME, check_same_thread=False)
+    df = pd.read_sql_query(sql, db)
+    return df.to_json()
 
 # Start Backend
 
