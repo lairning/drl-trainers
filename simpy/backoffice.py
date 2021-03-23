@@ -256,7 +256,12 @@ def _get_policies_api(request):
 # Start Backend
 
 if __name__ == "__main__":
-    backend_cli = start_backend_server()
+    # backend_cli = start_backend_server()
+    try:
+        backend_cli = serve.connect()
+    except RayServeException:
+        print("# Start SERVE")
+        backend_cli = serve.start(detached=True)
     backend_cli.create_backend("get_policies", _get_policies_api)
     backend_cli.create_endpoint("get_policies", backend="get_policies", route="/policies")
 
