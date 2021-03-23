@@ -11,10 +11,10 @@ TRAINER_DB_NAME = "laisim_trainer"
 BACKOFFICE_DB_NAME = "laisim_backoffice"
 
 
-def db_connect(db_name: str):
+def db_connect(db_name: str, check_same_thread=True):
     if DBTYPE == 'sqlite':
         import sqlite3 as dbengine
-        return dbengine.connect("{}.db".format(db_name))
+        return dbengine.connect("{}.db".format(db_name),check_same_thread=check_same_thread)
     else:
         raise Exception("Invalid DB Type")
 
