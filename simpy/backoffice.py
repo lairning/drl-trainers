@@ -257,6 +257,8 @@ def _get_policies_api(request):
 
 if __name__ == "__main__":
     # backend_cli = start_backend_server()
+    if not ray.is_initialized():
+        ray.init()
     try:
         backend_cli = serve.connect()
     except RayServeException:
