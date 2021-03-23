@@ -250,7 +250,8 @@ def get_simulator(trainer_id: int, policy_id: int):
 # API Interface
 
 def _get_policies_api(request):
-    return get_policies().to_json()
+    df = get_policies()
+    return df.to_json()
 
 # Start Backend
 
