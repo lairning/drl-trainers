@@ -205,6 +205,12 @@ def add_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, pol
         policy_config = {'num_replicas': 1}
     backend_server.create_backend(policy_name, ServeModel, saved_agent_config, checkpoint, trainer_name, model_name,
                                   config=policy_config, env=CondaEnv("simpy"))
+    #ToDo: add backend name to the table policy
+    sql = '''UPDATE policy SET backend_name = {} 
+             WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER, P_MARKER)
+    cursor = _BACKOFFICE_DB.cursor()
+    cursor.execute(sql, (policy_name, trainer_id, policy_id))
+    _BACKOFFICE_DB.commit()
     print("# Policy '{}' Configured".format(policy_name))
     return policy_name
 
