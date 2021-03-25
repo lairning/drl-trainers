@@ -81,7 +81,7 @@ def tear_down_trainer(trainer_id: int):
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
     assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
     trainer_name, cloud_provider = row
-    result = subprocess.run(_CMD_PREFIX + "ray down {} -y".format(_TRAINER_YAML(trainer_name)),
+    result = subprocess.run(_CMD_PREFIX + "ray down {} -y".format(_TRAINER_YAML(trainer_name, cloud_provider)),
                             shell=True, capture_output=True, text=True, executable=_SHELL)
     assert not result.returncode, "Error on Tear Down {} {}\n{}".format(_TRAINER_YAML(trainer_name, cloud_provider),
                                                                         _TRAINER_PATH(trainer_name), result.stderr)
