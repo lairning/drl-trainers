@@ -41,8 +41,8 @@ def get_policies_api(request):
     def _process(row, backend_list, backend_traffic):
         row[5] = json.loads(row[5])
         row[6] = json.loads(row[6])
-        row += (None,None) if row[7] is None else (backend_list[row[7]].num_replicas,
-                                                   backend_list[row[7]].max_concurrent_queries)
+        row += (None,None) if row[7] is None or row[7] not in backend_list.keys() \
+                            else (backend_list[row[7]].num_replicas, backend_list[row[7]].max_concurrent_queries)
         row += (None,) if row[7] is None else (backend_traffic.get(row[7],None),)
         return tuple(row)
 
@@ -58,6 +58,7 @@ def get_policies_api(request):
     db = db_connect(BACKOFFICE_DB_NAME, check_same_thread=False)
     rows = select_all(db, sql)
     backend = serve.connect()
+    global BACKOFFICE_ENDPOINTS
     backend_traffic = { backend:endpoint for endpoint,props in backend.list_endpoints().items()
                             if endpoint not in BACKOFFICE_ENDPOINTS.keys()
                             for backend in props['traffic'].keys()}
