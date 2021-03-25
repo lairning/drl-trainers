@@ -16,7 +16,7 @@ def recreate_db():
     db.execute('''create table trainer_cluster
                    (id INTEGER PRIMARY KEY,
                     name unicode,
-                    cloud_provider as unicode,
+                    cloud_provider unicode,
                     start TIMESTAMP,
                     stop TIMESTAMP,
                     config json
