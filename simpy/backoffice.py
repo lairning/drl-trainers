@@ -26,8 +26,8 @@ _CMD_PREFIX = ". {}/etc/profile.d/conda.sh && conda activate simpy && ".format(_
 
 
 def start_backend_server():
-    stderrout = sys.stderr
-    sys.stderr = open('modelserver.log', 'w')
+    #stderrout = sys.stderr
+    #sys.stderr = open('modelserver.log', 'w')
     if not ray.is_initialized():
         ray.init(address='auto')
 
@@ -36,10 +36,10 @@ def start_backend_server():
     except RayServeException:
         backend_server = serve.start(detached=True)
 
-    sys.stderr = stderrout
-    print("{} INFO Model Server started on {}".format(datetime.now(), addr))
-    print(
-        "{} INFO Trainers Should Deploy Policies on this Server using address='{}'".format(datetime.now(), addr))
+    #sys.stderr = stderrout
+    #print("{} INFO Model Server started on {}".format(datetime.now(), addr))
+    #print(
+    #    "{} INFO Trainers Should Deploy Policies on this Server using address='{}'".format(datetime.now(), addr))
     return backend_server
 
 
@@ -87,7 +87,7 @@ def tear_down_trainer(trainer_id: int):
                                                                         _TRAINER_PATH(trainer_name), result.stderr)
     sql = "UPDATE trainer_cluster SET stop = {} WHERE id = {}".format(P_MARKER, P_MARKER)
     cursor = _BACKOFFICE_DB.cursor()
-    cursor.execute(sql=sql, parameters=(datetime.now(), trainer_id))
+    cursor.execute(sql, (datetime.now(), trainer_id))
     _BACKOFFICE_DB.commit()
     return result
 
