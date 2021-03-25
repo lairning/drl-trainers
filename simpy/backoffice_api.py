@@ -28,7 +28,8 @@ def get_trainers_api(request):
     sql = '''SELECT id, name, cloud_provider, start, stop, config FROM trainer_cluster'''
     db = db_connect(BACKOFFICE_DB_NAME, check_same_thread=False)
     rows = select_all(db, sql)
-    data = [(i, name, my_json_load(data)) for i, name, data in rows]
+    data = [(i, name, cloud_provider, start, stop, json.loads(config))
+            for i, name, cloud_provider, start, stop, config in rows]
     return json.dumps(data)
 
 def get_endpoints_api(request):
