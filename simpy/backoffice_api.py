@@ -67,6 +67,7 @@ def get_policies_api(request):
 # Each endpoint is defined by the backend name, function and http route
 BACKOFFICE_ENDPOINTS = {'get_trainers':(get_trainers_api,'/trainers'),
                         'get_endpoints': (get_endpoints_api, '/endpoints'),
+                        'get_policies': (get_policies_api, '/policies'),
                         }
 
 # Start Backend
