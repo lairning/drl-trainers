@@ -46,22 +46,13 @@ def start_backend_server():
 # ToDo: Add more exception handling
 
 def launch_trainer(trainer_name: str = None, cloud_provider: str = 'azure', config: dict = None):
-    ''' Older Code
-    sql = "SELECT data FROM trainer_cluster WHERE name = {}".format(P_MARKER)
-    params = (trainer_name,)
-    row = select_record(_BACKOFFICE_DB, sql=sql, params=params)
-    if row is None:
-        cursor = _BACKOFFICE_DB.cursor()
-        cursor.execute("INSERT INTO trainer_cluster (name) VALUES ({})".format(P_MARKER), (trainer_name,))
-    '''
+
     cursor = _BACKOFFICE_DB.cursor()
     sql = "INSERT INTO trainer_cluster (name, cloud_provider, start, config) VALUES ({})".format(SQLParamList(4))
     params = (trainer_name, cloud_provider, datetime.now(), json.dumps(config))
-    cursor.execute(sql=sql, parameters=params)
+    cursor.execute(sql, params)
     _BACKOFFICE_DB.commit()
     trainer_id = cursor.lastrowid
-    #ToDo: Refactor to take into consideration the cloud vendor and the configurations
-    # Check if training folder exists
     result = subprocess.run(['ls', _TRAINER_PATH(trainer_name)], capture_output=True, text=True)
     # Create the Trainer Cluster if it does not exist.
     # No distinction exists between cloud providers, therefore training results are shared between runs in different
@@ -76,7 +67,7 @@ def launch_trainer(trainer_name: str = None, cloud_provider: str = 'azure', conf
     # Create trainer yaml config file
     # When a cluster with the same name and provider is relaunched the configuration is overridden
     config_file = open(_TRAINER_YAML(trainer_name, cloud_provider), "wt")
-    # ToDo: Add other Cloud Providers and use the
+    # ToDo: Add other Cloud Providers and use the configurations
     config_file.write(azure_scaler_config(trainer_name))
     config_file.close()
     # launch the cluster
