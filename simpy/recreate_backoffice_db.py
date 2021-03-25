@@ -16,7 +16,10 @@ def recreate_db():
     db.execute('''create table trainer_cluster
                    (id INTEGER PRIMARY KEY,
                     name unicode,
-                    data json
+                    cloud_provider as unicode,
+                    start TIMESTAMP,
+                    stop TIMESTAMP,
+                    config json
                     )''')
 
     # An entry for each policy created by a trainer cluster
@@ -28,7 +31,7 @@ def recreate_db():
                     checkpoint unicode,        
                     agent_config json,
                     sim_config json,
-                    backend integer default 0, -- Does the policy has a backend                 
+                    backend_name unicode, -- name of the backend if created                 
                     data json,
                     PRIMARY KEY(cluster_id, policy_id),
                     FOREIGN KEY(cluster_id) REFERENCES trainer_cluster(id) ON DELETE CASCADE

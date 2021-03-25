@@ -14,56 +14,58 @@ import subprocess
 import os
 
 from simpy_template.simpy_env import SimpyEnv
-from configs.standard_azure_autoscaler import simpy_config
+from configs.scaler_config import azure_scaler_config
 
 _SHELL = os.getenv('SHELL')
 _CONDA_PREFIX = os.getenv('CONDA_PREFIX_1') if 'CONDA_PREFIX_1' in os.environ.keys() else os.getenv('CONDA_PREFIX')
 
 _BACKOFFICE_DB = db_connect(BACKOFFICE_DB_NAME)
-_TRAINER_YAML = lambda trainer_name: "trainer_configs/{}_azure_scaler.yaml".format(trainer_name)
+_TRAINER_YAML = lambda trainer_name, cloud_provider: "configs/{}_{}_scaler.yaml".format(trainer_name, cloud_provider)
 _TRAINER_PATH = lambda trainer_name: "trainer_" + trainer_name
 _CMD_PREFIX = ". {}/etc/profile.d/conda.sh && conda activate simpy && ".format(_CONDA_PREFIX)
 
 
-def start_backend_server(addr: str = None):
+def start_backend_server():
     stderrout = sys.stderr
     sys.stderr = open('modelserver.log', 'w')
     if not ray.is_initialized():
-        if addr is not None:
-            ray.init(address=addr)
-        else:
-            result = ray.init()
-            addr = result['node_ip_address']
-        backend_id = serve.start(detached=True)
-    else:
-        try:
-            backend_id = serve.connect()
-        except RayServeException:
-            ray.shutdown()
-            if addr is not None:
-                ray.init(address=addr)
-            else:
-                result = ray.init()
-                addr = result['node_ip_address']
-            backend_id = serve.start(detached=True)
+        ray.init(address='auto')
+
+    try:
+        backend_server = serve.connect()
+    except RayServeException:
+        backend_server = serve.start(detached=True)
 
     sys.stderr = stderrout
     print("{} INFO Model Server started on {}".format(datetime.now(), addr))
     print(
         "{} INFO Trainers Should Deploy Policies on this Server using address='{}'".format(datetime.now(), addr))
-    return backend_id
+    return backend_server
 
 
 # ToDo: Add more exception handling
-def launch_trainer(trainer_name: str = None):
-    sql = '''SELECT data FROM trainer_cluster WHERE name = {}'''.format(P_MARKER)
+
+def launch_trainer(trainer_name: str = None, cloud_provider: str = 'azure', config: dict = None):
+    ''' Older Code
+    sql = "SELECT data FROM trainer_cluster WHERE name = {}".format(P_MARKER)
     params = (trainer_name,)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=params)
     if row is None:
         cursor = _BACKOFFICE_DB.cursor()
-        cursor.execute('''INSERT INTO trainer_cluster (name) VALUES ({})'''.format(P_MARKER), (trainer_name,))
+        cursor.execute("INSERT INTO trainer_cluster (name) VALUES ({})".format(P_MARKER), (trainer_name,))
+    '''
+    cursor = _BACKOFFICE_DB.cursor()
+    sql = "INSERT INTO trainer_cluster (name, cloud_provider, start, config) VALUES ({})".format(SQLParamList(4))
+    params = (trainer_name, cloud_provider, datetime.now(), json.dumps(config))
+    cursor.execute(sql=sql, parameters=params)
+    _BACKOFFICE_DB.commit()
+    trainer_id = cursor.lastrowid
+    #ToDo: Refactor to take into consideration the cloud vendor and the configurations
     # Check if training folder exists
     result = subprocess.run(['ls', _TRAINER_PATH(trainer_name)], capture_output=True, text=True)
+    # Create the Trainer Cluster if it does not exist.
+    # No distinction exists between cloud providers, therefore training results are shared between runs in different
+    # clouds
     if result.returncode != 0:
         # Create trainer folder
         result = subprocess.run(['cp', '-r', 'simpy_template', _TRAINER_PATH(trainer_name)], capture_output=True,
@@ -71,30 +73,44 @@ def launch_trainer(trainer_name: str = None):
         if result.returncode:
             print("Error Creating Trainer Directory {}".format(_TRAINER_PATH(trainer_name)))
             print(result.stderr)
-        # Create trainer yaml config file
-    config_file = open(_TRAINER_YAML(trainer_name), "wt")
-    config_file.write(simpy_config(trainer_name))
+    # Create trainer yaml config file
+    # When a cluster with the same name and provider is relaunched the configuration is overridden
+    config_file = open(_TRAINER_YAML(trainer_name, cloud_provider), "wt")
+    # ToDo: Add other Cloud Providers and use the
+    config_file.write(azure_scaler_config(trainer_name))
     config_file.close()
     # launch the cluster
     result = subprocess.run(_CMD_PREFIX + "ray up {} --no-config-cache -y".format(_TRAINER_YAML(
-        trainer_name)), shell=True, capture_output=True, text=True, executable=_SHELL)
+        trainer_name, cloud_provider)), shell=True, capture_output=True, text=True, executable=_SHELL)
+    _BACKOFFICE_DB.commit()
+    return trainer_id, result
+
+def tear_down_trainer(trainer_id: int):
+    sql = "SELECT name, cloud_provider FROM trainer_cluster WHERE id = {}".format(P_MARKER)
+    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
+    assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
+    trainer_name, cloud_provider = row
+    result = subprocess.run(_CMD_PREFIX + "ray down {} -y".format(_TRAINER_YAML(trainer_name)),
+                            shell=True, capture_output=True, text=True, executable=_SHELL)
+    assert not result.returncode, "Error on Tear Down {} {}\n{}".format(_TRAINER_YAML(trainer_name, cloud_provider),
+                                                                        _TRAINER_PATH(trainer_name), result.stderr)
+    sql = "UPDATE trainer_cluster SET stop = {} WHERE id = {}".format(P_MARKER, P_MARKER)
+    cursor = _BACKOFFICE_DB.cursor()
+    cursor.execute(sql=sql, parameters=(datetime.now(), trainer_id))
     _BACKOFFICE_DB.commit()
     return result
 
 
-def tear_down_trainer(trainer_name: str = None):
-    result = subprocess.run(_CMD_PREFIX + "ray down {} -y".format(_TRAINER_YAML(trainer_name)),
-                            shell=True, capture_output=True, text=True, executable=_SHELL)
-    return result
-
-
-def get_trainer_data(trainer_name: str = None):
+def get_trainer_data(trainer_id: int):
+    sql = "SELECT name, cloud_provider FROM trainer_cluster WHERE id = {}".format(P_MARKER)
+    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
+    assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
+    trainer_name, cloud_provider = row
     result = subprocess.run(_CMD_PREFIX + "ray rsync_down {} '/home/ubuntu/trainer/' '{}'".format(
-        _TRAINER_YAML(trainer_name), _TRAINER_PATH(trainer_name)),
+        _TRAINER_YAML(trainer_name, cloud_provider), _TRAINER_PATH(trainer_name)),
                             shell=True, capture_output=True, text=True, executable=_SHELL)
-    assert not result.returncode, \
-        "Error on SyncDown {} {}\n{}".format(_TRAINER_YAML(trainer_name), _TRAINER_PATH(trainer_name), result.stderr)
-
+    assert not result.returncode, "Error on SyncDown {} {}\n{}".format(_TRAINER_YAML(trainer_name, cloud_provider),
+                                                                       _TRAINER_PATH(trainer_name), result.stderr)
     # Insert Update Policy Data from the Trainer DB
     # get the cluster id
     sql = '''SELECT id FROM trainer_cluster WHERE name = {}'''.format(P_MARKER)
@@ -117,8 +133,7 @@ def get_trainer_data(trainer_name: str = None):
                         sim_config
                     ) VALUES ({})'''.format(SQLParamList(6))
     for policy_data in cluster_policies:
-        cursor = _BACKOFFICE_DB.execute(insert_sql, (cluster_id,) + policy_data)
-
+        cursor = _BACKOFFICE_DB.execute(insert_sql, (trainer_id,) + policy_data)
     _BACKOFFICE_DB.commit()
 
 
@@ -131,18 +146,22 @@ def get_policies():
              FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id'''
     return pd.read_sql_query(sql, _BACKOFFICE_DB)
 
-
+#ToDo: Refactor to receive a trainer cluster id
 # Removes backend services, and deletes local data
-def remove_trainer(trainer_name: str = None):
+def remove_trainer(trainer_id: int):
+    sql = "SELECT name, cloud_provider FROM trainer_cluster WHERE id = {}".format(P_MARKER)
+    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
+    assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
+    trainer_name, cloud_provider = row
     result = subprocess.run(['rm', '-r', _TRAINER_PATH(trainer_name)], capture_output=True, text=True)
     if result.returncode:
         print(result.stderr)
-    result = subprocess.run(['rm', _TRAINER_YAML(trainer_name)], capture_output=True, text=True)
+    result = subprocess.run(['rm', _TRAINER_YAML(trainer_name, cloud_provider)], capture_output=True, text=True)
     if result.returncode:
         print(result.stderr)
     cursor = _BACKOFFICE_DB.cursor()
-    sql = '''DELETE FROM trainer_cluster WHERE name = {}'''.format(P_MARKER)
-    cursor.execute(sql, (trainer_name,))
+    sql = '''DELETE FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
+    cursor.execute(sql, (trainer_id,))
     _BACKOFFICE_DB.commit()
 
 def add_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, policy_config: dict = None):
@@ -247,32 +266,8 @@ def get_simulator(trainer_id: int, policy_id: int):
     return SimpyEnv(env_config)
 
 
-# API Interface
 
-def _get_policies_api(request):
-    sql = '''SELECT policy.cluster_id as trainer_id,
-                    trainer_cluster.name as trainer_name,
-                    policy.policy_id as policy_id, 
-                    policy.model_name as model_name,
-                    policy.checkpoint as checkpoint
-             FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id'''
-    db = db_connect(BACKOFFICE_DB_NAME, check_same_thread=False)
-    df = pd.read_sql_query(sql, db)
-    return df.to_json()
 
-# Start Backend
-
-if __name__ == "__main__":
-    # backend_cli = start_backend_server()
-    if not ray.is_initialized():
-        ray.init()
-    try:
-        backend_cli = serve.connect()
-    except RayServeException:
-        print("# Start SERVE")
-        backend_cli = serve.start(detached=True,http_options={'http_port':8030})
-    backend_cli.create_backend("get_policies", _get_policies_api)
-    backend_cli.create_endpoint("get_policies", backend="get_policies", route="/policies")
 
 
 

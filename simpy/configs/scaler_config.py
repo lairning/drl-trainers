@@ -1,4 +1,4 @@
-simpy_config_str = '''# An unique identifier for the head node and workers of this cluster.
+azure_config_str = '''# An unique identifier for the head node and workers of this cluster.
 cluster_name: {}
 
 # The maximum number of workers nodes to launch in addition to the head
@@ -69,8 +69,7 @@ setup_commands:
     # - cp simpy/configs/jupyter_lab_config.py .jupyter
 '''
 
-
-
-def simpy_config(trainer_name: str):
+# ToDo: Add other Cloud Providers
+def azure_scaler_config(trainer_name: str):
     cluster_map = {ord(c): None for c in '_-%&?»«!@#$'}
-    return simpy_config_str.format(trainer_name.translate(cluster_map), trainer_name)
+    return azure_config_str.format(trainer_name.translate(cluster_map), trainer_name)
