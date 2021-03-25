@@ -34,6 +34,7 @@ def get_trainers_api(request):
 
 def get_endpoints_api(request):
     backend = serve.connect()
+    global BACKOFFICE_ENDPOINTS
     data = {k:v for k,v in backend.list_endpoints().items() if k not in BACKOFFICE_ENDPOINTS.keys()}
     return json.dumps(data)
 
