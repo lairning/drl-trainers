@@ -217,10 +217,11 @@ def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, 
                   endpoint_name: str = None):
     policy_name = add_policy(backend_server, trainer_id, policy_id, policy_config)
     if endpoint_name is None:
-        sql = '''SELECT model_name
-                 FROM policy
-                 WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
-        endpoint_name, = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id, policy_id))
+        # sql = '''SELECT model_name
+        #         FROM policy
+        #         WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
+        # endpoint_name, = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id, policy_id))
+        endpoint_name = policy_name
     add_endpoint(backend_server,policy_name,endpoint_name)
     return endpoint_name, policy_name
 
