@@ -7,7 +7,7 @@ P_MARKER = "?" if DBTYPE == 'sqlite' else "%s"
 
 SQLParamList = lambda n: '' if n <= 0 else (P_MARKER + ',') * (n - 1) + P_MARKER
 
-TRAINER_DB_NAME = "simpy_template\\laisim_trainer"
+TRAINER_DB_NAME = "simpy_template/laisim_trainer"
 BACKOFFICE_DB_NAME = "laisim_backoffice"
 
 
