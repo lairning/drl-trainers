@@ -85,7 +85,7 @@ def recreate_db():
                     duration float,
                     results json,
                     other_data json,
-                    FOREIGN KEY(policy_id) REFERENCES policy(id)
+                    FOREIGN KEY(policy_id) REFERENCES policy(id) ON DELETE CASCADE
                     )''')
 
     # Baseline Runs for Sim Configs
