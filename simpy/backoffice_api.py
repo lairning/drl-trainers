@@ -17,13 +17,6 @@ def my_json_load(data):
 
 # API Services
 
-#ToDo:  recreate backoffice.db trainer_cluster table to add more trainer properties
-#       change the backoffice launch_trainer function to add the new trainer properties
-#       resync trainer data
-#ToDo:  Add a table trainer Cluster runs to the backoffice.db to store periods the cluster was up
-#       change the backoffice launch_trainer function and tear down to add records to the new table
-#       resync trainer data
-
 def get_trainers_api(request):
     sql = '''SELECT id, name, cloud_provider, start, stop, config FROM trainer_cluster'''
     db = db_connect(BACKOFFICE_DB_NAME, check_same_thread=False)
@@ -73,6 +66,9 @@ BACKOFFICE_ENDPOINTS = {'get_trainers':(get_trainers_api,'/trainers'),
                         'get_policies': (get_policies_api, '/policies'),
                         }
 
+# Policies CPU Multiplexing factor. 0.5 = 2 policies / CPU
+POLICY_ACTOR_CONFIG = {'num_cpus': 0.5}
+
 # Start Backend
 
 if __name__ == "__main__":
@@ -87,12 +83,19 @@ if __name__ == "__main__":
     endpoint_list = list(backend_server.list_endpoints().keys())
     backend_list = list(backend_server.list_backends().keys())
 
+    backoffice_actor_config = {'num_cpus': 1/len(BACKOFFICE_ENDPOINTS)}
+
+    # Policy replicas
     policy_config = {'num_replicas': 1}
+
 
     for name, (service_function, route) in BACKOFFICE_ENDPOINTS.items():
         if name in endpoint_list:
             backend_server.delete_endpoint(name)
         if name in backend_list:
             backend_server.delete_backend(name)
-        backend_server.create_backend(name, service_function, config=policy_config, env=CondaEnv("simpy"))
+        backend_server.create_backend(name, service_function,
+                                      config=policy_config,
+                                      ray_actor_options=backoffice_actor_config,
+                                      env=CondaEnv("simpy"))
         backend_server.create_endpoint(name, backend=name, route=route)
