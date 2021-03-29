@@ -91,7 +91,7 @@ def tear_down_trainer(trainer_id: int):
     _BACKOFFICE_DB.commit()
     return result
 
-
+#ToDo: This is to syn data and not to add. Existent data should not be added.
 def get_trainer_data(trainer_id: int):
     sql = "SELECT name, cloud_provider FROM trainer_cluster WHERE id = {}".format(P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
@@ -107,7 +107,7 @@ def get_trainer_data(trainer_id: int):
     sql = '''SELECT id FROM trainer_cluster WHERE name = {}'''.format(P_MARKER)
     params = (trainer_name,)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=params)
-    assert row is not None, "Cluster {} does not Exist in {}.db".format(trainer_name, BACKOFFICE_DB_NAME)
+    assert row is not None, "Trainer ID {} does not Exist in {}.db".format(trainer_name, BACKOFFICE_DB_NAME)
     cluster_id, = row
     # get the policy data from the trainer db
     trainer_db = db_connect(_TRAINER_PATH(trainer_name) + "/" + TRAINER_DB_NAME)
@@ -155,7 +155,7 @@ def remove_trainer(trainer_id: int):
     cursor.execute(sql, (trainer_id,))
     _BACKOFFICE_DB.commit()
 
-def add_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, policy_config: dict = None):
+def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, policy_config: dict = None):
     class ServeModel:
         def __init__(self, agent_config: dict, checkpoint_path: str, trainer_name: str, model_name: str):
 
@@ -196,7 +196,7 @@ def add_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, pol
              WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id, policy_id))
 
-    assert row is not None, "Invalid cluster_id {} and policy_id {}".format(trainer_id, policy_id)
+    assert row is not None, "Invalid Trainer ID {} and Policy ID {}".format(trainer_id, policy_id)
     trainer_name, model_name, checkpoint, saved_agent_config = row
     saved_agent_config = json.loads(saved_agent_config)
 
@@ -205,7 +205,6 @@ def add_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, pol
         policy_config = {'num_replicas': 1}
     backend_server.create_backend(policy_name, ServeModel, saved_agent_config, checkpoint, trainer_name, model_name,
                                   config=policy_config, env=CondaEnv("simpy"))
-    #ToDo: add backend name to the table policy
     sql = '''UPDATE policy SET backend_name = {} 
              WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER, P_MARKER)
     cursor = _BACKOFFICE_DB.cursor()
@@ -214,14 +213,50 @@ def add_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, pol
     print("# Policy '{}' Configured".format(policy_name))
     return policy_name
 
+def undeploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int):
+    sql = '''SELECT backend_name FROM policy 
+             WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
+    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id, policy_id))
+    assert row is not None, "Invalid Trainer ID {} and Policy ID {}".format(trainer_id, policy_id)
+    policy_name, = row
+    backend_server.delete_backend(policy_name)
+    sql = '''UPDATE policy SET backend_name = {} 
+             WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER, P_MARKER)
+    cursor = _BACKOFFICE_DB.cursor()
+    cursor.execute(sql, (None, trainer_id, policy_id))
+    _BACKOFFICE_DB.commit()
+
+def delete_policy(backend_server: ServeClient, trainer_id: int, policy_id: int):
+    sql = '''SELECT trainer_cluster.name, backend_name FROM policy 
+             INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id 
+             WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
+    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id, policy_id))
+    assert row is not None, "Invalid Trainer ID {} and Policy ID {}".format(trainer_id, policy_id)
+    trainer_name, policy_name = row
+    if policy_name is not None:
+        backend_server.delete_backend(policy_name)
+    cursor = _BACKOFFICE_DB.cursor()
+    sql = '''DELETE FROM policy WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER,P_MARKER)
+    cursor.execute(sql, (trainer_id, policy_id))
+    _BACKOFFICE_DB.commit()
+    trainer_db = db_connect(_TRAINER_PATH(trainer_name) + "/" + TRAINER_DB_NAME)
+    cursor = trainer_db.cursor()
+    sql = '''DELETE FROM policy WHERE id = {}'''.format(P_MARKER)
+    cursor.execute(sql, (policy_id))
+    trainer_db.commit()
+
+
 def add_endpoint(backend_server: ServeClient, policy_name: str, endpoint_name: str):
     assert endpoint_name is not None and isinstance(endpoint_name,str), "Invalid endpoint {}".format(endpoint_name)
     endpoint_route = "/{}".format(endpoint_name)
-    backend_server.create_endpoint(endpoint_name, backend=policy_name, route=endpoint_route)
+    return backend_server.create_endpoint(endpoint_name, backend=policy_name, route=endpoint_route)
 
-def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, policy_config: dict = None,
-                  endpoint_name: str = None):
-    policy_name = add_policy(backend_server, trainer_id, policy_id, policy_config)
+def delete_endpoint(backend_server: ServeClient, endpoint_name: str):
+    return backend_server.delete_endpoint(endpoint_name)
+
+def deploy_endpoint_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, policy_config: dict = None,
+                           endpoint_name: str = None):
+    policy_name = deploy_policy(backend_server, trainer_id, policy_id, policy_config)
     if endpoint_name is None:
         # sql = '''SELECT model_name
         #         FROM policy
@@ -242,7 +277,7 @@ def get_simulator(trainer_id: int, policy_id: int):
              WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id, policy_id))
 
-    assert row is not None, "Invalid cluster_id {} and policy_id {}".format(trainer_id, policy_id)
+    assert row is not None, "Invalid Trainer ID {} and Policy ID {}".format(trainer_id, policy_id)
     trainer_name, model_name, sim_config = row
     sim_config = json.loads(sim_config)
 
