@@ -76,6 +76,7 @@ def launch_trainer(trainer_name: str = None, cloud_provider: str = 'azure', conf
     _BACKOFFICE_DB.commit()
     return trainer_id, result
 
+# ToDo: Test tear down of trainers already down. It seems it get stuck.
 def tear_down_trainer(trainer_id: int):
     sql = "SELECT name, cloud_provider FROM trainer_cluster WHERE id = {}".format(P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
@@ -138,18 +139,20 @@ def get_policies():
     return pd.read_sql_query(sql, _BACKOFFICE_DB)
 
 #ToDo: Refactor to receive a trainer cluster id
-# Removes backend services, and deletes local data
 def remove_trainer(trainer_id: int):
-    sql = "SELECT name, cloud_provider FROM trainer_cluster WHERE id = {}".format(P_MARKER)
+    sql = '''SELECT name, cloud_provider, count(*) 
+             FROM trainer_cluster WHERE id = {} 
+             GROUP BY name, cloud_provider'''.format(P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
     assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
-    trainer_name, cloud_provider = row
-    result = subprocess.run(['rm', '-r', _TRAINER_PATH(trainer_name)], capture_output=True, text=True)
-    if result.returncode:
-        print(result.stderr)
-    result = subprocess.run(['rm', _TRAINER_YAML(trainer_name, cloud_provider)], capture_output=True, text=True)
-    if result.returncode:
-        print(result.stderr)
+    trainer_name, cloud_provider, count = row
+    if count == 1:
+        result = subprocess.run(['rm', '-r', _TRAINER_PATH(trainer_name)], capture_output=True, text=True)
+        if result.returncode:
+            print(result.stderr)
+        result = subprocess.run(['rm', _TRAINER_YAML(trainer_name, cloud_provider)], capture_output=True, text=True)
+        if result.returncode:
+            print(result.stderr)
     cursor = _BACKOFFICE_DB.cursor()
     sql = '''DELETE FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
     cursor.execute(sql, (trainer_id,))
