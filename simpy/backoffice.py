@@ -44,15 +44,8 @@ def start_backend_server():
 
 
 # ToDo: Add more exception handling
-
 def launch_trainer(trainer_name: str = None, cloud_provider: str = 'azure', config: dict = None):
 
-    cursor = _BACKOFFICE_DB.cursor()
-    sql = "INSERT INTO trainer_cluster (name, cloud_provider, start, config) VALUES ({})".format(SQLParamList(4))
-    params = (trainer_name, cloud_provider, datetime.now(), json.dumps(config))
-    cursor.execute(sql, params)
-    _BACKOFFICE_DB.commit()
-    trainer_id = cursor.lastrowid
     result = subprocess.run(['ls', _TRAINER_PATH(trainer_name)], capture_output=True, text=True)
     # Create the Trainer Cluster if it does not exist.
     # No distinction exists between cloud providers, therefore training results are shared between runs in different
@@ -64,6 +57,17 @@ def launch_trainer(trainer_name: str = None, cloud_provider: str = 'azure', conf
         if result.returncode:
             print("Error Creating Trainer Directory {}".format(_TRAINER_PATH(trainer_name)))
             print(result.stderr)
+
+        cursor = _BACKOFFICE_DB.cursor()
+        sql = "INSERT INTO trainer_cluster (name, cloud_provider, start, config) VALUES ({})".format(SQLParamList(4))
+        params = (trainer_name, cloud_provider, datetime.now(), json.dumps(config))
+        cursor.execute(sql, params)
+        _BACKOFFICE_DB.commit()
+        trainer_id = cursor.lastrowid
+    else:
+        sql = '''SELECT id FROM trainer_cluster 
+                 WHERE name = {} and cloud_provider = {} and stop IS NULL'''.format(P_MARKER, P_MARKER)
+        trainer_id, = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_name, cloud_provider))
     # Create trainer yaml config file
     # When a cluster with the same name and provider is relaunched the configuration is overridden
     config_file = open(_TRAINER_YAML(trainer_name, cloud_provider), "wt")
@@ -86,13 +90,10 @@ def tear_down_trainer(trainer_id: int):
                             shell=True, capture_output=True, text=True, executable=_SHELL)
     assert not result.returncode, "Error on Tear Down {} {}\n{}".format(_TRAINER_YAML(trainer_name, cloud_provider),
                                                                         _TRAINER_PATH(trainer_name), result.stderr)
-    sql = "UPDATE trainer_cluster SET stop = {} WHERE id = {}".format(P_MARKER, P_MARKER)
-    cursor = _BACKOFFICE_DB.cursor()
-    cursor.execute(sql, (datetime.now(), trainer_id))
-    _BACKOFFICE_DB.commit()
+
     return result
 
-#ToDo: This is to syn data and not to add. Existent data should not be added.
+
 def get_trainer_data(trainer_id: int):
     sql = "SELECT name, cloud_provider FROM trainer_cluster WHERE id = {}".format(P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
@@ -103,13 +104,7 @@ def get_trainer_data(trainer_id: int):
                             shell=True, capture_output=True, text=True, executable=_SHELL)
     assert not result.returncode, "Error on SyncDown {} {}\n{}".format(_TRAINER_YAML(trainer_name, cloud_provider),
                                                                        _TRAINER_PATH(trainer_name), result.stderr)
-    # Insert Update Policy Data from the Trainer DB
-    # get the cluster id
-    sql = '''SELECT id FROM trainer_cluster WHERE name = {}'''.format(P_MARKER)
-    params = (trainer_name,)
-    row = select_record(_BACKOFFICE_DB, sql=sql, params=params)
-    assert row is not None, "Trainer ID {} does not Exist in {}.db".format(trainer_name, BACKOFFICE_DB_NAME)
-    cluster_id, = row
+
     # get the policy data from the trainer db
     trainer_db = db_connect(_TRAINER_PATH(trainer_name) + "/" + TRAINER_DB_NAME)
     sql = '''SELECT policy.id, sim_model.name, policy.checkpoint, policy.agent_config, sim_config.config
@@ -138,27 +133,29 @@ def get_policies():
              FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id'''
     return pd.read_sql_query(sql, _BACKOFFICE_DB)
 
-#ToDo: Refactor to receive a trainer cluster id
-def remove_trainer(trainer_id: int):
-    sql = '''SELECT name, cloud_provider 
+
+def delete_trainer(trainer_id: int, delete_backoffice: bool = False):
+    if not delete_backoffice:
+        # If backoffice data is not deleted then save the trainer data in the backoffice
+        get_trainer_data(trainer_id=trainer_id)
+    sql = '''SELECT name, cloud_provider
              FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
     assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
     trainer_name, cloud_provider = row
-    sql = '''SELECT count(*) 
-             FROM trainer_cluster WHERE name = {} and cloud_provider = {}'''.format(P_MARKER, P_MARKER)
-    count, = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_name, cloud_provider))
-    # if the pair trainer_and and cloud_provider is unique remove the trainer folder and the config
-    if count == 1:
-        result = subprocess.run(['rm', '-r', _TRAINER_PATH(trainer_name)], capture_output=True, text=True)
-        if result.returncode:
-            print(result.stderr)
-        result = subprocess.run(['rm', _TRAINER_YAML(trainer_name, cloud_provider)], capture_output=True, text=True)
-        if result.returncode:
+    result = subprocess.run(['rm', '-r', _TRAINER_PATH(trainer_name)], capture_output=True, text=True)
+    if result.returncode:
+        print(result.stderr)
+    result = subprocess.run(['rm', _TRAINER_YAML(trainer_name, cloud_provider)], capture_output=True, text=True)
+    if result.returncode:
             print(result.stderr)
     cursor = _BACKOFFICE_DB.cursor()
-    sql = '''DELETE FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
-    cursor.execute(sql, (trainer_id,))
+    if delete_backoffice:
+        sql = '''DELETE FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
+        cursor.execute(sql, (trainer_id,))
+    else:
+        sql = "UPDATE trainer_cluster SET stop = {} WHERE id = {}".format(P_MARKER, P_MARKER)
+        cursor.execute(sql, (datetime.now(), trainer_id))
     _BACKOFFICE_DB.commit()
 
 def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, policy_config: dict = None):

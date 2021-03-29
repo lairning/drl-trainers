@@ -12,7 +12,7 @@ def recreate_db():
     except Exception as e:
         raise e
 
-    # An entry for each trainer cluster that is launched
+    # An entry for each trainer cluster. Stop will be filled with the remove operation.
     db.execute('''create table trainer_cluster
                    (id INTEGER PRIMARY KEY,
                     name unicode,
