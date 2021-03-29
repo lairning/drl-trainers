@@ -140,12 +140,15 @@ def get_policies():
 
 #ToDo: Refactor to receive a trainer cluster id
 def remove_trainer(trainer_id: int):
-    sql = '''SELECT name, cloud_provider, count(*) 
-             FROM trainer_cluster WHERE id = {} 
-             GROUP BY name, cloud_provider'''.format(P_MARKER)
+    sql = '''SELECT name, cloud_provider 
+             FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
     assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
-    trainer_name, cloud_provider, count = row
+    trainer_name, cloud_provider = row
+    sql = '''SELECT count(*) 
+             FROM trainer_cluster WHERE name = {} and cloud_provider = {}'''.format(P_MARKER, P_MARKER)
+    count, = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_name, cloud_provider))
+    # if the pair trainer_and and cloud_provider is unique remove the trainer folder and the config
     if count == 1:
         result = subprocess.run(['rm', '-r', _TRAINER_PATH(trainer_name)], capture_output=True, text=True)
         if result.returncode:
