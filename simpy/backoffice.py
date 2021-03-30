@@ -138,6 +138,7 @@ def delete_trainer(trainer_id: int, delete_backoffice: bool = False):
     if not delete_backoffice:
         # If backoffice data is not deleted then save the trainer data in the backoffice
         get_trainer_data(trainer_id=trainer_id)
+    tear_down_trainer(trainer_id=trainer_id)
     sql = '''SELECT name, cloud_provider
              FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
