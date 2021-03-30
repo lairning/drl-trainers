@@ -1,8 +1,8 @@
-from utils import db_connect, TRAINER_DB_NAME
+from utils import db_connect, TEMPLATE_TRAINER_DB_NAME
 
 
 def recreate_db():
-    db = db_connect(TRAINER_DB_NAME)
+    db = db_connect(TEMPLATE_TRAINER_DB_NAME)
 
     try:
         db.execute("drop table if exists sim_model")
