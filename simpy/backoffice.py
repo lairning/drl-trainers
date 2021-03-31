@@ -1,4 +1,4 @@
-import sys
+# import sys
 from starlette.requests import Request
 import ray
 from ray import serve
@@ -21,7 +21,7 @@ _CONDA_PREFIX = os.getenv('CONDA_PREFIX_1') if 'CONDA_PREFIX_1' in os.environ.ke
 
 _BACKOFFICE_DB = db_connect(BACKOFFICE_DB_NAME)
 _TRAINER_YAML = lambda trainer_name, cloud_provider: "configs/{}_{}_scaler.yaml".format(trainer_name, cloud_provider)
-_TRAINER_PATH = lambda trainer_name: "trainer_" + trainer_name
+_TRAINER_PATH = lambda trainer_name, cloud_provider: "trainer_{}_{}".format(trainer_name, cloud_provider)
 _CMD_PREFIX = ". {}/etc/profile.d/conda.sh && conda activate simpy && ".format(_CONDA_PREFIX)
 
 
@@ -46,16 +46,16 @@ def start_backend_server():
 # ToDo: Add more exception handling
 def launch_trainer(trainer_name: str = None, cloud_provider: str = 'azure', config: dict = None):
 
-    result = subprocess.run(['ls', _TRAINER_PATH(trainer_name)], capture_output=True, text=True)
+    result = subprocess.run(['ls', _TRAINER_PATH(trainer_name, cloud_provider)], capture_output=True, text=True)
     # Create the Trainer Cluster if it does not exist.
     # No distinction exists between cloud providers, therefore training results are shared between runs in different
     # clouds
     if result.returncode != 0:
         # Create trainer folder
-        result = subprocess.run(['cp', '-r', 'simpy_template', _TRAINER_PATH(trainer_name)], capture_output=True,
+        result = subprocess.run(['cp', '-r', 'simpy_template', _TRAINER_PATH(trainer_name, cloud_provider)], capture_output=True,
                                 text=True)
         if result.returncode:
-            print("Error Creating Trainer Directory {}".format(_TRAINER_PATH(trainer_name)))
+            print("Error Creating Trainer Directory {}".format(_TRAINER_PATH(trainer_name, cloud_provider)))
             print(result.stderr)
 
         cursor = _BACKOFFICE_DB.cursor()
@@ -89,7 +89,7 @@ def tear_down_trainer(trainer_id: int):
     result = subprocess.run(_CMD_PREFIX + "ray down {} -y".format(_TRAINER_YAML(trainer_name, cloud_provider)),
                             shell=True, capture_output=True, text=True, executable=_SHELL)
     assert not result.returncode, "Error on Tear Down {} {}\n{}".format(_TRAINER_YAML(trainer_name, cloud_provider),
-                                                                        _TRAINER_PATH(trainer_name), result.stderr)
+                                                                    _TRAINER_PATH(trainer_name, cloud_provider), result.stderr)
 
     return result
 
@@ -100,13 +100,13 @@ def get_trainer_data(trainer_id: int):
     assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
     trainer_name, cloud_provider = row
     result = subprocess.run(_CMD_PREFIX + "ray rsync_down {} '/home/ubuntu/trainer/' '{}'".format(
-        _TRAINER_YAML(trainer_name, cloud_provider), _TRAINER_PATH(trainer_name)),
+        _TRAINER_YAML(trainer_name, cloud_provider), _TRAINER_PATH(trainer_name, cloud_provider)),
                             shell=True, capture_output=True, text=True, executable=_SHELL)
     assert not result.returncode, "Error on SyncDown {} {}\n{}".format(_TRAINER_YAML(trainer_name, cloud_provider),
-                                                                       _TRAINER_PATH(trainer_name), result.stderr)
+                                                                       _TRAINER_PATH(trainer_name, cloud_provider), result.stderr)
 
     # get the policy data from the trainer db
-    trainer_db = db_connect(_TRAINER_PATH(trainer_name) + "/" + TRAINER_DB_NAME)
+    trainer_db = db_connect(_TRAINER_PATH(trainer_name, cloud_provider) + "/" + TRAINER_DB_NAME)
     sql = '''SELECT policy.id, sim_model.name, policy.checkpoint, policy.agent_config, sim_config.config
              FROM policy INNER JOIN sim_model ON policy.sim_model_id = sim_model.id
              INNER JOIN sim_config ON policy.sim_config_id = sim_config.id'''
@@ -133,37 +133,35 @@ def get_policies():
              FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id'''
     return pd.read_sql_query(sql, _BACKOFFICE_DB)
 
+# ToDo: Test delete_trainer
+def delete_trainer(trainer_id: int):
+    sql = '''SELECT count(*) FROM policy 
+             WHERE cluster_id = {} AND backend IS NOT NULL'''.format(P_MARKER, P_MARKER)
 
-def delete_trainer(trainer_id: int, delete_backoffice: bool = False):
-    if not delete_backoffice:
-        # If backoffice data is not deleted then save the trainer data in the backoffice
-        get_trainer_data(trainer_id=trainer_id)
+    count, = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
+    assert count == 0, "Can not delete trainer with deployed policies"
     tear_down_trainer(trainer_id=trainer_id)
     sql = '''SELECT name, cloud_provider
              FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
     assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
     trainer_name, cloud_provider = row
-    result = subprocess.run(['rm', '-r', _TRAINER_PATH(trainer_name)], capture_output=True, text=True)
+    result = subprocess.run(['rm', '-r', _TRAINER_PATH(trainer_name, cloud_provider)], capture_output=True, text=True)
     if result.returncode:
         print(result.stderr)
     result = subprocess.run(['rm', _TRAINER_YAML(trainer_name, cloud_provider)], capture_output=True, text=True)
     if result.returncode:
             print(result.stderr)
     cursor = _BACKOFFICE_DB.cursor()
-    if delete_backoffice:
-        sql = '''DELETE FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
-        cursor.execute(sql, (trainer_id,))
-    else:
-        sql = "UPDATE trainer_cluster SET stop = {} WHERE id = {}".format(P_MARKER, P_MARKER)
-        cursor.execute(sql, (datetime.now(), trainer_id))
+    sql = '''DELETE FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
+    cursor.execute(sql, (trainer_id,))
     _BACKOFFICE_DB.commit()
 
 def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, policy_config: dict = None):
     class ServeModel:
-        def __init__(self, agent_config: dict, checkpoint_path: str, trainer_name: str, model_name: str):
+        def __init__(self, agent_config: dict, checkpoint_path: str, trainer_path: str, model_name: str):
 
-            sim_path = '{}.models.{}'.format(_TRAINER_PATH(trainer_name), model_name)
+            sim_path = '{}.models.{}'.format(trainer_path, model_name)
             exec_locals = {}
             try:
                 exec("from {} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel, BASE_CONFIG".format(
@@ -181,7 +179,7 @@ def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, 
             # print(agent_config)
             # assert agent_config is not None and isinstance(agent_config, dict), \
             #    "Invalid Agent Config {} when deploying a policy!".format(agent_config)
-            checkpoint_path = _TRAINER_PATH(trainer_name) + checkpoint_path[1:]
+            checkpoint_path = trainer_path + checkpoint_path[1:]
             print(checkpoint_path)
             # assert checkpoint_path is not None and isinstance(agent_config, str), \
             #    "Invalid Checkpoint Path {} when deploying a policy!".format(checkpoint_path)
@@ -195,19 +193,21 @@ def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, 
             action = self.trainer.compute_action(obs)
             return {"action": int(action)}
 
-    sql = '''SELECT trainer_cluster.name, policy.model_name, policy.checkpoint, policy.agent_config
+    sql = '''SELECT trainer_cluster.name, trainer_cluster.cloud_provider, policy.model_name, 
+                    policy.checkpoint, policy.agent_config
              FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id
              WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id, policy_id))
 
     assert row is not None, "Invalid Trainer ID {} and Policy ID {}".format(trainer_id, policy_id)
-    trainer_name, model_name, checkpoint, saved_agent_config = row
+    trainer_name, cloud_provider, model_name, checkpoint, saved_agent_config = row
     saved_agent_config = json.loads(saved_agent_config)
 
-    policy_name = "{}_{}".format(trainer_name, policy_id)
     if policy_config is None:
         policy_config = {'num_replicas': 1}
-    backend_server.create_backend(policy_name, ServeModel, saved_agent_config, checkpoint, trainer_name, model_name,
+    policy_name = "{}_{}".format(trainer_name, policy_id)
+    trainer_path = _TRAINER_PATH(trainer_name, cloud_provider)
+    backend_server.create_backend(policy_name, ServeModel, saved_agent_config, checkpoint, trainer_path, model_name,
                                   config=policy_config, env=CondaEnv("simpy"))
     sql = '''UPDATE policy SET backend_name = {} 
              WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER, P_MARKER)
@@ -231,19 +231,19 @@ def undeploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int
     _BACKOFFICE_DB.commit()
 
 def delete_policy(backend_server: ServeClient, trainer_id: int, policy_id: int):
-    sql = '''SELECT trainer_cluster.name, backend_name FROM policy 
+    sql = '''SELECT trainer_cluster.name, trainer_cluster.cloud_provider, backend_name FROM policy 
              INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id 
              WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id, policy_id))
     assert row is not None, "Invalid Trainer ID {} and Policy ID {}".format(trainer_id, policy_id)
-    trainer_name, policy_name = row
+    trainer_name, cloud_provider, policy_name = row
     if policy_name is not None:
         backend_server.delete_backend(policy_name)
     cursor = _BACKOFFICE_DB.cursor()
     sql = '''DELETE FROM policy WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER,P_MARKER)
     cursor.execute(sql, (trainer_id, policy_id))
     _BACKOFFICE_DB.commit()
-    trainer_db = db_connect(_TRAINER_PATH(trainer_name) + "/" + TRAINER_DB_NAME)
+    trainer_db = db_connect(_TRAINER_PATH(trainer_name, cloud_provider) + "/" + TRAINER_DB_NAME)
     cursor = trainer_db.cursor()
     sql = '''DELETE FROM policy WHERE id = {}'''.format(P_MARKER)
     cursor.execute(sql, (policy_id))
@@ -276,16 +276,16 @@ def set_endpoint_traffic(backend_server: ServeClient, endpoint_name: str, traffi
     backend_server.set_traffic(endpoint_name,traffic_config)
 
 def get_simulator(trainer_id: int, policy_id: int):
-    sql = '''SELECT trainer_cluster.name, policy.model_name, policy.sim_config
+    sql = '''SELECT trainer_cluster.name, trainer_cluster.cloud_provider, policy.model_name, policy.sim_config
              FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id
              WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id, policy_id))
 
     assert row is not None, "Invalid Trainer ID {} and Policy ID {}".format(trainer_id, policy_id)
-    trainer_name, model_name, sim_config = row
+    trainer_name, cloud_provider, model_name, sim_config = row
     sim_config = json.loads(sim_config)
 
-    sim_path = '{}.models.{}'.format(_TRAINER_PATH(trainer_name), model_name)
+    sim_path = '{}.models.{}'.format(_TRAINER_PATH(trainer_name, cloud_provider), model_name)
     exec_locals = {}
     try:
         exec("from {} import SimBaseline, N_ACTIONS, OBSERVATION_SPACE, SimModel, BASE_CONFIG".format(
