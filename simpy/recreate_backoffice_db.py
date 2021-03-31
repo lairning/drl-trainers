@@ -52,7 +52,7 @@ def recreate_db():
     db.execute('''create table policy_run
                    (cluster_id INTEGER,
                     run_id INTEGER,
-                    i as integer,
+                    i integer,
                     policy_id integer,
                     time_start TIMESTAMP,
                     simulations integer,
@@ -67,7 +67,7 @@ def recreate_db():
     db.execute('''create table baseline_run
                    (cluster_id INTEGER,
                     run_id INTEGER,
-                    i as integer,
+                    i integer,
                     sim_config_id INTEGER,
                     time_start TIMESTAMP,
                     simulations integer,
