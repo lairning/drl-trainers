@@ -136,7 +136,7 @@ def get_policies():
 # ToDo: Test delete_trainer
 def delete_trainer(trainer_id: int):
     sql = '''SELECT count(*) FROM policy 
-             WHERE cluster_id = {} AND backend IS NOT NULL'''.format(P_MARKER, P_MARKER)
+             WHERE cluster_id = {} AND backend_name IS NOT NULL'''.format(P_MARKER, P_MARKER)
 
     count, = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
     assert count == 0, "Can not delete trainer with deployed policies"
