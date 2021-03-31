@@ -14,14 +14,14 @@ def recreate_db():
         raise e
 
     # An entry for each trainer cluster. Stop will be filled with the remove operation.
-    db.execute('''create table trainer_cluster
-                   (id INTEGER PRIMARY KEY,
-                    name unicode,
-                    cloud_provider unicode,
-                    start TIMESTAMP,
-                    stop TIMESTAMP,
-                    config json
-                    )''')
+    # db.execute('''create table trainer_cluster
+    #               (id INTEGER PRIMARY KEY,
+    #                name unicode,
+    #                cloud_provider unicode,
+    #                start TIMESTAMP,
+    #                stop TIMESTAMP,
+    #                config json
+    #                )''')
 
     db.execute('''create table sim_config
                    (cluster_id INTEGER,
