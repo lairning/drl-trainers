@@ -81,7 +81,9 @@ def launch_trainer(trainer_name: str = None, cloud_provider: str = 'azure', conf
     return trainer_id, result
 
 # ToDo: Test tear down of trainers already down. It seems it get stuck.
-def tear_down_trainer(trainer_id: int):
+def tear_down_trainer(trainer_id: int, sync:bool = True):
+    if sync:
+        get_trainer_data(trainer_id=trainer_id)
     sql = "SELECT name, cloud_provider FROM trainer_cluster WHERE id = {}".format(P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
     assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
@@ -94,7 +96,9 @@ def tear_down_trainer(trainer_id: int):
     return result
 
 
+
 def get_trainer_data(trainer_id: int):
+
     sql = "SELECT name, cloud_provider FROM trainer_cluster WHERE id = {}".format(P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
     assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
@@ -105,24 +109,74 @@ def get_trainer_data(trainer_id: int):
     assert not result.returncode, "Error on SyncDown {} {}\n{}".format(_TRAINER_YAML(trainer_name, cloud_provider),
                                                                        _TRAINER_PATH(trainer_name, cloud_provider), result.stderr)
 
-    # get the policy data from the trainer db
+    # get the sim_config data from the trainer db
     trainer_db = db_connect(_TRAINER_PATH(trainer_name, cloud_provider) + "/" + TRAINER_DB_NAME)
-    sql = '''SELECT policy.id, sim_model.name, policy.checkpoint, policy.agent_config, sim_config.config
-             FROM policy INNER JOIN sim_model ON policy.sim_model_id = sim_model.id
-             INNER JOIN sim_config ON policy.sim_config_id = sim_config.id'''
+    sql = '''SELECT sim_config.id, sim_model.name, sim_config.name, sim_config.baseline_avg, sim_config.config
+             FROM sim_model INNER JOIN sim_config ON sim_model.id = sim_config.sim_model_id'''
+    sim_configs = select_all(trainer_db, sql=sql)
+    insert_sql = '''INSERT OR IGNORE INTO sim_config (
+                        cluster_id,
+                        config_id,
+                        model_name,
+                        config_name,        
+                        baseline_avg,
+                        sim_config
+                    ) VALUES ({})'''.format(SQLParamList(6))
+    data = [(trainer_id,) + data for data in sim_configs]
+    _BACKOFFICE_DB.executemany(insert_sql, data)
+    _BACKOFFICE_DB.commit()
+
+    # get the policy data from the trainer db
+    sql = '''SELECT policy.id, sim_config.id, policy.checkpoint, policy.agent_config, sim_config.config
+             FROM policy INNER JOIN sim_config ON policy.sim_config_id = sim_config.id'''
     cluster_policies = select_all(trainer_db, sql=sql)
     insert_sql = '''INSERT OR IGNORE INTO policy (
                         cluster_id,
                         policy_id,
-                        model_name,
+                        sim_config_id,
                         checkpoint,        
                         agent_config,
                         sim_config
                     ) VALUES ({})'''.format(SQLParamList(6))
-    for policy_data in cluster_policies:
-        cursor = _BACKOFFICE_DB.execute(insert_sql, (trainer_id,) + policy_data)
+    data = [(trainer_id,) + policy_data for policy_data in cluster_policies]
+    _BACKOFFICE_DB.executemany(insert_sql, data)
     _BACKOFFICE_DB.commit()
 
+    # Get Policy Runs
+    sql = '''SELECT id, policy_id, time_start, simulations, duration, results 
+             FROM policy_run'''
+    policy_run = select_all(trainer_db, sql=sql)
+    data = [(trainer_id, run_id, policy_id, time_start, simulations, duration, x)
+            for run_id, policy_id, time_start, simulations, duration, l in policy_run for x in json.loads(l)]
+    insert_sql = '''INSERT OR IGNORE INTO policy_run (
+                        cluster_id,
+                        run_id,
+                        policy_id,
+                        time_start,
+                        simulations,
+                        duration,        
+                        results
+                    ) VALUES ({})'''.format(SQLParamList(7))
+    _BACKOFFICE_DB.executemany(insert_sql, data)
+    _BACKOFFICE_DB.commit()
+
+    # Get Baseline Runs
+    sql = '''SELECT id, sim_config.id, time_start, simulations, duration, results 
+             FROM baseline_run'''
+    baseline_run = select_all(trainer_db, sql=sql)
+    data = [(trainer_id, run_id, sim_config_id, time_start, simulations, duration, x)
+            for run_id, sim_config_id, time_start, simulations, duration, l in baseline_run for x in json.loads(l)]
+    insert_sql = '''INSERT OR IGNORE INTO baseline_run (
+                        cluster_id,
+                        run_id,
+                        sim_config_id,
+                        time_start,
+                        simulations,
+                        duration,        
+                        results
+                    ) VALUES ({})'''.format(SQLParamList(7))
+    _BACKOFFICE_DB.executemany(insert_sql, data)
+    _BACKOFFICE_DB.commit()
 
 def get_policies():
     sql = '''SELECT policy.cluster_id as trainer_id,
