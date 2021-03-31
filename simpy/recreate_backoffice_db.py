@@ -74,7 +74,7 @@ def recreate_db():
                     duration float,
                     results json,
                     other_data json,
-                    PRIMARY KEY(cluster_id, run_id),
+                    PRIMARY KEY(cluster_id, run_id, i),
                     FOREIGN KEY(cluster_id, sim_config_id) REFERENCES sim_config(cluster_id, sim_config_id) ON DELETE CASCADE
                     )''')
 

@@ -163,7 +163,7 @@ def get_trainer_data(trainer_id: int):
     _BACKOFFICE_DB.commit()
 
     # Get Baseline Runs
-    sql = '''SELECT id, sim_config.id, time_start, simulations, duration, results 
+    sql = '''SELECT id, sim_config_id, time_start, simulations, duration, results 
              FROM baseline_run'''
     baseline_run = select_all(trainer_db, sql=sql)
     data = [(trainer_id, run_id, i, sim_config_id, time_start, simulations, duration, x)
