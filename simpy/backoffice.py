@@ -120,7 +120,7 @@ def get_trainer_data(trainer_id: int):
                         model_name,
                         config_name,        
                         baseline_avg,
-                        sim_config
+                        config
                     ) VALUES ({})'''.format(SQLParamList(6))
     data = [(trainer_id,) + data for data in sim_configs]
     _BACKOFFICE_DB.executemany(insert_sql, data)
@@ -146,17 +146,19 @@ def get_trainer_data(trainer_id: int):
     sql = '''SELECT id, policy_id, time_start, simulations, duration, results 
              FROM policy_run'''
     policy_run = select_all(trainer_db, sql=sql)
-    data = [(trainer_id, run_id, policy_id, time_start, simulations, duration, x)
-            for run_id, policy_id, time_start, simulations, duration, l in policy_run for x in json.loads(l)]
+    data = [(trainer_id, run_id, i, policy_id, time_start, simulations, duration, x)
+            for run_id, policy_id, time_start, simulations, duration, l in policy_run
+            for i, x in enumerate(json.loads(l))]
     insert_sql = '''INSERT OR IGNORE INTO policy_run (
                         cluster_id,
                         run_id,
+                        i,
                         policy_id,
                         time_start,
                         simulations,
                         duration,        
                         results
-                    ) VALUES ({})'''.format(SQLParamList(7))
+                    ) VALUES ({})'''.format(SQLParamList(8))
     _BACKOFFICE_DB.executemany(insert_sql, data)
     _BACKOFFICE_DB.commit()
 
@@ -164,17 +166,19 @@ def get_trainer_data(trainer_id: int):
     sql = '''SELECT id, sim_config.id, time_start, simulations, duration, results 
              FROM baseline_run'''
     baseline_run = select_all(trainer_db, sql=sql)
-    data = [(trainer_id, run_id, sim_config_id, time_start, simulations, duration, x)
-            for run_id, sim_config_id, time_start, simulations, duration, l in baseline_run for x in json.loads(l)]
+    data = [(trainer_id, run_id, i, sim_config_id, time_start, simulations, duration, x)
+            for run_id, sim_config_id, time_start, simulations, duration, l in baseline_run
+            for i, x in enumerate(json.loads(l))]
     insert_sql = '''INSERT OR IGNORE INTO baseline_run (
                         cluster_id,
                         run_id,
+                        i,
                         sim_config_id,
                         time_start,
                         simulations,
                         duration,        
                         results
-                    ) VALUES ({})'''.format(SQLParamList(7))
+                    ) VALUES ({})'''.format(SQLParamList(8))
     _BACKOFFICE_DB.executemany(insert_sql, data)
     _BACKOFFICE_DB.commit()
 

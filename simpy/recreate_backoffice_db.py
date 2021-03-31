@@ -52,13 +52,14 @@ def recreate_db():
     db.execute('''create table policy_run
                    (cluster_id INTEGER,
                     run_id INTEGER,
+                    i as integer,
                     policy_id integer,
                     time_start TIMESTAMP,
                     simulations integer,
                     duration float,
                     results json,
                     other_data json,
-                    PRIMARY KEY(cluster_id, run_id),
+                    PRIMARY KEY(cluster_id, run_id, i),
                     FOREIGN KEY(cluster_id, policy_id) REFERENCES policy(cluster_id, policy_id) ON DELETE CASCADE
                     )''')
 
@@ -66,6 +67,7 @@ def recreate_db():
     db.execute('''create table baseline_run
                    (cluster_id INTEGER,
                     run_id INTEGER,
+                    i as integer,
                     sim_config_id INTEGER,
                     time_start TIMESTAMP,
                     simulations integer,
