@@ -56,7 +56,7 @@ worker_nodes:
         # priority: Spot
 
 file_mounts: {{
-    '/home/ubuntu/trainer': '~/drl-trainers/simpy/trainer_{}',
+    '/home/ubuntu/trainer': '~/drl-trainers/simpy/{}',
 }}
 
 # List of shell commands to run to set up nodes.
@@ -70,6 +70,6 @@ setup_commands:
 '''
 
 # ToDo: Add other Cloud Providers
-def azure_scaler_config(trainer_name: str):
+def azure_scaler_config(cluster_name: str, trainer_path: str):
     cluster_map = {ord(c): None for c in '_-%&?»«!@#$'}
-    return azure_config_str.format(trainer_name.translate(cluster_map), trainer_name)
+    return azure_config_str.format(cluster_name.translate(cluster_map), trainer_path)

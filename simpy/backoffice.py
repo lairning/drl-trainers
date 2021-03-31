@@ -72,7 +72,7 @@ def launch_trainer(trainer_name: str = None, cloud_provider: str = 'azure', conf
     # When a cluster with the same name and provider is relaunched the configuration is overridden
     config_file = open(_TRAINER_YAML(trainer_name, cloud_provider), "wt")
     # ToDo: Add other Cloud Providers and use the configurations
-    config_file.write(azure_scaler_config(trainer_name))
+    config_file.write(azure_scaler_config(trainer_name, _TRAINER_PATH(trainer_name, cloud_provider)))
     config_file.close()
     # launch the cluster
     result = subprocess.run(_CMD_PREFIX + "ray up {} --no-config-cache -y".format(_TRAINER_YAML(
