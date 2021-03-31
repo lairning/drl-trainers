@@ -14,7 +14,7 @@ import subprocess
 import os
 
 from simpy_template.simpy_env import SimpyEnv
-from configs.scaler_config import azure_scaler_config
+from configs.scaler_config import scaler_config
 
 _SHELL = os.getenv('SHELL')
 _CONDA_PREFIX = os.getenv('CONDA_PREFIX_1') if 'CONDA_PREFIX_1' in os.environ.keys() else os.getenv('CONDA_PREFIX')
@@ -71,8 +71,8 @@ def launch_trainer(trainer_name: str = None, cloud_provider: str = 'azure', conf
     # Create trainer yaml config file
     # When a cluster with the same name and provider is relaunched the configuration is overridden
     config_file = open(_TRAINER_YAML(trainer_name, cloud_provider), "wt")
-    # ToDo: Add other Cloud Providers and use the configurations
-    config_file.write(azure_scaler_config(trainer_name, _TRAINER_PATH(trainer_name, cloud_provider)))
+    # ToDo: Test aws
+    config_file.write(scaler_config(cloud_provider, trainer_name, _TRAINER_PATH(trainer_name, cloud_provider)))
     config_file.close()
     # launch the cluster
     result = subprocess.run(_CMD_PREFIX + "ray up {} --no-config-cache -y".format(_TRAINER_YAML(
