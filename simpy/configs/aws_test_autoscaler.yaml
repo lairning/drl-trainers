@@ -30,12 +30,12 @@ auth:
 # Provider-specific config for the head node, e.g. instance type.
 head_node:
     InstanceType: m5.large
-    ImageId: ami-0a2363a9cff180a64 # Deep Learning AMI (Ubuntu) Version 30
+    ImageId: ami-017849919db4eac7c # amazon/Deep Learning AMI (Ubuntu 18.04) Version 40.0
 
 # Provider-specific config for worker nodes, e.g. instance type.
 worker_nodes:
     InstanceType: m5.large
-    ImageId: ami-0a2363a9cff180a64 # Deep Learning AMI (Ubuntu) Version 30
+    ImageId: ami-017849919db4eac7c # amazon/Deep Learning AMI (Ubuntu 18.04) Version 40.0
     InstanceMarketOptions:
         MarketType: spot
 
