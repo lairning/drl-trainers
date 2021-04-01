@@ -13,6 +13,12 @@ max_workers: 2
 # This number should be > 0.
 upscaling_speed: 1.0
 
+docker:
+    image: "rayproject/ray-ml:latest-cpu" # You can change this to latest-cpu if you don't need GPU support and want a faster startup
+    # image: rayproject/ray:latest-gpu   # use this one if you don't need ML dependencies, it's faster to pull
+    container_name: "ray_container"
+
+
 # If a node is idle for this many minutes, it will be removed.
 idle_timeout_minutes: 5
 
