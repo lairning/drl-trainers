@@ -39,9 +39,9 @@ worker_nodes:
     InstanceMarketOptions:
         MarketType: spot
 
-file_mounts:
+file_mounts: {
     '/home/ubuntu/trainer': '~/drl-trainers/simpy/trainer_traffic_light_azure',
-
+}
 
 # List of shell commands to run to set up nodes.
 setup_commands:
