@@ -114,6 +114,7 @@ file_mounts: {{
 
 # List of shell commands to run to set up nodes.
 setup_commands:
+    - pip install torch==1.8.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
     - pip install -U 'ray[rllib]'
     - pip install simpy seaborn
 
