@@ -72,7 +72,8 @@ def launch_trainer(trainer_name: str = None, cloud_provider: str = 'azure', conf
     # When a cluster with the same name and provider is relaunched the configuration is overridden
     config_file = open(_TRAINER_YAML(trainer_name, cloud_provider), "wt")
     # ToDo: Test aws
-    config_file.write(scaler_config(cloud_provider, trainer_name, _TRAINER_PATH(trainer_name, cloud_provider)))
+    config_file.write(scaler_config(cloud_provider, trainer_name, _TRAINER_PATH(trainer_name, cloud_provider),
+                                    config=config))
     config_file.close()
     # launch the cluster
     result = subprocess.run(_CMD_PREFIX + "ray up {} --no-config-cache -y".format(_TRAINER_YAML(
@@ -198,7 +199,7 @@ def delete_trainer(trainer_id: int):
 
     count, = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
     assert count == 0, "Can not delete trainer with deployed policies"
-    tear_down_trainer(trainer_id=trainer_id)
+    tear_down_trainer(trainer_id=trainer_id, sync=False)
     sql = '''SELECT name, cloud_provider
              FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))

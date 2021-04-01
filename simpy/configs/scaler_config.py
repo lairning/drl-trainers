@@ -5,7 +5,7 @@ cluster_name: {}
 # node. This takes precedence over min_workers. min_workers default to 0.
 min_workers: 0
 
-max_workers: 2
+max_workers: {}
 
 # The autoscaler will scale up the cluster faster with higher upscaling speed.
 # E.g., if the task requires adding more nodes then autoscaler will gradually
@@ -35,7 +35,7 @@ auth:
 head_node:
     azure_arm_parameters:
         # Changed to B1S that are free with the Azure Free Subscritpion
-        vmSize: Standard_D4s_v3
+        vmSize: {}
         # List images https://docs.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage
         imagePublisher: microsoft-dsvm
         imageOffer: ubuntu-1804
@@ -46,7 +46,7 @@ head_node:
 worker_nodes:
     azure_arm_parameters:
         # Changed to B1S that are free with the Azure Free Subscritpion
-        vmSize: Standard_D2s_v3
+        vmSize: {}
         # List images https://docs.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage
         imagePublisher: microsoft-dsvm
         imageOffer: ubuntu-1804
@@ -74,7 +74,7 @@ cluster_name: {}
 # node. This takes precedence over min_workers. min_workers default to 0.
 min_workers: 0
 
-max_workers: 2
+max_workers: {}
 
 # The autoscaler will scale up the cluster faster with higher upscaling speed.
 # E.g., if the task requires adding more nodes then autoscaler will gradually
@@ -98,12 +98,12 @@ auth:
 
 # Provider-specific config for the head node, e.g. instance type.
 head_node:
-    InstanceType: m5.large
+    InstanceType: {}
     ImageId: ami-017849919db4eac7c # amazon/Deep Learning AMI (Ubuntu 18.04) Version 40.0
 
 # Provider-specific config for worker nodes, e.g. instance type.
 worker_nodes:
-    InstanceType: m5.large
+    InstanceType: {}
     ImageId: ami-017849919db4eac7c # amazon/Deep Learning AMI (Ubuntu 18.04) Version 40.0
     InstanceMarketOptions:
         MarketType: spot
@@ -120,11 +120,22 @@ setup_commands:
 
 '''
 
-def scaler_config(cloud_provider: str, cluster_name: str, trainer_path: str):
+
+def scaler_config(cloud_provider: str, cluster_name: str, trainer_path: str, config: dict = None):
     cluster_map = {ord(c): None for c in '_-%&?»«!@#$'}
     if cloud_provider == "azure":
-        return azure_config_str.format(cluster_name.translate(cluster_map), trainer_path)
+        config = config if config is not None else {'worker_nodes': 2, 'header_type': 'Standard_D4s_v3',
+                                                    'worker_type' : 'Standard_D2s_v3'}
+        worker_nodes = config.get('worker_nodes', 2)
+        header_type = config.get('header_type', 'Standard_D4s_v3')
+        worker_type = config.get('worker_type', 'Standard_D2s_v3')
+        return azure_config_str.format(cluster_name.translate(cluster_map), worker_nodes, header_type, worker_type,
+                                       trainer_path)
     if cloud_provider == "aws":
-        return aws_config_str.format(cluster_name.translate(cluster_map), trainer_path)
+        config = config if config is not None else {'worker_nodes': 2, 'header_type': 'm5.large'}
+        worker_nodes = config.get('worker_nodes', 2)
+        header_type = config.get('header_type', 'm5.large')
+        worker_type = config.get('worker_type', 'm5.large')
+        return aws_config_str.format(cluster_name.translate(cluster_map), worker_nodes, header_type, worker_type,
+                                     trainer_path)
     raise "Invalid Cloud Provider '{}'. Available Cloud Providers are ['azure','aws']".format(cloud_provider)
-
