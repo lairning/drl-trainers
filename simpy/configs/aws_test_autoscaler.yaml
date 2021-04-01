@@ -1,0 +1,49 @@
+# An unique identifier for the head node and workers of this cluster.
+cluster_name: lairning
+
+# The maximum number of workers nodes to launch in addition to the head
+# node. This takes precedence over min_workers. min_workers default to 0.
+min_workers: 0
+
+max_workers: 2
+
+# The autoscaler will scale up the cluster faster with higher upscaling speed.
+# E.g., if the task requires adding more nodes then autoscaler will gradually
+# scale up the cluster in chunks of upscaling_speed*currently_running_nodes.
+# This number should be > 0.
+upscaling_speed: 1.0
+
+# If a node is idle for this many minutes, it will be removed.
+idle_timeout_minutes: 5
+
+
+# Cloud-provider specific configuration.
+provider:
+    type: aws
+    region: us-west-2
+    availability_zone: us-west-2a
+
+# How Ray will authenticate with newly launched nodes.
+auth:
+    ssh_user: ubuntu
+
+# Provider-specific config for the head node, e.g. instance type.
+head_node:
+    InstanceType: m5.large
+    ImageId: ami-0a2363a9cff180a64 # Deep Learning AMI (Ubuntu) Version 30
+
+# Provider-specific config for worker nodes, e.g. instance type.
+worker_nodes:
+    InstanceType: m5.large
+    ImageId: ami-0a2363a9cff180a64 # Deep Learning AMI (Ubuntu) Version 30
+    InstanceMarketOptions:
+        MarketType: spot
+
+file_mounts: {{
+    '/home/ubuntu/trainer': '~/drl-trainers/simpy/trainer_traffic_light_azure',
+}}
+
+# List of shell commands to run to set up nodes.
+setup_commands:
+    - pip install -U 'ray[rllib]'
+    - pip install simpy seaborn
