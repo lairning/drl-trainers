@@ -20,7 +20,7 @@ idle_timeout_minutes: 5
 # Cloud-provider specific configuration.
 provider:
     type: aws
-    region: eu-west-2
+    region: eu-west-1
     availability_zone: eu-west-1a
 
 # How Ray will authenticate with newly launched nodes.
