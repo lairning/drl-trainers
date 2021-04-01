@@ -125,4 +125,5 @@ def scaler_config(cloud_provider: str, cluster_name: str, trainer_path: str):
         return azure_config_str.format(cluster_name.translate(cluster_map), trainer_path)
     if cloud_provider == "aws":
         return aws_config_str.format(cluster_name.translate(cluster_map), trainer_path)
+    raise "Invalid Cloud Provider '{}'. Available Cloud Providers are ['azure','aws']".format(cloud_provider)
 
