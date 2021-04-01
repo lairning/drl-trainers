@@ -44,7 +44,7 @@ def start_backend_server():
 
 
 # ToDo: Add more exception handling
-def launch_trainer(trainer_name: str = None, cloud_provider: str = 'azure', config: dict = None):
+def launch_trainer(trainer_name: str = None, cloud_provider: str = 'azure', cluster_config: dict = None):
 
     result = subprocess.run(['ls', _TRAINER_PATH(trainer_name, cloud_provider)], capture_output=True, text=True)
     # Create the Trainer Cluster if it does not exist.
@@ -60,7 +60,7 @@ def launch_trainer(trainer_name: str = None, cloud_provider: str = 'azure', conf
 
         cursor = _BACKOFFICE_DB.cursor()
         sql = "INSERT INTO trainer_cluster (name, cloud_provider, start, config) VALUES ({})".format(SQLParamList(4))
-        params = (trainer_name, cloud_provider, datetime.now(), json.dumps(config))
+        params = (trainer_name, cloud_provider, datetime.now(), json.dumps(cluster_config))
         cursor.execute(sql, params)
         _BACKOFFICE_DB.commit()
         trainer_id = cursor.lastrowid
@@ -73,7 +73,7 @@ def launch_trainer(trainer_name: str = None, cloud_provider: str = 'azure', conf
     config_file = open(_TRAINER_YAML(trainer_name, cloud_provider), "wt")
     # ToDo: Test aws
     config_file.write(scaler_config(cloud_provider, trainer_name, _TRAINER_PATH(trainer_name, cloud_provider),
-                                    config=config))
+                                    config=cluster_config))
     config_file.close()
     # launch the cluster
     result = subprocess.run(_CMD_PREFIX + "ray up {} --no-config-cache -y".format(_TRAINER_YAML(

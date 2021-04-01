@@ -114,15 +114,22 @@ file_mounts: {{
 
 # List of shell commands to run to set up nodes.
 setup_commands:
-    - pip install torch==1.8.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
+    - pip install torch=={} -f https://download.pytorch.org/whl/torch_stable.html
     - pip install -U 'ray[rllib]'
     - pip install simpy seaborn
 
 '''
 
 
+
 def scaler_config(cloud_provider: str, cluster_name: str, trainer_path: str, config: dict = None):
+
+    def is_aws_gpu(header_type, worker_type):
+        gpu_prefix = ['p3', 'p4', 'g3', 'g4']
+        return header_type in gpu_prefix or header_type in gpu_prefix
+
     cluster_map = {ord(c): None for c in '_-%&?»«!@#$'}
+
     if cloud_provider == "azure":
         config = config if config is not None else {'worker_nodes': 2, 'header_type': 'Standard_D4s_v3',
                                                     'worker_type' : 'Standard_D2s_v3'}
@@ -132,10 +139,12 @@ def scaler_config(cloud_provider: str, cluster_name: str, trainer_path: str, con
         return azure_config_str.format(cluster_name.translate(cluster_map), worker_nodes, header_type, worker_type,
                                        trainer_path)
     if cloud_provider == "aws":
-        config = config if config is not None else {'worker_nodes': 2, 'header_type': 'm5.large'}
+        config = config if config is not None else {'worker_nodes': 2, 'header_type': 'm5.large',
+                                                    'worker_type': 'm5.large'}
         worker_nodes = config.get('worker_nodes', 2)
         header_type = config.get('header_type', 'm5.large')
         worker_type = config.get('worker_type', 'm5.large')
+        pytorch_version = "1.8.1+cu102" if is_aws_gpu(header_type, worker_type) else "1.8.1+cpu"
         return aws_config_str.format(cluster_name.translate(cluster_map), worker_nodes, header_type, worker_type,
-                                     trainer_path)
+                                     trainer_path, pytorch_version)
     raise "Invalid Cloud Provider '{}'. Available Cloud Providers are ['azure','aws']".format(cloud_provider)
