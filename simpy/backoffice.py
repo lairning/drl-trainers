@@ -79,9 +79,12 @@ def launch_trainer(trainer_name: str = None, cloud_provider: str = '', cluster_c
         # launch the cluster
         result = subprocess.run(_CMD_PREFIX + "ray up {} --no-config-cache -y".format(_TRAINER_YAML(
             trainer_name, cloud_provider)), shell=True, capture_output=True, text=True, executable=_SHELL)
-        # subprocess.run(_CMD_PREFIX + "ray rsync_up {} '{}/' '/home/ubuntu/trainer'".format(
-        #    _TRAINER_YAML(trainer_name, cloud_provider), _TRAINER_PATH(trainer_name, cloud_provider)),
-        #                        shell=True, capture_output=True, text=True, executable=_SHELL)
+        subprocess.run(_CMD_PREFIX + "ray exec {} 'rm -r /home/ubuntu/trainer/*'".format(
+            _TRAINER_YAML(trainer_name, cloud_provider)),
+                                shell=True, capture_output=True, text=True, executable=_SHELL)
+        subprocess.run(_CMD_PREFIX + "ray rsync_up {} '{}/' '/home/ubuntu/trainer/'".format(
+            _TRAINER_YAML(trainer_name, cloud_provider), _TRAINER_PATH(trainer_name, cloud_provider)),
+                                shell=True, capture_output=True, text=True, executable=_SHELL)
 
     _BACKOFFICE_DB.commit()
     return trainer_id, result
