@@ -44,7 +44,7 @@ def start_backend_server():
 
 
 # ToDo: Add more exception handling
-def launch_trainer(trainer_name: str = None, cloud_provider: str = 'azure', cluster_config: dict = None):
+def launch_trainer(trainer_name: str = None, cloud_provider: str = '', cluster_config: dict = None):
 
     result = subprocess.run(['ls', _TRAINER_PATH(trainer_name, cloud_provider)], capture_output=True, text=True)
     # Create the Trainer Cluster if it does not exist.
@@ -70,14 +70,15 @@ def launch_trainer(trainer_name: str = None, cloud_provider: str = 'azure', clus
         trainer_id, = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_name, cloud_provider))
     # Create trainer yaml config file
     # When a cluster with the same name and provider is relaunched the configuration is overridden
-    config_file = open(_TRAINER_YAML(trainer_name, cloud_provider), "wt")
-    # ToDo: Test aws
-    config_file.write(scaler_config(cloud_provider, trainer_name, _TRAINER_PATH(trainer_name, cloud_provider),
-                                    config=cluster_config))
-    config_file.close()
-    # launch the cluster
-    result = subprocess.run(_CMD_PREFIX + "ray up {} --no-config-cache -y".format(_TRAINER_YAML(
-        trainer_name, cloud_provider)), shell=True, capture_output=True, text=True, executable=_SHELL)
+    if cloud_provider != '':
+        config_file = open(_TRAINER_YAML(trainer_name, cloud_provider), "wt")
+        # ToDo: Test aws
+        config_file.write(scaler_config(cloud_provider, trainer_name, _TRAINER_PATH(trainer_name, cloud_provider),
+                                        config=cluster_config))
+        config_file.close()
+        # launch the cluster
+        result = subprocess.run(_CMD_PREFIX + "ray up {} --no-config-cache -y".format(_TRAINER_YAML(
+            trainer_name, cloud_provider)), shell=True, capture_output=True, text=True, executable=_SHELL)
     _BACKOFFICE_DB.commit()
     return trainer_id, result
 
@@ -89,12 +90,11 @@ def tear_down_trainer(trainer_id: int, sync:bool = True):
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
     assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
     trainer_name, cloud_provider = row
-    result = subprocess.run(_CMD_PREFIX + "ray down {} -y".format(_TRAINER_YAML(trainer_name, cloud_provider)),
-                            shell=True, capture_output=True, text=True, executable=_SHELL)
-    assert not result.returncode, "Error on Tear Down {} {}\n{}".format(_TRAINER_YAML(trainer_name, cloud_provider),
-                                                                    _TRAINER_PATH(trainer_name, cloud_provider), result.stderr)
-
-    return result
+    if cloud_provider != '':
+        result = subprocess.run(_CMD_PREFIX + "ray down {} -y".format(_TRAINER_YAML(trainer_name, cloud_provider)),
+                                shell=True, capture_output=True, text=True, executable=_SHELL)
+        assert not result.returncode, "Error on Tear Down {} {}\n{}".format(_TRAINER_YAML(trainer_name, cloud_provider),
+                                                                        _TRAINER_PATH(trainer_name, cloud_provider), result.stderr)
 
 
 
@@ -104,10 +104,11 @@ def get_trainer_data(trainer_id: int):
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
     assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
     trainer_name, cloud_provider = row
-    result = subprocess.run(_CMD_PREFIX + "ray rsync_down {} '/home/ubuntu/trainer/' '{}'".format(
-        _TRAINER_YAML(trainer_name, cloud_provider), _TRAINER_PATH(trainer_name, cloud_provider)),
-                            shell=True, capture_output=True, text=True, executable=_SHELL)
-    assert not result.returncode, "Error on SyncDown {} {}\n{}".format(_TRAINER_YAML(trainer_name, cloud_provider),
+    if cloud_provider != '':
+        result = subprocess.run(_CMD_PREFIX + "ray rsync_down {} '/home/ubuntu/trainer/' '{}'".format(
+            _TRAINER_YAML(trainer_name, cloud_provider), _TRAINER_PATH(trainer_name, cloud_provider)),
+                                shell=True, capture_output=True, text=True, executable=_SHELL)
+        assert not result.returncode, "Error on SyncDown {} {}\n{}".format(_TRAINER_YAML(trainer_name, cloud_provider),
                                                                        _TRAINER_PATH(trainer_name, cloud_provider), result.stderr)
 
     # get the sim_config data from the trainer db
@@ -208,9 +209,10 @@ def delete_trainer(trainer_id: int):
     result = subprocess.run(['rm', '-r', _TRAINER_PATH(trainer_name, cloud_provider)], capture_output=True, text=True)
     if result.returncode:
         print(result.stderr)
-    result = subprocess.run(['rm', _TRAINER_YAML(trainer_name, cloud_provider)], capture_output=True, text=True)
-    if result.returncode:
-            print(result.stderr)
+    if cloud_provider != '':
+        result = subprocess.run(['rm', _TRAINER_YAML(trainer_name, cloud_provider)], capture_output=True, text=True)
+        if result.returncode:
+                print(result.stderr)
     cursor = _BACKOFFICE_DB.cursor()
     sql = '''DELETE FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
     cursor.execute(sql, (trainer_id,))
