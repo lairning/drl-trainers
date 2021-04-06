@@ -31,7 +31,7 @@ def start_backend_server(config = None):
     #stderrout = sys.stderr
     #sys.stderr = open('modelserver.log', 'w')
     if not ray.is_initialized():
-        ray.init(address='auto')
+        ray.init(include_dashboard=False, log_to_driver=False, logging_level=0, address='auto')
 
     try:
         backend_server = serve.connect()
