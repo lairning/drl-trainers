@@ -152,7 +152,7 @@ def show_policies():
     sql = "SELECT id, name, cloud_provider FROM trainer_cluster"
     rows = select_all(_BACKOFFICE_DB, sql=sql)
     results = []
-    sql = '''SELECT sim_model.name as model_name, 
+    policy_data_sql = '''SELECT sim_model.name as model_name, 
                     policy.sim_config_id as sim_config_id,
                     policy_run.policy_id as policy_id, 
                     policy_run.id as policy_run_id, 
@@ -163,14 +163,17 @@ def show_policies():
              FROM policy_run 
              INNER JOIN policy ON policy_run.policy_id = policy.id
              INNER JOIN sim_model ON policy.sim_model_id = sim_model.id'''
+    deployed_sql = '''SELECT policy_id
+                           FROM policy WHERE trainer_id = {}'''.format(P_MARKER)
     for trainer_row in rows:
         trainer_id, trainer_name, cloud_provider = trainer_row
         trainer_db = db_connect(_TRAINER_PATH(trainer_name, cloud_provider) + "/" + TRAINER_DB_NAME)
-        trainer_data = select_all(trainer_db,sql=sql)
-        df_data = [trainer_row+data[:-1]+(np.mean(json.loads(data[-1])), np.std(json.loads(data[-1])))
-                                               for data in trainer_data]
+        trainer_data = select_all(trainer_db,sql=policy_data_sql)
+        deployed_policies = [row[0] for row in select_all(_BACKOFFICE_DB, sql=deployed_sql, params=(trainer_id,))]
+        df_data = [trainer_row+data[:-1]+(np.mean(json.loads(data[-1])), np.std(json.loads(data[-1])),
+                                          data[2] in deployed_policies) for data in trainer_data]
         df_columns = ['trainer_id', 'trainer_name', 'cloud_provider', 'model_name', 'sim_config_id', 'policy_id',
-                      'run_id', 'time_start', 'simulations', 'duration', 'mean', 'std']
+                      'run_id', 'time_start', 'simulations', 'duration', 'mean', 'std', 'deployed']
         results.append(pd.DataFrame(data=df_data, columns=df_columns))
     return pd.concat(results)
 
