@@ -298,7 +298,7 @@ def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, 
     # Get Policy info
     sql = '''SELECT sim_model.name, policy.checkpoint, policy.agent_config
              FROM policy INNER JOIN sim_model ON policy.sim_model_id = sim_model.id
-             WHERE policy_id = {}'''.format(P_MARKER)
+             WHERE policy.id = {}'''.format(P_MARKER)
     row = select_record(trainer_db, sql=sql, params=(policy_id,))
     assert row is not None, "Invalid Trainer ID {} and Policy ID {}".format(trainer_id, policy_id)
     trainer_name, cloud_provider, model_name, checkpoint, saved_agent_config = row
