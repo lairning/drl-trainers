@@ -271,6 +271,7 @@ def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, 
             except Exception as e:
                 raise e
 
+            agent_config["num_workers"] = 0
             agent_config["env"] = SimpyEnv
             agent_config["env_config"] = {"n_actions"        : exec_locals['N_ACTIONS'],
                                           "observation_space": exec_locals['OBSERVATION_SPACE'],
