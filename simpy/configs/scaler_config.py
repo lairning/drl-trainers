@@ -126,7 +126,7 @@ def scaler_config(cloud_provider: str, cluster_name: str, trainer_path: str, con
 
     def is_aws_gpu(header_type, worker_type):
         gpu_prefix = ['p2','p3', 'p4', 'g3', 'g4']
-        return header_type in gpu_prefix or header_type in gpu_prefix
+        return header_type[:2] in gpu_prefix or worker_type[:2] in gpu_prefix
 
     cluster_map = {ord(c): None for c in '_-%&?»«!@#$'}
 
@@ -145,6 +145,7 @@ def scaler_config(cloud_provider: str, cluster_name: str, trainer_path: str, con
         header_type = config.get('header_type', 'm5.large')
         worker_type = config.get('worker_type', 'm5.large')
         pytorch_version = "1.8.1+cu102" if is_aws_gpu(header_type, worker_type) else "1.8.1+cpu"
+        print()
         return aws_config_str.format(cluster_name.translate(cluster_map), worker_nodes, header_type, worker_type,
                                      trainer_path, pytorch_version)
     raise "Invalid Cloud Provider '{}'. Available Cloud Providers are ['azure','aws']".format(cloud_provider)
