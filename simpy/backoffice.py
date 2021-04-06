@@ -96,9 +96,8 @@ def launch_trainer(trainer_name: str = None, cloud_provider: str = '', cluster_c
     return trainer_id, result
 
 # ToDo: Test tear down of trainers already down. It seems it get stuck.
-def tear_down_trainer(trainer_id: int, sync:bool = True):
-    if sync:
-        get_trainer_data(trainer_id=trainer_id)
+def tear_down_trainer(trainer_id: int):
+    get_trainer_data(trainer_id=trainer_id)
     sql = "SELECT name, cloud_provider FROM trainer_cluster WHERE id = {}".format(P_MARKER)
     row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
     assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
@@ -123,79 +122,6 @@ def get_trainer_data(trainer_id: int):
                                 shell=True, capture_output=True, text=True, executable=_SHELL)
         assert not result.returncode, "Error on SyncDown {} {}\n{}".format(_TRAINER_YAML(trainer_name, cloud_provider),
                                                                        _TRAINER_PATH(trainer_name, cloud_provider), result.stderr)
-
-    # get the sim_config data from the trainer db
-    trainer_db = db_connect(_TRAINER_PATH(trainer_name, cloud_provider) + "/" + TRAINER_DB_NAME)
-    sql = '''SELECT sim_config.id, sim_model.name, sim_config.name, sim_config.baseline_avg, sim_config.config
-             FROM sim_model INNER JOIN sim_config ON sim_model.id = sim_config.sim_model_id'''
-    sim_configs = select_all(trainer_db, sql=sql)
-    insert_sql = '''INSERT OR IGNORE INTO sim_config (
-                        cluster_id,
-                        config_id,
-                        model_name,
-                        config_name,        
-                        baseline_avg,
-                        config
-                    ) VALUES ({})'''.format(SQLParamList(6))
-    data = [(trainer_id,) + data for data in sim_configs]
-    _BACKOFFICE_DB.executemany(insert_sql, data)
-    _BACKOFFICE_DB.commit()
-
-    # get the policy data from the trainer db
-    sql = '''SELECT policy.id, sim_config.id, policy.checkpoint, policy.agent_config, sim_config.config
-             FROM policy INNER JOIN sim_config ON policy.sim_config_id = sim_config.id'''
-    cluster_policies = select_all(trainer_db, sql=sql)
-    insert_sql = '''INSERT OR IGNORE INTO policy (
-                        cluster_id,
-                        policy_id,
-                        sim_config_id,
-                        checkpoint,        
-                        agent_config,
-                        sim_config
-                    ) VALUES ({})'''.format(SQLParamList(6))
-    data = [(trainer_id,) + policy_data for policy_data in cluster_policies]
-    _BACKOFFICE_DB.executemany(insert_sql, data)
-    _BACKOFFICE_DB.commit()
-
-    # Get Policy Runs
-    sql = '''SELECT id, policy_id, time_start, simulations, duration, results 
-             FROM policy_run'''
-    policy_run = select_all(trainer_db, sql=sql)
-    data = [(trainer_id, run_id, i, policy_id, time_start, simulations, duration, x)
-            for run_id, policy_id, time_start, simulations, duration, l in policy_run
-            for i, x in enumerate(json.loads(l))]
-    insert_sql = '''INSERT OR IGNORE INTO policy_run (
-                        cluster_id,
-                        run_id,
-                        i,
-                        policy_id,
-                        time_start,
-                        simulations,
-                        duration,        
-                        results
-                    ) VALUES ({})'''.format(SQLParamList(8))
-    _BACKOFFICE_DB.executemany(insert_sql, data)
-    _BACKOFFICE_DB.commit()
-
-    # Get Baseline Runs
-    sql = '''SELECT id, sim_config_id, time_start, simulations, duration, results 
-             FROM baseline_run'''
-    baseline_run = select_all(trainer_db, sql=sql)
-    data = [(trainer_id, run_id, i, sim_config_id, time_start, simulations, duration, x)
-            for run_id, sim_config_id, time_start, simulations, duration, l in baseline_run
-            for i, x in enumerate(json.loads(l))]
-    insert_sql = '''INSERT OR IGNORE INTO baseline_run (
-                        cluster_id,
-                        run_id,
-                        i,
-                        sim_config_id,
-                        time_start,
-                        simulations,
-                        duration,        
-                        results
-                    ) VALUES ({})'''.format(SQLParamList(8))
-    _BACKOFFICE_DB.executemany(insert_sql, data)
-    _BACKOFFICE_DB.commit()
 
 def delete_trainer(trainer_id: int):
     sql = '''SELECT count(*) FROM policy 
@@ -329,38 +255,13 @@ def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, 
     print("# Policy '{}' Deployed".format(policy_name))
     return policy_name
 
-def undeploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int):
-    sql = '''SELECT backend_name FROM policy 
-             WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
-    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id, policy_id))
-    assert row is not None, "Invalid Trainer ID {} and Policy ID {}".format(trainer_id, policy_id)
-    policy_name, = row
+def undeploy_policy(backend_server: ServeClient, policy_name: str):
+    sql = '''DELETE FROM policy 
+             WHERE backend_name = {}'''.format(P_MARKER)
+    cursor = _BACKOFFICE_DB.cursor()
+    cursor.execute(sql, (policy_name, ))
+    _BACKOFFICE_DB.commit()
     backend_server.delete_backend(policy_name)
-    sql = '''UPDATE policy SET backend_name = {} 
-             WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER, P_MARKER)
-    cursor = _BACKOFFICE_DB.cursor()
-    cursor.execute(sql, (None, trainer_id, policy_id))
-    _BACKOFFICE_DB.commit()
-
-def delete_policy(backend_server: ServeClient, trainer_id: int, policy_id: int):
-    sql = '''SELECT trainer_cluster.name, trainer_cluster.cloud_provider, backend_name FROM policy 
-             INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id 
-             WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
-    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id, policy_id))
-    assert row is not None, "Invalid Trainer ID {} and Policy ID {}".format(trainer_id, policy_id)
-    trainer_name, cloud_provider, policy_name = row
-    if policy_name is not None:
-        backend_server.delete_backend(policy_name)
-    cursor = _BACKOFFICE_DB.cursor()
-    sql = '''DELETE FROM policy WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER,P_MARKER)
-    cursor.execute(sql, (trainer_id, policy_id))
-    _BACKOFFICE_DB.commit()
-    trainer_db = db_connect(_TRAINER_PATH(trainer_name, cloud_provider) + "/" + TRAINER_DB_NAME)
-    cursor = trainer_db.cursor()
-    sql = '''DELETE FROM policy WHERE id = {}'''.format(P_MARKER)
-    cursor.execute(sql, (policy_id))
-    trainer_db.commit()
-
 
 def add_endpoint(backend_server: ServeClient, policy_name: str, endpoint_name: str):
     assert endpoint_name is not None and isinstance(endpoint_name,str), "Invalid endpoint {}".format(endpoint_name)
@@ -374,10 +275,6 @@ def deploy_endpoint_policy(backend_server: ServeClient, trainer_id: int, policy_
                            endpoint_name: str = None):
     policy_name = deploy_policy(backend_server, trainer_id, policy_id, policy_config)
     if endpoint_name is None:
-        # sql = '''SELECT model_name
-        #         FROM policy
-        #         WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
-        # endpoint_name, = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id, policy_id))
         endpoint_name = policy_name
     add_endpoint(backend_server,policy_name,endpoint_name)
     return endpoint_name, policy_name
