@@ -380,13 +380,24 @@ def set_endpoint_traffic(backend_server: ServeClient, endpoint_name: str, traffi
     backend_server.set_traffic(endpoint_name,traffic_config)
 
 def get_simulator(trainer_id: int, policy_id: int):
+
+    # Get Trainer DB
+    sql = "SELECT name, cloud_provider FROM trainer_cluster WHERE id = {}".format(P_MARKER)
+    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
+    assert row is not None, "Invalid Trainer ID {} ".format(trainer_id)
+    trainer_name, cloud_provider = row
+    trainer_db = db_connect(_TRAINER_PATH(trainer_name, cloud_provider) + "/" + TRAINER_DB_NAME)
+
     sql = '''SELECT trainer_cluster.name, trainer_cluster.cloud_provider, policy.model_name, policy.sim_config
              FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id
-             WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
-    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id, policy_id))
-
+             WHERE policy_id = {}'''.format(P_MARKER, P_MARKER)
+    sql = '''SELECT sim_model.name, sim_config.config
+             FROM policy INNER JOIN sim_model ON policy.sim_model_id = sim_model.id
+             INNER JOIN sim_config ON policy.sim_config_id = sim_config.id
+             WHERE policy.id = {}'''.format(P_MARKER)
+    row = select_record(trainer_db, sql=sql, params=(policy_id,))
     assert row is not None, "Invalid Trainer ID {} and Policy ID {}".format(trainer_id, policy_id)
-    trainer_name, cloud_provider, model_name, sim_config = row
+    model_name, sim_config = row
     sim_config = json.loads(sim_config)
 
     sim_path = '{}.models.{}'.format(_TRAINER_PATH(trainer_name, cloud_provider), model_name)
