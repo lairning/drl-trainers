@@ -25,8 +25,9 @@ _TRAINER_YAML = lambda trainer_name, cloud_provider: "configs/{}_{}_scaler.yaml"
 _TRAINER_PATH = lambda trainer_name, cloud_provider: "trainer_{}_{}".format(trainer_name, cloud_provider)
 _CMD_PREFIX = ". {}/etc/profile.d/conda.sh && conda activate simpy && ".format(_CONDA_PREFIX)
 
+_POLICY_ACTOR_CONFIG = {'num_cpus': 1}
 
-def start_backend_server():
+def start_backend_server(config = None):
     #stderrout = sys.stderr
     #sys.stderr = open('modelserver.log', 'w')
     if not ray.is_initialized():
@@ -36,6 +37,10 @@ def start_backend_server():
         backend_server = serve.connect()
     except RayServeException:
         backend_server = serve.start(detached=True)
+
+    if config != None:
+        global _POLICY_ACTOR_CONFIG
+        _POLICY_ACTOR_CONFIG = config
 
     #sys.stderr = stderrout
     #print("{} INFO Model Server started on {}".format(datetime.now(), addr))
