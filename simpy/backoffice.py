@@ -192,6 +192,31 @@ def get_trainer_data(trainer_id: int):
     _BACKOFFICE_DB.executemany(insert_sql, data)
     _BACKOFFICE_DB.commit()
 
+def delete_trainer(trainer_id: int):
+    sql = '''SELECT count(*) FROM policy 
+             WHERE cluster_id = {} AND backend_name IS NOT NULL'''.format(P_MARKER, P_MARKER)
+
+    count, = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
+    assert count == 0, "Can not delete trainer with deployed policies"
+    tear_down_trainer(trainer_id=trainer_id, sync=False)
+    sql = '''SELECT name, cloud_provider
+             FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
+    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
+    assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
+    trainer_name, cloud_provider = row
+    result = subprocess.run(['rm', '-r', _TRAINER_PATH(trainer_name, cloud_provider)], capture_output=True, text=True)
+    if result.returncode:
+        print(result.stderr)
+    if cloud_provider != '':
+        result = subprocess.run(['rm', _TRAINER_YAML(trainer_name, cloud_provider)], capture_output=True, text=True)
+        if result.returncode:
+                print(result.stderr)
+    cursor = _BACKOFFICE_DB.cursor()
+    sql = '''DELETE FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
+    cursor.execute(sql, (trainer_id,))
+    _BACKOFFICE_DB.commit()
+
+
 def show_policies():
     sql = "SELECT id, name, cloud_provider FROM trainer_cluster"
     rows = select_all(_BACKOFFICE_DB, sql=sql)
@@ -218,30 +243,6 @@ def show_policies():
         results.append(pd.DataFrame(data=df_data, columns=df_columns))
     return pd.concat(results)
 
-
-def delete_trainer(trainer_id: int):
-    sql = '''SELECT count(*) FROM policy 
-             WHERE cluster_id = {} AND backend_name IS NOT NULL'''.format(P_MARKER, P_MARKER)
-
-    count, = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
-    assert count == 0, "Can not delete trainer with deployed policies"
-    tear_down_trainer(trainer_id=trainer_id, sync=False)
-    sql = '''SELECT name, cloud_provider
-             FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
-    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
-    assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
-    trainer_name, cloud_provider = row
-    result = subprocess.run(['rm', '-r', _TRAINER_PATH(trainer_name, cloud_provider)], capture_output=True, text=True)
-    if result.returncode:
-        print(result.stderr)
-    if cloud_provider != '':
-        result = subprocess.run(['rm', _TRAINER_YAML(trainer_name, cloud_provider)], capture_output=True, text=True)
-        if result.returncode:
-                print(result.stderr)
-    cursor = _BACKOFFICE_DB.cursor()
-    sql = '''DELETE FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
-    cursor.execute(sql, (trainer_id,))
-    _BACKOFFICE_DB.commit()
 
 # ToDo: complete using the trainer.py code
 def get_training_data(trainer_id: int, sim_config: int = None, baseline: bool = True):
@@ -287,28 +288,37 @@ def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, 
             action = self.trainer.compute_action(obs)
             return {"action": int(action)}
 
-    sql = '''SELECT trainer_cluster.name, trainer_cluster.cloud_provider, policy.model_name, 
-                    policy.checkpoint, policy.agent_config
-             FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id
-             WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER)
-    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id, policy_id))
+    # Get Trainer DB
+    sql = "SELECT name, cloud_provider FROM trainer_cluster WHERE id = {}".format(P_MARKER)
+    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
+    assert row is not None, "Invalid Trainer ID {} ".format(trainer_id)
+    trainer_name, cloud_provider = row
+    trainer_db = db_connect(_TRAINER_PATH(trainer_name, cloud_provider) + "/" + TRAINER_DB_NAME)
 
+    # Get Policy info
+    sql = '''SELECT sim_model.name, policy.checkpoint, policy.agent_config
+             FROM policy INNER JOIN sim_model ON policy.sim_model_id = sim_model.id
+             WHERE policy_id = {}'''.format(P_MARKER)
+    row = select_record(trainer_db, sql=sql, params=(policy_id,))
     assert row is not None, "Invalid Trainer ID {} and Policy ID {}".format(trainer_id, policy_id)
     trainer_name, cloud_provider, model_name, checkpoint, saved_agent_config = row
     saved_agent_config = json.loads(saved_agent_config)
 
     if policy_config is None:
         policy_config = {'num_replicas': 1}
-    policy_name = "{}_{}".format(trainer_name, policy_id)
+    policy_name = "trainer{}_policy{}".format(trainer_id, policy_id)
     trainer_path = _TRAINER_PATH(trainer_name, cloud_provider)
     backend_server.create_backend(policy_name, ServeModel, saved_agent_config, checkpoint, trainer_path, model_name,
                                   config=policy_config, env=CondaEnv("simpy"))
-    sql = '''UPDATE policy SET backend_name = {} 
-             WHERE cluster_id = {} AND policy_id = {}'''.format(P_MARKER, P_MARKER, P_MARKER)
+    insert_sql = '''INSERT OR IGNORE INTO policy (
+                        trainer_id,
+                        policy_id,
+                        backend_name
+                    ) VALUES ({})'''.format(SQLParamList(3))
     cursor = _BACKOFFICE_DB.cursor()
-    cursor.execute(sql, (policy_name, trainer_id, policy_id))
+    cursor.execute(sql, (trainer_id, policy_id, policy_name))
     _BACKOFFICE_DB.commit()
-    print("# Policy '{}' Configured".format(policy_name))
+    print("# Policy '{}' Deployed".format(policy_name))
     return policy_name
 
 def undeploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int):
