@@ -301,7 +301,7 @@ def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, 
              WHERE policy.id = {}'''.format(P_MARKER)
     row = select_record(trainer_db, sql=sql, params=(policy_id,))
     assert row is not None, "Invalid Trainer ID {} and Policy ID {}".format(trainer_id, policy_id)
-    trainer_name, cloud_provider, model_name, checkpoint, saved_agent_config = row
+    model_name, checkpoint, saved_agent_config = row
     saved_agent_config = json.loads(saved_agent_config)
 
     if policy_config is None:
