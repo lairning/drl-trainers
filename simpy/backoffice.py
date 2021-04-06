@@ -316,7 +316,7 @@ def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, 
                         backend_name
                     ) VALUES ({})'''.format(SQLParamList(3))
     cursor = _BACKOFFICE_DB.cursor()
-    cursor.execute(sql, (trainer_id, policy_id, policy_name))
+    cursor.execute(insert_sql, (trainer_id, policy_id, policy_name))
     _BACKOFFICE_DB.commit()
     print("# Policy '{}' Deployed".format(policy_name))
     return policy_name
