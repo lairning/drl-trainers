@@ -9,6 +9,7 @@ import ray.rllib.agents.ppo as ppo
 from utils import db_connect, BACKOFFICE_DB_NAME, TRAINER_DB_NAME, P_MARKER, select_record, SQLParamList, select_all
 import json
 import pandas as pd
+import numpy as np
 from datetime import datetime
 import subprocess
 import os
@@ -104,7 +105,7 @@ def tear_down_trainer(trainer_id: int, sync:bool = True):
                                                                         _TRAINER_PATH(trainer_name, cloud_provider), result.stderr)
 
 
-
+#Todo: Do not copy data into the backoffice db just sync the files from the cluster
 def get_trainer_data(trainer_id: int):
 
     sql = "SELECT name, cloud_provider FROM trainer_cluster WHERE id = {}".format(P_MARKER)
@@ -191,16 +192,33 @@ def get_trainer_data(trainer_id: int):
     _BACKOFFICE_DB.executemany(insert_sql, data)
     _BACKOFFICE_DB.commit()
 
-def get_policies():
-    sql = '''SELECT policy.cluster_id as trainer_id,
-                    trainer_cluster.name as trainer_name,
-                    policy.policy_id as policy_id, 
-                    policy.model_name as model_name,
-                    policy.checkpoint as checkpoint
-             FROM policy INNER JOIN trainer_cluster ON policy.cluster_id = trainer_cluster.id'''
-    return pd.read_sql_query(sql, _BACKOFFICE_DB)
+def show_policies():
+    sql = "SELECT id, name, cloud_provider FROM trainer_cluster"
+    rows = select_all(_BACKOFFICE_DB, sql=sql)
+    results = []
+    sql = '''SELECT sim_model.name as model_name, 
+                    policy.sim_config_id as sim_config_id,
+                    policy_run.policy_id as policy_id, 
+                    policy_run.id as policy_run_id, 
+                    policy_run.time_start as time_start, 
+                    policy_run.simulations as simulations, 
+                    policy_run.duration as duration, 
+                    policy_run.results as results
+             FROM policy_run 
+             INNER JOIN policy ON policy_run.policy_id = policy.id
+             INNER JOIN sim_model ON policy.sim_model_id = sim_model.id'''
+    for trainer_row in rows:
+        trainer_id, trainer_name, cloud_provider = trainer_row
+        trainer_db = db_connect(_TRAINER_PATH(trainer_name, cloud_provider) + "/" + TRAINER_DB_NAME)
+        trainer_data = select_all(trainer_db,sql=sql)
+        df_data = [trainer_row+data[:-1]+(np.mean(json.loads(data[-1])), np.std(json.loads(data[-1])))
+                                               for data in trainer_data]
+        df_columns = ['trainer_id', 'trainer_name', 'cloud_provider', 'model_name', 'sim_config_id', 'policy_id',
+                      'run_id', 'time_start', 'simulations', 'duration', 'mean', 'std']
+        results.append(pd.DataFrame(data=df_data, columns=df_columns))
+    return pd.concat(results)
 
-# ToDo: Test delete_trainer
+
 def delete_trainer(trainer_id: int):
     sql = '''SELECT count(*) FROM policy 
              WHERE cluster_id = {} AND backend_name IS NOT NULL'''.format(P_MARKER, P_MARKER)
@@ -224,6 +242,14 @@ def delete_trainer(trainer_id: int):
     sql = '''DELETE FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
     cursor.execute(sql, (trainer_id,))
     _BACKOFFICE_DB.commit()
+
+# ToDo: complete using the trainer.py code
+def get_training_data(trainer_id: int, sim_config: int = None, baseline: bool = True):
+    pass
+
+# ToDo: complete using the trainer.py code
+def get_policy_run_data(trainer_id: int, sim_config: int = None, baseline: bool = True):
+    pass
 
 def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, policy_config: dict = None):
     class ServeModel:
