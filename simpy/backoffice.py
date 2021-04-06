@@ -314,7 +314,9 @@ def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, 
     policy_name = "trainer{}_policy{}".format(trainer_id, policy_id)
     trainer_path = _TRAINER_PATH(trainer_name, cloud_provider)
     backend_server.create_backend(policy_name, ServeModel, saved_agent_config, checkpoint, trainer_path, model_name,
-                                  config=policy_config, env=CondaEnv("simpy"))
+                                  config=policy_config,
+                                  ray_actor_options=_POLICY_ACTOR_CONFIG,
+                                  env=CondaEnv("simpy") )
     insert_sql = '''INSERT OR IGNORE INTO policy (
                         trainer_id,
                         policy_id,
