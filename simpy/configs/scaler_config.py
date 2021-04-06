@@ -125,7 +125,7 @@ setup_commands:
 def scaler_config(cloud_provider: str, cluster_name: str, trainer_path: str, config: dict = None):
 
     def is_aws_gpu(header_type, worker_type):
-        gpu_prefix = ['p3', 'p4', 'g3', 'g4']
+        gpu_prefix = ['p2','p3', 'p4', 'g3', 'g4']
         return header_type in gpu_prefix or header_type in gpu_prefix
 
     cluster_map = {ord(c): None for c in '_-%&?»«!@#$'}
