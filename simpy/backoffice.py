@@ -12,20 +12,23 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 import subprocess
-import os
+import os, sys
 
 from simpy_template.simpy_env import SimpyEnv
-from configs.scaler_config import scaler_config
+from configs.scaler_config import trainer_cluster_config, server_cluster_config
 
 _SHELL = os.getenv('SHELL')
 _CONDA_PREFIX = os.getenv('CONDA_PREFIX_1') if 'CONDA_PREFIX_1' in os.environ.keys() else os.getenv('CONDA_PREFIX')
 
 _BACKOFFICE_DB = db_connect(BACKOFFICE_DB_NAME)
-_TRAINER_YAML = lambda trainer_name, cloud_provider: "configs/{}_{}_scaler.yaml".format(trainer_name, cloud_provider)
-_TRAINER_PATH = lambda trainer_name, cloud_provider: "trainer_{}_{}".format(trainer_name, cloud_provider)
+_TRAINER_YAML = lambda cluster_name, cloud_provider: "configs/{}_{}_scaler.yaml".format(cluster_name, cloud_provider)
+_TRAINER_PATH = lambda cluster_name, cloud_provider: "trainer_{}_{}".format(cluster_name, cloud_provider)
 _CMD_PREFIX = ". {}/etc/profile.d/conda.sh && conda activate simpy && ".format(_CONDA_PREFIX)
+_POLICY_SERVER_YAML = lambda cluster_name, cloud_provider: "configs/{}_{}_policy_server.yaml".format(cluster_name, cloud_provider)
 
 _POLICY_ACTOR_CONFIG = {'num_cpus': 1}
+
+_CURRENT_ENV = sys.executable.split('/')[-3]
 
 def start_backend_server(config = None):
     #stderrout = sys.stderr
@@ -48,49 +51,54 @@ def start_backend_server(config = None):
     #    "{} INFO Trainers Should Deploy Policies on this Server using address='{}'".format(datetime.now(), addr))
     return backend_server
 
+def _get_trainer_and_cloud(trainer_id: int):
+    sql = "SELECT name, cloud_provider FROM trainer_cluster WHERE id = {}".format(P_MARKER)
+    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
+    assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
+    return row
 
 # ToDo: Add more exception handling
-def launch_trainer(trainer_name: str = None, cloud_provider: str = '', cluster_config: dict = None):
+def launch_trainer(cluster_name: str = None, cloud_provider: str = '', cluster_config: dict = None):
 
-    result = subprocess.run(['ls', _TRAINER_PATH(trainer_name, cloud_provider)], capture_output=True, text=True)
+    result = subprocess.run(['ls', _TRAINER_PATH(cluster_name, cloud_provider)], capture_output=True, text=True)
     # Create the Trainer Cluster if it does not exist.
     # No distinction exists between cloud providers, therefore training results are shared between runs in different
     # clouds
     if result.returncode != 0:
         # Create trainer folder
-        result = subprocess.run(['cp', '-r', 'simpy_template', _TRAINER_PATH(trainer_name, cloud_provider)], capture_output=True,
+        result = subprocess.run(['cp', '-r', 'simpy_template', _TRAINER_PATH(cluster_name, cloud_provider)], capture_output=True,
                                 text=True)
         if result.returncode:
-            print("Error Creating Trainer Directory {}".format(_TRAINER_PATH(trainer_name, cloud_provider)))
+            print("Error Creating Trainer Directory {}".format(_TRAINER_PATH(cluster_name, cloud_provider)))
             print(result.stderr)
 
         cursor = _BACKOFFICE_DB.cursor()
         sql = "INSERT INTO trainer_cluster (name, cloud_provider, start, config) VALUES ({})".format(SQLParamList(4))
-        params = (trainer_name, cloud_provider, datetime.now(), json.dumps(cluster_config))
+        params = (cluster_name, cloud_provider, datetime.now(), json.dumps(cluster_config))
         cursor.execute(sql, params)
         _BACKOFFICE_DB.commit()
         trainer_id = cursor.lastrowid
     else:
         sql = '''SELECT id FROM trainer_cluster 
                  WHERE name = {} and cloud_provider = {} and stop IS NULL'''.format(P_MARKER, P_MARKER)
-        trainer_id, = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_name, cloud_provider))
+        trainer_id, = select_record(_BACKOFFICE_DB, sql=sql, params=(cluster_name, cloud_provider))
     # Create trainer yaml config file
     # When a cluster with the same name and provider is relaunched the configuration is overridden
     if cloud_provider != '':
-        config_file = open(_TRAINER_YAML(trainer_name, cloud_provider), "wt")
+        config_file = open(_TRAINER_YAML(cluster_name, cloud_provider), "wt")
         # ToDo: Test aws
-        config_file.write(scaler_config(cloud_provider, trainer_name, _TRAINER_PATH(trainer_name, cloud_provider),
-                                        config=cluster_config))
+        config_file.write(trainer_cluster_config(cloud_provider, cluster_name, _TRAINER_PATH(cluster_name, cloud_provider),
+                                                 config=cluster_config))
         config_file.close()
         # launch the cluster
         result = subprocess.run(_CMD_PREFIX + "ray up {} --no-config-cache -y".format(_TRAINER_YAML(
-            trainer_name, cloud_provider)), shell=True, capture_output=True, text=True, executable=_SHELL)
+            cluster_name, cloud_provider)), shell=True, capture_output=True, text=True, executable=_SHELL)
         subprocess.run(_CMD_PREFIX + "ray exec {} 'rm -r /home/ubuntu/trainer/*'".format(
-            _TRAINER_YAML(trainer_name, cloud_provider)),
-                                shell=True, capture_output=True, text=True, executable=_SHELL)
+            _TRAINER_YAML(cluster_name, cloud_provider)),
+                       shell=True, capture_output=True, text=True, executable=_SHELL)
         subprocess.run(_CMD_PREFIX + "ray rsync_up {} '{}/' '/home/ubuntu/trainer/'".format(
-            _TRAINER_YAML(trainer_name, cloud_provider), _TRAINER_PATH(trainer_name, cloud_provider)),
-                                shell=True, capture_output=True, text=True, executable=_SHELL)
+            _TRAINER_YAML(cluster_name, cloud_provider), _TRAINER_PATH(cluster_name, cloud_provider)),
+                       shell=True, capture_output=True, text=True, executable=_SHELL)
 
     _BACKOFFICE_DB.commit()
     return trainer_id, result
@@ -108,14 +116,18 @@ def tear_down_trainer(trainer_id: int):
         assert not result.returncode, "Error on Tear Down {} {}\n{}".format(_TRAINER_YAML(trainer_name, cloud_provider),
                                                                         _TRAINER_PATH(trainer_name, cloud_provider), result.stderr)
 
+def monitor_trainer(trainer_id: int):
 
-#Todo: Do not copy data into the backoffice db just sync the files from the cluster
+    trainer_name, cloud_provider = _get_trainer_and_cloud(trainer_id=trainer_id)
+    if cloud_provider != '':
+        result = subprocess.run(_CMD_PREFIX + "ray exec {} 'tail -n 100 -f /tmp/ray/session_latest/logs/monitor*'".format(
+            _TRAINER_YAML(trainer_name, cloud_provider)), shell=True, capture_output=True, text=True, executable=_SHELL)
+        assert not result.returncode, "Error on SyncDown {} {}\n{}".format(_TRAINER_YAML(trainer_name, cloud_provider),
+                                                                       _TRAINER_PATH(trainer_name, cloud_provider), result.stderr)
+
 def get_trainer_data(trainer_id: int):
 
-    sql = "SELECT name, cloud_provider FROM trainer_cluster WHERE id = {}".format(P_MARKER)
-    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
-    assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
-    trainer_name, cloud_provider = row
+    trainer_name, cloud_provider = _get_trainer_and_cloud(trainer_id=trainer_id)
     if cloud_provider != '':
         result = subprocess.run(_CMD_PREFIX + "ray rsync_down {} '/home/ubuntu/trainer/' '{}'".format(
             _TRAINER_YAML(trainer_name, cloud_provider), _TRAINER_PATH(trainer_name, cloud_provider)),
@@ -124,17 +136,14 @@ def get_trainer_data(trainer_id: int):
                                                                        _TRAINER_PATH(trainer_name, cloud_provider), result.stderr)
 
 def delete_trainer(trainer_id: int):
+
     sql = '''SELECT count(*) FROM policy 
              WHERE cluster_id = {} AND backend_name IS NOT NULL'''.format(P_MARKER, P_MARKER)
-
     count, = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
     assert count == 0, "Can not delete trainer with deployed policies"
-    tear_down_trainer(trainer_id=trainer_id, sync=False)
-    sql = '''SELECT name, cloud_provider
-             FROM trainer_cluster WHERE id = {}'''.format(P_MARKER)
-    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
-    assert row is not None, "Unknown Trainer ID {}".format(trainer_id)
-    trainer_name, cloud_provider = row
+    tear_down_trainer(trainer_id=trainer_id)
+
+    trainer_name, cloud_provider = _get_trainer_and_cloud(trainer_id=trainer_id)
     result = subprocess.run(['rm', '-r', _TRAINER_PATH(trainer_name, cloud_provider)], capture_output=True, text=True)
     if result.returncode:
         print(result.stderr)
@@ -224,10 +233,7 @@ def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, 
             return {"action": int(action)}
 
     # Get Trainer DB
-    sql = "SELECT name, cloud_provider FROM trainer_cluster WHERE id = {}".format(P_MARKER)
-    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
-    assert row is not None, "Invalid Trainer ID {} ".format(trainer_id)
-    trainer_name, cloud_provider = row
+    trainer_name, cloud_provider = _get_trainer_and_cloud(trainer_id=trainer_id)
     trainer_db = db_connect(_TRAINER_PATH(trainer_name, cloud_provider) + "/" + TRAINER_DB_NAME)
 
     # Get Policy info
@@ -246,7 +252,7 @@ def deploy_policy(backend_server: ServeClient, trainer_id: int, policy_id: int, 
     backend_server.create_backend(policy_name, ServeModel, saved_agent_config, checkpoint, trainer_path, model_name,
                                   config=policy_config,
                                   ray_actor_options=_POLICY_ACTOR_CONFIG,
-                                  env=CondaEnv("simpy") )
+                                  env=CondaEnv(_CURRENT_ENV) )
     insert_sql = '''INSERT OR IGNORE INTO policy (
                         trainer_id,
                         policy_id,
@@ -290,10 +296,7 @@ def set_endpoint_traffic(backend_server: ServeClient, endpoint_name: str, traffi
 def get_simulator(trainer_id: int, policy_id: int):
 
     # Get Trainer DB
-    sql = "SELECT name, cloud_provider FROM trainer_cluster WHERE id = {}".format(P_MARKER)
-    row = select_record(_BACKOFFICE_DB, sql=sql, params=(trainer_id,))
-    assert row is not None, "Invalid Trainer ID {} ".format(trainer_id)
-    trainer_name, cloud_provider = row
+    trainer_name, cloud_provider = _get_trainer_and_cloud(trainer_id=trainer_id)
     trainer_db = db_connect(_TRAINER_PATH(trainer_name, cloud_provider) + "/" + TRAINER_DB_NAME)
 
     sql = '''SELECT trainer_cluster.name, trainer_cluster.cloud_provider, policy.model_name, policy.sim_config
@@ -326,11 +329,47 @@ def get_simulator(trainer_id: int, policy_id: int):
     return SimpyEnv(env_config)
 
 
+def launch_policy_server(cluster_name: str = None, cloud_provider: str = '', cluster_config: dict = None):
+
+    policy_server_yaml = _POLICY_SERVER_YAML(cluster_name, cloud_provider)
+
+    result = subprocess.run(['ls', policy_server_yaml], capture_output=True, text=True)
+    # Check if the cluster yaml file exists.
+    if result.returncode != 0:
+
+        config_file = open(policy_server_yaml, "wt")
+
+        config_file.write(server_cluster_config(cloud_provider, cluster_name, config=cluster_config))
+        config_file.close()
+        # launch the cluster
+        result = subprocess.run(_CMD_PREFIX + "ray up {} --no-config-cache -y".format(policy_server_yaml),
+                                shell=True, capture_output=True, text=True, executable=_SHELL)
+        subprocess.run(_CMD_PREFIX + "ray exec {} 'rm -r /home/ubuntu/server/*'".format(policy_server_yaml),
+                       shell=True, capture_output=True, text=True, executable=_SHELL)
+        subprocess.run(_CMD_PREFIX + "ray rsync_up {} './' '/home/ubuntu/server/'".format(policy_server_yaml),
+                       shell=True, capture_output=True, text=True, executable=_SHELL)
+
+    return result
+
+def tear_down_policy_server(cluster_name: str = None, cloud_provider: str = ''):
+
+    policy_server_yaml = _POLICY_SERVER_YAML(cluster_name, cloud_provider)
+
+    result = subprocess.run(_CMD_PREFIX + "ray down {} -y".format(policy_server_yaml),
+                            shell=True, capture_output=True, text=True, executable=_SHELL)
+    subprocess.run(['rm', policy_server_yaml], capture_output=True, text=True)
+
+    return result
 
 
+def monitor_policy_server(cluster_name: str = None, cloud_provider: str = ''):
 
+    policy_server_yaml = _POLICY_SERVER_YAML(cluster_name, cloud_provider)
 
-
+    if cloud_provider != '':
+        result = subprocess.run(_CMD_PREFIX + "ray exec {} 'tail -n 100 -f /tmp/ray/session_latest/logs/monitor*'".format(
+            policy_server_yaml), shell=True, capture_output=True, text=True, executable=_SHELL)
+        assert not result.returncode, "Error on SyncDown {}\n{}".format(policy_server_yaml, result.stderr)
 
 
 
